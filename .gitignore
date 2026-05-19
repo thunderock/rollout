@@ -43,6 +43,7 @@ htmlcov/
 # Local state
 .env
 .env.local
+.envrc.local
 *.log
 local/
 data/
