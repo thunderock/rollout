@@ -96,3 +96,20 @@ MIT. See [`LICENSE`](LICENSE).
 ## For AI agents
 
 If you are an AI agent working in this repo, read [`AGENTS.md`](AGENTS.md) **first**. It is the cold-start brief: principles, layout, build/test commands, glossary, house style.
+
+## Quick start (local dev)
+
+All tasks go through the top-level `Makefile`:
+
+```bash
+make help            # list targets
+make build           # cargo build --workspace
+make lint            # cargo fmt --check + clippy -D warnings
+make test            # cargo test --workspace --tests
+make check           # lint + test
+make schema-gen      # regenerate schemas/ + python stubs
+make validate-schema # meta-validate the JSON Schema (requires `pip install check-jsonschema`)
+make docs            # mdbook build + cargo doc (requires `cargo install mdbook --locked`)
+```
+
+Requires only `cargo` (pinned to `1.88.0` via `rust-toolchain.toml`) and `make`. `make docs` additionally requires `mdbook` (`cargo install mdbook --locked --version 0.4.x`).
