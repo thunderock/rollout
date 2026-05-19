@@ -1,0 +1,117 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# docs-deploy needs these to publish GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent Pages deploy per ref.
+concurrency:
+  group: "pages-${{ github.ref }}"
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: short
+
+jobs:
+  lint:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88.0
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-lint
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+
+  test:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-test
+      - run: cargo test --workspace --tests
+
+  deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check advisories licenses bans sources
+
+  commitlint:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install convco (macOS)
+        run: |
+          set -euo pipefail
+          curl -sSL https://github.com/convco/convco/releases/latest/download/convco-macos.zip -o /tmp/convco.zip
+          unzip -o /tmp/convco.zip -d /tmp/convco
+          chmod +x /tmp/convco/convco
+          sudo mv /tmp/convco/convco /usr/local/bin/
+      - name: Lint commits
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            convco check ${{ github.event.pull_request.base.sha }}..HEAD
+          else
+            # Tolerant on direct main pushes during bootstrap (D-CI-04).
+            convco check HEAD~10..HEAD || true
+          fi
+
+  schema-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-schema-drift
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Python tools
+        run: pip install datamodel-code-generator==0.57.0 check-jsonschema==0.37.2
+      - name: Regenerate schemas
+        run: cargo xtask schema-gen
+      - name: Assert no drift
+        run: |
+          set -e
+          git diff --exit-code schemas/ python/ \
+            || (echo "::error::Schema drift detected. Run 'cargo xtask schema-gen' and commit."; exit 1)
+      - name: Validate generated schema (meta-schema)
+        run: check-jsonschema --check-metaschema schemas/rollout.schema.json
+
+  architecture-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-arch-lint
+      - name: Dependency-direction lint
+        run: cargo test -p rollout-core --test dependency_direction
+
+  unused-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bnjbvr/cargo-machete@v0.9.2
