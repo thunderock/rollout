@@ -1,0 +1,20 @@
+[package]
+name = "rollout-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "rollout CLI binary"
+
+[[bin]]
+name = "rollout"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+rollout-core = { path = "../rollout-core" }
+clap = { workspace = true }
+serde_json = { workspace = true }
