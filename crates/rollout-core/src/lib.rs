@@ -7,10 +7,12 @@
 //! traits from here.
 #![forbid(unsafe_code)]
 
+pub mod config;
 pub mod errors;
 pub mod ids;
 pub mod traits;
 
+pub use config::RunConfig;
 pub use errors::{CoreError, FatalError, RecoverableError, RetryHint};
 pub use ids::{ContentId, RunId, WorkerId};
 pub use traits::{
