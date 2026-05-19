@@ -18,3 +18,4 @@ workspace = true
 rollout-core = { path = "../rollout-core" }
 clap = { workspace = true }
 serde_json = { workspace = true }
+schemars = { workspace = true }
