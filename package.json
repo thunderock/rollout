@@ -1,0 +1,14 @@
+{
+  "name": "rollout-dev-tools",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Dev tooling shell for the rollout repo. Not published. Hosts dev-only Node tools (graphify, etc.); the actual project is the Rust workspace under crates/.",
+  "scripts": {
+    "graphify": "graphify-ts",
+    "graphify:build": "graphify-ts build",
+    "graphify:watch": "graphify-ts watch"
+  },
+  "devDependencies": {
+    "@mohammednagy/graphify-ts": "^0.22.9"
+  }
+}

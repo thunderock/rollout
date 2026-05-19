@@ -59,3 +59,8 @@ artifacts/
 checkpoints/
 snapshots/
 runs/
+
+# Node dev tooling (graphify-ts, etc. — Rust workspace is the real project)
+node_modules/
+graphify-out/
+*.tsbuildinfo
