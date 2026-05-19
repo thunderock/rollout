@@ -9,6 +9,12 @@
 
 pub mod errors;
 pub mod ids;
+pub mod traits;
 
 pub use errors::{CoreError, FatalError, RecoverableError, RetryHint};
 pub use ids::{ContentId, RunId, WorkerId};
+pub use traits::{
+    Clock, ComputeHint, Coordinator, DrainReason, EnvHarness, EvalHarness, InferenceBackend,
+    ObjectStore, Plugin, PluginHost, PolicyAlgorithm, Queue, RewardModel, Scheduler, SecretStore,
+    Snapshotter, Storage, StorageTxn, ToolHarness, Worker, WorkerContext,
+};
