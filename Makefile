@@ -1,0 +1,39 @@
+.PHONY: lint test build check schema-gen validate-schema docs graphify help
+
+export CARGO_TERM_COLOR := always
+
+lint:
+	cargo fmt --all -- --check
+	cargo clippy --all-targets --all-features -- -D warnings
+
+test:
+	cargo test --workspace --tests
+
+build:
+	cargo build --workspace
+
+check: lint test
+
+schema-gen:
+	cargo xtask schema-gen
+
+validate-schema:
+	cargo run -p rollout-cli -- schema --format json > /tmp/rollout-schema-test.json
+	check-jsonschema --check-metaschema /tmp/rollout-schema-test.json
+
+docs:
+	mdbook build docs/book
+	cargo doc --workspace --no-deps --all-features
+
+graphify:
+	npx graphify-ts generate . --directed --svg
+
+help:
+	@echo "lint             cargo fmt --check + clippy -D warnings"
+	@echo "test             cargo test --workspace --tests"
+	@echo "build            cargo build --workspace"
+	@echo "check            lint + test"
+	@echo "schema-gen       regenerate schemas/rollout.schema.json + python stubs"
+	@echo "validate-schema  meta-validate the JSON Schema (requires check-jsonschema)"
+	@echo "docs             mdbook build + cargo doc --workspace --no-deps --all-features"
+	@echo "graphify         build codebase knowledge graph via graphify-ts (out: graphify-out/)"
