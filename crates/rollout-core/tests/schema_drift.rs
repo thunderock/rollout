@@ -56,7 +56,7 @@ fn python_stubs_match_committed() {
 
 #[test]
 fn schema_json_top_level_properties_sorted() {
-    let schema_json = serde_json::to_value(&schema_for!(RunConfig)).expect("to_value");
+    let schema_json = serde_json::to_value(schema_for!(RunConfig)).expect("to_value");
     let s = schema_json.to_string();
     assert!(
         s.contains("schema_version"),
