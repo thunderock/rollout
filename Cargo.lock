@@ -410,6 +410,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "blake3",
+ "cargo_metadata",
  "schemars",
  "serde",
  "serde_json",

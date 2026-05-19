@@ -37,10 +37,11 @@ fn algo_crates_do_not_depend_on_cloud_crates() {
     let meta = MetadataCommand::new().exec().expect("cargo metadata");
     for pkg in meta.workspace_packages() {
         for dep in &pkg.dependencies {
+            let pkg_name = pkg.name.as_str();
+            let dep_name = dep.name.as_str();
             assert!(
-                !violation(pkg.name.as_str(), dep.name.as_str()),
-                "Dependency violation: {} -> {} (cloud crates forbidden in algo/cap layer)",
-                pkg.name, dep.name
+                !violation(pkg_name, dep_name),
+                "Dependency violation: {pkg_name} -> {dep_name} (cloud crates forbidden in algo/cap layer)",
             );
         }
     }
@@ -52,7 +53,7 @@ fn deliberate_violation_fixture_is_detected() {
     let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures/violation/Cargo.toml");
     let body = std::fs::read_to_string(&fixture)
-        .unwrap_or_else(|e| panic!("read fixture {:?}: {}", fixture, e));
+        .unwrap_or_else(|e| panic!("read fixture {fixture:?}: {e}"));
 
     let pkg = toml_pkg_name(&body);
     let deps = toml_dep_names(&body);
@@ -60,8 +61,7 @@ fn deliberate_violation_fixture_is_detected() {
     let caught = deps.iter().any(|d| violation(&pkg, d));
     assert!(
         caught,
-        "fixture failed: expected violation between pkg={} and deps={:?}",
-        pkg, deps
+        "fixture failed: expected violation between pkg={pkg} and deps={deps:?}",
     );
 }
 
