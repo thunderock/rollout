@@ -3,14 +3,36 @@
   "granularity": "standard",
   "parallelization": true,
   "commit_docs": false,
-  "model_profile": "balanced",
+  "model_profile": "quality",
   "workflow": {
     "research": true,
     "plan_check": true,
     "verifier": true,
     "nyquist_validation": true,
-    "auto_advance": false,
-    "research_before_questions": false
+    "auto_advance": true,
+    "research_before_questions": true,
+    "ui_phase": true,
+    "ui_safety_gate": true,
+    "skip_discuss": false,
+    "graphify": true,
+    "_auto_chain_active": false
   },
-  "notes": "commit_docs=false because user explicitly requested no commits during initialization. Planning artifacts live in .planning/ uncommitted; the user will decide when to commit. If commit_docs is flipped to true later, also remove .planning/ from .gitignore."
+  "git": {
+    "branching_strategy": "none"
+  },
+  "hooks": {
+    "context_warnings": true
+  },
+  "tools": {
+    "graphify": {
+      "enabled": true,
+      "package": "@mohammednagy/graphify-ts",
+      "binary": "graphify-ts",
+      "install": "npm install (root package.json devDependencies)",
+      "out_dir": "graphify-out",
+      "command_build": "npx graphify-ts generate . --directed --svg",
+      "command_watch": "npx graphify-ts watch ."
+    }
+  },
+  "notes": "commit_docs=false because user explicitly requested no commits during initialization. Planning artifacts live in .planning/ uncommitted; the user will decide when to commit. If commit_docs is flipped to true later, also remove .planning/ from .gitignore. graphify-ts is installed at the repo root via package.json devDependencies; graphify-out/ and node_modules/ are gitignored."
 }

@@ -148,6 +148,57 @@ CI runs the same commands. If `cargo clippy -- -D warnings` fails, that's a merg
 - **Commits:** conventional commits (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`).
 - **Comments:** explain *why*, never *what*. One-liners preferred. No multi-paragraph docstrings except on top-level public traits.
 
+## 9. Standing project rules (non-negotiable, every phase)
+
+These are durable, repo-wide commitments. They are **always part of the context** for any task, brainstorm, or plan. Re-read at the start of every session. (Committed in-repo so they travel across machines, teammates, and CI.)
+
+### 9.1 Docs site (DOCS-01)
+
+- An mdBook docs site lives at `docs/book/` and is built by `make docs`.
+- A GitHub Actions workflow builds it on every PR (required check) and **publishes to GitHub Pages on every push to `main`**.
+- The site embeds or cross-links `cargo doc --workspace --no-deps --all-features` output for API reference.
+- The site reserves `docs/book/src/examples/` for the v1 working-model recipe (see §9.4).
+
+### 9.2 Per-commit doc + test policy (DOCS-02)
+
+- Every commit that modifies code under `crates/`, `python/`, or `xtask/` MUST also touch at least one of:
+  - `docs/` content,
+  - inline rustdoc / Python docstrings on the changed file, or
+  - tests under `crates/*/tests/` or `python/**/tests/`.
+- CI job `docs-test-policy` enforces this on PRs by inspecting `git diff --name-only origin/${{ github.base_ref }}...HEAD`.
+- Controlled escape hatch: a `[skip-docs-check]` trailer in the commit message bypasses the check. Use sparingly (bootstrap, mechanical refactors, dependency bumps).
+
+### 9.3 Rustdoc gate (DOCS-03)
+
+- CI runs `cargo doc --workspace --no-deps --all-features` with `RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links -D rustdoc::missing_crate_level_docs"`.
+- Every published crate has a crate-level `//!` doc comment.
+- Every `pub` item has at least a one-line doc comment. Adding `#[allow(missing_docs)]` requires a TODO with a tracking issue.
+
+### 9.4 v1 release gate — working model example (SHIP-03 hardened)
+
+- v1 cannot ship without **at least one end-to-end working model example**: a reproducible recipe (`make example` or `cargo run --example` form) that takes a real (small) open-weights model, runs SFT or PPO, completes end-to-end on commodity hardware, is exercised by nightly CI, and is documented on the docs site under `docs/book/src/examples/`.
+- The recipe lands progressively: Phase 4 (SFT stub) → Phase 9 (real recipe) → Phase 12 (polished docs).
+- Any change that breaks the recipe in nightly CI is a release blocker — fix or revert before the next merge.
+
+### 9.5 What this means for every phase plan
+
+When `/gsd:plan-phase` or any planner produces tasks for any phase:
+
+1. Every task that modifies code must declare in `<acceptance_criteria>` that the corresponding doc + test were updated in the same commit (unless the task itself is doc-only or test-only).
+2. Every phase's CI changes must keep `docs-build`, `docs-deploy`, `rustdoc-check`, and `docs-test-policy` jobs healthy — no skipping, no `continue-on-error`.
+3. Every phase from Phase 4 onward must check whether the v1 example recipe still runs; if affected, the phase plan must include a task to update the recipe.
+
+### 9.6 Codebase knowledge graph — `graphify-ts`
+
+- The repo declares `@mohammednagy/graphify-ts` as a dev dependency in the root `package.json` (`devDependencies`). Install with `npm install` at the repo root.
+- `.planning/config.json` carries `workflow.graphify: true` and a `tools.graphify` block so GSD treats the graph as available.
+- Local commands:
+  - `npx graphify-ts generate . --directed --svg` — one-shot build into `graphify-out/`.
+  - `npx graphify-ts watch .` — incremental rebuild while editing.
+  - `npm run graphify` is wired as a shortcut.
+- `graphify-out/` and `node_modules/` are gitignored; the graph is regenerated on demand, not committed.
+- Use it before large refactors, before planning a phase that touches multiple crates, and to verify the §9.5 dependency-direction rule at a glance.
+
 ---
 
 You now have enough context to be useful. Start with `SKILLS.md` to learn what the framework exposes, then dive into whichever spec matches your task.

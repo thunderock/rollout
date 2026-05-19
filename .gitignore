@@ -68,3 +68,6 @@ graphify-out/
 
 # mdBook build output
 docs/book/book/
+
+# Claude Code agent worktrees (transient — created by isolation=worktree subagents)
+.claude/worktrees/
