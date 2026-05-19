@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 03 of 7
+current_plan: 04 of 7
 status: in-progress
-stopped_at: Completed 01-07-docs-site-PLAN.md
-last_updated: "2026-05-19T22:32:52.773Z"
+stopped_at: Completed 01-03-rollout-core-content-PLAN.md
+last_updated: "2026-05-19T22:42:41.821Z"
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 7
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # STATE — Project Memory
@@ -23,18 +23,18 @@ This file tracks current project state. Updated at phase transitions.
 
 Wave 1 complete: plans 01 (workspace skeleton), 02 (Makefile + graphify dev dep), and 07 (mdBook docs site + crate-level //! docs) shipped. Workspace builds cleanly, `cargo xtask` alias resolves, all 9 Makefile targets parse, `make help` runs locally, `node_modules/.bin/graphify-ts` resolves, `make docs` succeeds end-to-end (mdBook 0.4.52 + workspace rustdoc), and the §9.3 rustdoc gate passes for all three Phase 1 crates' binaries.
 
-**Current Plan:** 03 of 7
-**Last completed plan:** 01-07-docs-site (2026-05-19) — Wave 1 finished
+**Current Plan:** 04 of 7
+**Last completed plan:** 01-03-rollout-core-content (2026-05-19) — Wave 2 finished
 
 ## Next Step
 
-Continue Phase 1 Wave 2: plan 01-03 (rollout-core content — populate the trait surface). Then Wave 3: 01-04 (schema-gen) + 01-05 (dep-direction). Then Wave 4: 01-06 (CI).
+Phase 1 Wave 2 complete (plan 01-03 — rollout-core content). Start Wave 3 in parallel: plan 01-04 (schema-gen pipeline) + plan 01-05 (dep-direction + cargo-deny). Then Wave 4: 01-06 (CI).
 
 ## Progress
 
 | Phase | State | Notes |
 |---|---|---|
-| 1 — Core foundations | in progress | Wave 1 complete: 01-01 workspace skeleton + 01-02 makefile + 01-07 docs-site |
+| 1 — Core foundations | in progress | Waves 1+2 complete: 01/02/07 (skeleton + makefile + docs) + 03 (trait surface + errors + IDs + RunConfig) |
 | 2 — Local substrate | not started | |
 | 3 — Inference backend + batch | not started | |
 | 4 — SFT + RM + train-state snapshots | not started | |
@@ -62,6 +62,7 @@ Continue Phase 1 Wave 2: plan 01-03 (rollout-core content — populate the trait
 - 2026-05-19: Plan 01-01 (workspace skeleton) complete. Workspace `Cargo.toml`, `rust-toolchain.toml`, `.cargo/config.toml`, and three crate skeletons (`rollout-core`, `rollout-cli`, `xtask`) added. `cargo build --workspace` and `cargo xtask schema-gen` both succeed.
 - 2026-05-19: Plan 01-02 (top-level Makefile + graphify dev dep) complete. `Makefile` ships all 9 targets (lint/test/build/check/schema-gen/validate-schema/docs/graphify/help) — `make -n` parses every target, `make help` runs. Root `package.json` declares `@mohammednagy/graphify-ts ^0.22.9` as a dev dep; `.gitignore` excludes `node_modules/`, `graphify-out/`, `*.tsbuildinfo`. README quick-start points users to `make help`. SUMMARY authored separately from the three pre-existing feat commits (3cb1b07, f047b1e, 7af8903).
 - 2026-05-19: Plan 01-07 (docs-site bootstrap + crate-level //! docs) complete. `docs/book/` mdBook scaffold (book.toml + SUMMARY + introduction + architecture stub + reserved examples landing page) renders cleanly via `mdbook build docs/book`. `make docs` succeeds end-to-end. Crate-level `//!` doc comments added on `rollout-cli` and `xtask` binaries — the §9.3 rustdoc gate (`-D rustdoc::missing_crate_level_docs`) passes for both. mdBook 0.4.52 installed locally via `cargo install mdbook --locked`. Commits: b3899ea (Task 1 — scaffold), 4620795 (Task 2 — //! docs). Wave 1 closes here.
+- 2026-05-19: Plan 01-03 (rollout-core content) complete. All 19 traits from CORE-01 (PolicyAlgorithm, Worker, Coordinator, Scheduler, Plugin, PluginHost, EnvHarness, ToolHarness, EvalHarness, RewardModel, InferenceBackend, Storage, StorageTxn, Snapshotter, ObjectStore, SecretStore, ComputeHint, Queue, Clock) public from `rollout-core` with one-line rustdocs + Send+Sync + object-safe; CoreError taxonomy (Recoverable | Fatal, RetryHint, #[from] propagation) per CORE-03; RunId(Ulid), WorkerId(Ulid), ContentId(blake3 [u8;32]) per CORE-05; RunConfig type tree with `JsonSchema` + `deny_unknown_fields` + `schemars(range(min=1,max=1))` for CORE-04 foundation. Wave 0 RED-first tests (id_types, error_taxonomy, trait_surface — 10 tests total) all green. `cargo test -p rollout-core` + `cargo clippy -p rollout-core --all-targets -- -D warnings` + DOCS-03 rustdoc gate all pass. Commits: 87143f1 (Task 1 — IDs + errors), ee41907 (Task 2 — traits), 13cb09b (Task 3 — RunConfig). Wave 2 closes here.
 
 ## Performance Metrics
 
@@ -70,6 +71,7 @@ Continue Phase 1 Wave 2: plan 01-03 (rollout-core content — populate the trait
 | 01-core-foundations | 01 | 2min | 2 | 13 | 2026-05-19 |
 | 01-core-foundations | 02 | pre-executed | 3 | 5 | 2026-05-19 |
 | 01-core-foundations | 07 | 2min | 2 | 9 | 2026-05-19 |
+| 01-core-foundations | 03 | 5min | 3 | 16 | 2026-05-19 |
 
 ## Decisions
 
@@ -84,11 +86,15 @@ Continue Phase 1 Wave 2: plan 01-03 (rollout-core content — populate the trait
 - **2026-05-19 (01-07):** Architecture page is a one-line cross-link to root `ARCHITECTURE.md` rather than duplicating content. Matches AGENTS.md §2 single-source-of-truth.
 - **2026-05-19 (01-07):** Examples landing page explicitly names SHIP-03 + spells out the progressive landing path (Phase 4 → 9 → 12) so future planners do not re-derive the contract. Reserved per AGENTS.md §9.4 / D-V1-EXAMPLE.
 - **2026-05-19 (01-07):** DOCS-01 + DOCS-03 (rustdoc gate for binaries) are now satisfied for Phase 1's two binary crates. DOCS-02 (per-commit doc/test policy CI script) and the GitHub Pages deploy workflow land in plan 01-06.
+- [Phase 01-core-foundations]: 2026-05-19 (01-03): Clock trait kept sync (no async_trait) per RESEARCH Pattern 2 exception; all other I/O traits use #[async_trait] for dyn-compatibility.
+- [Phase 01-core-foundations]: 2026-05-19 (01-03): WorkerContext + DrainReason added as Phase 1 stub types in traits/worker.rs to preserve spec-shaped Worker signatures; full types arrive in Phase 2.
+- [Phase 01-core-foundations]: 2026-05-19 (01-03): schemars 1.2.1 #[schemars(range(min = 1, max = 1))] compiled without fallback — RESEARCH Open Question Q2 resolved positively.
+- [Phase 01-core-foundations]: 2026-05-19 (01-03): not_serializable test scans errors.rs source via include_bytes! rather than nightly negative trait bounds — stable-Rust enforcement of RESEARCH Anti-Pattern 4.
 
 ## Last Session
 
-- **Last session:** 2026-05-19T22:32:52.769Z
-- **Stopped at:** Completed 01-07-docs-site-PLAN.md
+- **Last session:** 2026-05-19T22:42:11.995Z
+- **Stopped at:** Completed 01-03-rollout-core-content-PLAN.md
 
 ## Things Not To Forget
 
