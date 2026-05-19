@@ -6,7 +6,7 @@ The narrative roadmap lives at the repo root: [`../ROADMAP.md`](../ROADMAP.md). 
 
 | Phase | Name | Requirements delivered |
 |---|---|---|
-| 1 | Core foundations | CORE-01, CORE-02, CORE-03, CORE-04, CORE-05 |
+| 1 | Core foundations | CORE-01, CORE-02, CORE-03, CORE-04, CORE-05, DOCS-01, DOCS-02, DOCS-03 |
 | 2 | Local substrate | SUBSTR-01, SUBSTR-02, SUBSTR-03, SUBSTR-04 |
 | 3 | Inference backend + batch | BACKEND-01, BACKEND-02 |
 | 4 | SFT + RM + train-state snapshots | TRAIN-01, TRAIN-02, TRAIN-03, TRAIN-04 |
@@ -26,5 +26,9 @@ Each phase has measurable exit criteria stated in the narrative roadmap. They ar
 ## Coverage
 
 100% — every v1 requirement maps to exactly one phase.
+
+**Cross-cutting requirements:** `DOCS-01` (docs site bootstrap), `DOCS-02` (per-commit doc/test policy), and `DOCS-03` (rustdoc CI gate) bootstrap in Phase 1 but apply to **every** phase thereafter — every phase's plans must enforce doc + test updates per commit.
+
+**v1 release gate:** `SHIP-03` is hardened — v1 cannot ship without at least one end-to-end working model example. Recipe lands progressively (Phase 4 stub → Phase 9 real → Phase 12 documented).
 
 The narrative `../ROADMAP.md` is authoritative for goals, risks, and exit criteria. The phase-detail `.planning/phase-N/` directories (created later by `/gsd:plan-phase N`) are authoritative for tasks.

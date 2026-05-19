@@ -6,11 +6,11 @@ This document captures the v1 requirements with REQ-IDs, organized by category. 
 
 ### Core (`CORE-*`)
 
-- [ ] **CORE-01** — `rollout-core` crate exposing the full trait surface: `PolicyAlgorithm`, `Worker`, `Coordinator`, `Scheduler`, `Plugin`, `EnvHarness`, `ToolHarness`, `EvalHarness`, `RewardModel`, `InferenceBackend`, `Storage`, `StorageTxn`, `Queue`, `ObjectStore`, `SecretStore`, `ComputeHint`, `Snapshotter`, `PluginHost`, `Clock`.
-- [ ] **CORE-02** — Workspace dependency-direction lint via `cargo deny`: algorithm crates may not depend on cloud crates; cloud SDKs only inside `rollout-cloud-*`.
-- [ ] **CORE-03** — Error taxonomy: `CoreError` = `Recoverable { Throttled, Transient, Preempted }` ∪ `Fatal { ConfigInvalid, SchemaViolation, PluginContract, Internal }`, each with a `RetryHint`.
-- [ ] **CORE-04** — Single source of truth config via `serde + schemars`; `cargo xtask schema-gen` regenerates JSON Schema + Python stubs; CI fails on drift.
-- [ ] **CORE-05** — Content-addressed IDs (blake3) and ULID-based run / worker IDs.
+- [x] **CORE-01** — `rollout-core` crate exposing the full trait surface: `PolicyAlgorithm`, `Worker`, `Coordinator`, `Scheduler`, `Plugin`, `EnvHarness`, `ToolHarness`, `EvalHarness`, `RewardModel`, `InferenceBackend`, `Storage`, `StorageTxn`, `Queue`, `ObjectStore`, `SecretStore`, `ComputeHint`, `Snapshotter`, `PluginHost`, `Clock`.
+- [x] **CORE-02** — Workspace dependency-direction lint via `cargo deny`: algorithm crates may not depend on cloud crates; cloud SDKs only inside `rollout-cloud-*`.
+- [x] **CORE-03** — Error taxonomy: `CoreError` = `Recoverable { Throttled, Transient, Preempted }` ∪ `Fatal { ConfigInvalid, SchemaViolation, PluginContract, Internal }`, each with a `RetryHint`.
+- [x] **CORE-04** — Single source of truth config via `serde + schemars`; `cargo xtask schema-gen` regenerates JSON Schema + Python stubs; CI fails on drift.
+- [x] **CORE-05** — Content-addressed IDs (blake3) and ULID-based run / worker IDs.
 
 ### Substrate (`SUBSTR-*`)
 
@@ -81,8 +81,14 @@ This document captures the v1 requirements with REQ-IDs, organized by category. 
 
 - [ ] **SHIP-01** — All 17 publishable crates released to crates.io at 0.1.0 (synchronized minor-version line).
 - [ ] **SHIP-02** — `pip install rollout` works on macOS (x86_64, arm64) + Linux (x86_64, aarch64) across three Python minor versions.
-- [ ] **SHIP-03** — One reference RLHF recipe runs end-to-end in nightly CI on a small model.
+- [ ] **SHIP-03** — One reference RLHF recipe runs end-to-end in nightly CI on a small model. **v1 release gate (hardened 2026-05-19):** the v1 release cannot ship without at least one working end-to-end model example — a reproducible recipe (`make example` or `cargo run --example` form) that takes a real (small) open-weights model, runs SFT or PPO, completes end-to-end on commodity hardware, is exercised by nightly CI, and is documented on the docs site (see SHIP-04 / DOCS-01).
 - [ ] **SHIP-04** — `docs.rs` cargo docs + mdBook docs site + Python docs site all build cleanly from source comments and `docs/` (no hand-written drift).
+
+### Docs / dev-loop (`DOCS-*`) — cross-cutting, applies to every phase
+
+- [ ] **DOCS-01** — mdBook docs site exists at the repo root (`docs/book/` or equivalent), built by `make docs` locally and by a GitHub Actions `docs` job. The site auto-publishes (GitHub Pages or equivalent) on every push to `main`. PRs run the docs build as a required check. Source: rustdoc-extracted API reference + hand-written narrative under `docs/book/src/`. Phase 1 ships the bootstrap (empty book + workflow + Makefile target); subsequent phases fill content.
+- [ ] **DOCS-02** — **Per-commit doc/test policy.** Every commit that modifies code (under `crates/`, `python/`, `xtask/`) must touch at least one of: (a) `docs/` content, (b) inline rustdoc / Python docstrings, (c) tests under `crates/*/tests/` or `python/**/tests/`. Enforced by a CI check (e.g., a script that inspects the changed file set of the PR's diff) so that pure-code commits without docs+tests fail the PR. Bootstrap commits (Phase 1 Wave 0/1) are exempted via a `[skip-docs-check]` commit-trailer convention, used sparingly.
+- [ ] **DOCS-03** — `cargo doc --workspace --no-deps --all-features` runs in CI with `RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links -D rustdoc::missing_crate_level_docs"`. Broken intra-doc links, missing docs on public items, or compilation warnings fail the PR.
 
 ## v2 / Future (deferred)
 
