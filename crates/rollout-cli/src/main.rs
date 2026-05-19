@@ -1,3 +1,4 @@
+//! rollout CLI binary. Subcommands wired progressively across phases; only `schema` is real in Phase 1.
 #![forbid(unsafe_code)]
 use clap::{Parser, Subcommand};
 
