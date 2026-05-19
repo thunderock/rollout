@@ -65,3 +65,6 @@ runs/
 node_modules/
 graphify-out/
 *.tsbuildinfo
+
+# mdBook build output
+docs/book/book/
