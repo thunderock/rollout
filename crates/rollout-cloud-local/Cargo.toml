@@ -9,6 +9,31 @@ repository.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = []
+nvml = ["dep:nvml-wrapper"]
+
 [dependencies]
-# Filled by plan 02-03 — Wave-0 stub only.
-rollout-core = { path = "../rollout-core", version = "0.1" }
+rollout-core    = { path = "../rollout-core", version = "0.1" }
+rollout-storage = { path = "../rollout-storage", version = "0.1" }
+async-trait     = { workspace = true }
+serde           = { workspace = true }
+serde_json      = { workspace = true }
+schemars        = { workspace = true }
+thiserror       = { workspace = true }
+tracing         = { workspace = true }
+tokio           = { workspace = true }
+blake3          = { workspace = true }
+postcard        = { workspace = true }
+hex             = { workspace = true }
+ulid            = { workspace = true }
+sysinfo         = { workspace = true }
+smol_str        = { workspace = true }
+nvml-wrapper    = { workspace = true, optional = true }
+
+[package.metadata.cargo-machete]
+ignored = ["nvml-wrapper"]
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio    = { workspace = true, features = ["macros", "rt-multi-thread"] }
