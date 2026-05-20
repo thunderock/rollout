@@ -1,0 +1,15 @@
+[workspace]
+# Keep this sample crate out of the main workspace — it's built on demand by
+# the smoke test driver (plan 02-07), not by `cargo build --workspace`.
+
+[package]
+name = "rust-cdylib-sample"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+# Self-contained: no rollout-core dep. The ABI shim shape is documented in
+# docs/book/src/substrate/plugin-host.md; users copy the #[repr(C)] struct
+# definitions into their own plugin crate.

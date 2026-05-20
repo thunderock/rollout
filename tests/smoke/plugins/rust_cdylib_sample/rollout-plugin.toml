@@ -1,0 +1,18 @@
+name = "rust-cdylib-sample"
+version = "0.1.0"
+kind = "env-harness"
+trait_id = "rollout_core::Plugin"
+mode = "rust-cdylib"
+network_allowlist = []
+
+[runtime]
+gpu = false
+memory_mib = 32
+
+[entry.cdylib]
+# Sample crate is built with its own workspace (see Cargo.toml `[workspace]`)
+# so it's emitted to `tests/smoke/plugins/rust_cdylib_sample/target/release/`,
+# NOT the main workspace target. Plan 02-07's smoke driver picks the file
+# with the platform-appropriate extension (.dylib / .so / .dll).
+path = "target/release/librust_cdylib_sample.dylib"
+symbol = "rollout_plugin_factory"
