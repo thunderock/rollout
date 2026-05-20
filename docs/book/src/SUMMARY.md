@@ -11,4 +11,5 @@
   - [Python bridge](./substrate/python-bridge.md)
   - [Coordinator](./substrate/coordinator.md)
   - [Smoke test](./substrate/smoke-test.md)
+- [Inference](./inference/index.md)
 - [Examples](./examples/index.md)

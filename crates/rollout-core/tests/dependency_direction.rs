@@ -29,6 +29,8 @@ const ALGO_AND_ABOVE: &[&str] = &[
 const TRANSPORT_CRATES: &[&str] = &["rollout-transport"];
 const PLUGIN_HOST_CRATES: &[&str] = &["rollout-plugin-host"];
 const COORDINATOR_CRATES: &[&str] = &["rollout-coordinator"];
+// Phase 3: backend crates depend on rollout-core + pyo3 only (spec 10 Layer 2).
+const BACKEND_CRATES: &[&str] = &["rollout-backend-vllm"];
 // Crates the coordinator must NOT depend on: the plugin host (plugins are a
 // worker concern) and any cloud-layer crate (the coordinator is cloud-agnostic).
 const COORDINATOR_FORBIDDEN: &[&str] =
@@ -50,11 +52,23 @@ fn violation_coordinator_uses_disallowed(pkg: &str, dep: &str) -> bool {
     COORDINATOR_CRATES.contains(&pkg) && COORDINATOR_FORBIDDEN.contains(&dep)
 }
 
+// Phase 3 invariant #5: backend crates must not depend on cloud crates.
+fn violation_backend_uses_cloud(pkg: &str, dep: &str) -> bool {
+    BACKEND_CRATES.contains(&pkg) && CLOUD_CRATES.contains(&dep)
+}
+
+// Phase 3 invariant #6: backend crates must not depend on rollout-transport.
+fn violation_backend_uses_transport(pkg: &str, dep: &str) -> bool {
+    BACKEND_CRATES.contains(&pkg) && dep == "rollout-transport"
+}
+
 fn any_violation(pkg: &str, dep: &str) -> bool {
     violation_algo_uses_cloud(pkg, dep)
         || violation_transport_uses_cloud(pkg, dep)
         || violation_plugin_host_uses_transport(pkg, dep)
         || violation_coordinator_uses_disallowed(pkg, dep)
+        || violation_backend_uses_cloud(pkg, dep)
+        || violation_backend_uses_transport(pkg, dep)
 }
 
 #[test]
@@ -148,6 +162,42 @@ fn deliberate_violation_coord_detected() {
     assert!(
         caught,
         "fixture failed: expected coordinator->forbidden violation, pkg={pkg} deps={deps:?}",
+    );
+}
+
+#[test]
+fn backend_must_not_depend_on_cloud() {
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/violation_backend_uses_cloud/Cargo.toml");
+    let body = std::fs::read_to_string(&fixture)
+        .unwrap_or_else(|e| panic!("read fixture {fixture:?}: {e}"));
+
+    let pkg = toml_pkg_name(&body);
+    let deps = toml_dep_names(&body);
+
+    let caught = deps.iter().any(|d| violation_backend_uses_cloud(&pkg, d));
+    assert!(
+        caught,
+        "fixture failed: expected backend->cloud violation, pkg={pkg} deps={deps:?}",
+    );
+}
+
+#[test]
+fn backend_must_not_depend_on_transport() {
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/violation_backend_uses_transport/Cargo.toml");
+    let body = std::fs::read_to_string(&fixture)
+        .unwrap_or_else(|e| panic!("read fixture {fixture:?}: {e}"));
+
+    let pkg = toml_pkg_name(&body);
+    let deps = toml_dep_names(&body);
+
+    let caught = deps
+        .iter()
+        .any(|d| violation_backend_uses_transport(&pkg, d));
+    assert!(
+        caught,
+        "fixture failed: expected backend->transport violation, pkg={pkg} deps={deps:?}",
     );
 }
 

@@ -1,0 +1,37 @@
+[package]
+name = "rollout-backend-vllm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "vLLM-backed InferenceBackend (PyO3 in-process)"
+
+[lints]
+workspace = true
+
+[features]
+default = []
+# Gates the live PyO3 init path; tests are #[ignore]'d unless ROLLOUT_VLLM_AVAILABLE=1.
+vllm = []
+
+[dependencies]
+rollout-core         = { path = "../rollout-core", version = "0.1" }
+pyo3                 = { workspace = true }
+pyo3-async-runtimes  = { workspace = true }
+async-trait          = { workspace = true }
+serde                = { workspace = true }
+serde_json           = { workspace = true }
+thiserror            = { workspace = true }
+tokio                = { workspace = true }
+tracing              = { workspace = true }
+blake3               = { workspace = true }
+postcard             = { workspace = true }
+
+[dev-dependencies]
+criterion            = { workspace = true }
+tempfile             = { workspace = true }
+
+[[bench]]
+name = "throughput"
+harness = false

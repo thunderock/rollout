@@ -1,0 +1,36 @@
+[package]
+name = "rollout-runtime-batch"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Batch-inference runtime glue: queue management + CAS sample-state machine"
+
+[lints]
+workspace = true
+
+[features]
+default            = []
+# Wires the `MockBackend` used by deterministic resume integration tests.
+test-mock-backend  = []
+
+[dependencies]
+rollout-core         = { path = "../rollout-core", version = "0.1" }
+rollout-storage      = { path = "../rollout-storage", version = "0.1" }
+rollout-cloud-local  = { path = "../rollout-cloud-local", version = "0.1" }
+async-trait          = { workspace = true }
+serde                = { workspace = true }
+serde_json           = { workspace = true }
+thiserror            = { workspace = true }
+tokio                = { workspace = true }
+tracing              = { workspace = true }
+blake3               = { workspace = true }
+postcard             = { workspace = true }
+ulid                 = { workspace = true }
+smol_str             = { workspace = true }
+toml                 = { workspace = true }
+
+[dev-dependencies]
+tempfile             = { workspace = true }
+proptest             = { workspace = true }

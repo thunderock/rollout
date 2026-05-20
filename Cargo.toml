@@ -8,6 +8,8 @@ members = [
     "crates/rollout-transport",
     "crates/rollout-plugin-host",
     "crates/rollout-coordinator",
+    "crates/rollout-backend-vllm",
+    "crates/rollout-runtime-batch",
     "xtask",
 ]
 resolver = "2"
@@ -83,3 +85,6 @@ tempfile           = "3.10"
 proptest           = "1.5"
 assert_cmd         = "2.0"
 predicates         = "3.1"
+
+# Phase 3 — benches
+criterion          = { version = "0.5", features = ["async_tokio"] }
