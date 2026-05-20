@@ -10,5 +10,16 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-# Filled by plan 02-02 — Wave-0 stub only.
 rollout-core = { path = "../rollout-core", version = "0.1" }
+async-trait  = { workspace = true }
+serde        = { workspace = true }
+schemars     = { workspace = true }
+thiserror    = { workspace = true }
+tracing      = { workspace = true }
+tokio        = { workspace = true }
+smol_str     = { workspace = true }
+redb         = { workspace = true }
+postcard     = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
