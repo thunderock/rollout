@@ -51,7 +51,12 @@ mod tests {
         // Before due_at: never failed.
         assert!(!is_failed(due - Duration::from_secs(1), due, skew, coord));
         // Just past due_at: under both thresholds.
-        assert!(!is_failed(due + Duration::from_millis(100), due, skew, coord));
+        assert!(!is_failed(
+            due + Duration::from_millis(100),
+            due,
+            skew,
+            coord
+        ));
         // Past skew but under coord_timeout.
         assert!(!is_failed(due + Duration::from_secs(1), due, skew, coord));
         // Past both thresholds.

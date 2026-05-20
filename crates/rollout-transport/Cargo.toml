@@ -49,6 +49,7 @@ h3-quinn = { version = "0.0.7", optional = true }
 ignored = ["quinn", "tonic-h3", "h3", "h3-quinn"]
 
 [dev-dependencies]
-tempfile       = { workspace = true }
-tokio          = { workspace = true, features = ["macros", "rt-multi-thread"] }
-rustls-pemfile = "2"
+tempfile = { workspace = true }
+tokio    = { workspace = true, features = ["macros", "rt-multi-thread"] }
+# rustls-pemfile 2.x is unmaintained (RUSTSEC-2025-0134); use rustls-pki-types::PemObject directly.
+rustls-pki-types = { version = "1.10", features = ["std"] }

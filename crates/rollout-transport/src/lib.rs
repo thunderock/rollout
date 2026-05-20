@@ -5,10 +5,11 @@
 //! See `docs/book/src/substrate/transport.md` for the plan-of-record rationale.
 #![forbid(unsafe_code)]
 
+pub mod channels;
+pub mod client;
 pub mod config;
 pub mod health;
+pub mod server;
 pub mod tls;
-
-// channels / client / server land in Task 2 of plan 02-04.
 
 pub use config::TransportConfig;

@@ -2,12 +2,13 @@
 //!
 //! Verifies that the rcgen-based dev CA (D-TRANS-02) writes files with the
 //! correct permissions, is idempotent across calls, and produces server certs
-//! that parse via `rustls-pemfile`.
+//! that parse via `rustls-pki-types::PemObject`.
 
 use std::os::unix::fs::PermissionsExt;
 use tempfile::TempDir;
 
 use rollout_transport::tls;
+use rustls_pki_types::{pem::PemObject, CertificateDer};
 
 #[test]
 fn ensure_dev_ca_creates_files() {
@@ -26,7 +27,11 @@ fn ensure_dev_ca_creates_files() {
         .expect("stat ca.key.pem")
         .permissions()
         .mode();
-    assert_eq!(mode & 0o777, 0o600, "ca.key.pem must be 0o600, got {mode:o}");
+    assert_eq!(
+        mode & 0o777,
+        0o600,
+        "ca.key.pem must be 0o600, got {mode:o}"
+    );
 }
 
 #[test]
@@ -42,14 +47,12 @@ fn ensure_dev_ca_is_idempotent() {
 fn issue_server_cert_works() {
     let dir = TempDir::new().expect("tempdir");
     let (ca_cert, ca_key) = tls::ensure_dev_ca(dir.path()).expect("ensure_dev_ca");
-    let (srv_cert, srv_key) =
-        tls::issue_server_cert(&ca_cert, &ca_key, &["localhost".to_string()])
-            .expect("issue_server_cert");
+    let (srv_cert, srv_key) = tls::issue_server_cert(&ca_cert, &ca_key, &["localhost".to_string()])
+        .expect("issue_server_cert");
     assert!(!srv_cert.is_empty());
     assert!(!srv_key.is_empty());
 
-    let mut reader = std::io::BufReader::new(srv_cert.as_slice());
-    let parsed: Vec<_> = rustls_pemfile::certs(&mut reader)
+    let parsed: Vec<CertificateDer<'static>> = CertificateDer::pem_slice_iter(&srv_cert)
         .collect::<Result<_, _>>()
         .expect("parse server cert pem");
     assert!(!parsed.is_empty(), "must contain at least one DER cert");

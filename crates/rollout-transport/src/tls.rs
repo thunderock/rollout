@@ -74,7 +74,12 @@ pub fn issue_server_cert(
     ca_key_pem: &[u8],
     dns_names: &[String],
 ) -> Result<(Vec<u8>, Vec<u8>), CoreError> {
-    issue_cert(ca_cert_pem, ca_key_pem, dns_names, /*is_client=*/ false)
+    issue_cert(
+        ca_cert_pem,
+        ca_key_pem,
+        dns_names,
+        /*is_client=*/ false,
+    )
 }
 
 /// Issue a client certificate signed by the dev CA for the given identity names.
