@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 3 (of 8 in Phase 2)
+current_plan: 4 (of 8 in Phase 2)
 status: Executing Phase 02
-stopped_at: Completed 02-02-rollout-storage-PLAN.md (Wave 2, 2 of 3)
-last_updated: "2026-05-20T16:44:01.952Z"
+stopped_at: Completed 02-03-rollout-cloud-local-PLAN.md (Wave 2, 3 of 3)
+last_updated: "2026-05-20T16:56:24.245Z"
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 15
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # STATE — Project Memory
@@ -23,21 +23,21 @@ This file tracks current project state. Updated at phase transitions.
 
 Wave 1 complete: plan 02-00 (Wave-0 trait extensions) shipped. `rollout-core` trait surface now matches the subset of spec 01/03/04/06 that Phase 2 consumes (Storage put/get/scan/watch/cas/abort; PluginHost call/reload/unload; Coordinator heartbeat; Worker init/ready; ObjectStore content-addressed; Queue ack/nack; ComputeHint inventory + preemption). `EventEmitter` trait + Event/EventKind/Level/SpanPhase types landed per spec 09 §2 (D-OBSERVE-01). Six Phase-2 crate stubs (rollout-proto/storage/cloud-local/transport/plugin-host/coordinator) registered. Phase-2 dependency pins added to `[workspace.dependencies]`.
 
-Wave 2 in progress. Plan 02-01 (rollout-proto crate) shipped 2026-05-20: `transport.proto` + `plugin.proto` compile via `tonic_prost_build` in `crates/rollout-proto/build.rs` (single tonic-build site per D-PROTO-01); `rollout_proto::transport::v1::*` (Heartbeat/Control/Work) + `rollout_proto::plugin::v1::*` (Plugin sidecar Init/Preflight/Call/Reload/Shutdown) reachable via `tonic::include_proto!`. Workspace pins corrected: tonic features `tls-ring+transport+server+channel+router`, prost bumped 0.13 -> 0.14 (tonic 0.14 alignment), new `tonic-prost`/`tonic-prost-build`/`protoc-bin-vendored` deps. `make protos` + `cargo xtask gen-protos` ship as opt-in Python gRPC stub regen (degrades cleanly when grpcio-tools is missing — in-tree Python sidecar uses stdlib framing per AGENTS.md §7). `docs/book/src/substrate/proto.md` substrate chapter shipped. Plans 02-02 (rollout-storage), 02-03 (rollout-cloud-local), 02-04 (rollout-transport), 02-05 (rollout-plugin-host), 02-06 (rollout-coordinator), 02-07 (smoke + docs + CI) pending.
+Wave 2 complete: plans 02-01 (rollout-proto), 02-02 (rollout-storage), and 02-03 (rollout-cloud-local) shipped 2026-05-20. `rollout-cloud-local` now ships FsObjectStore (content-addressed two-level sharded FS under `./data/object-store/`), InMemQueue (RAM hot path mirrored into `cloudlocal_queue` Storage namespace with full restart replay via ULID-sorted scan), EnvSecretStore (read-only ROLLOUT_SECRET_<NAME> reader with config-defined allowlist + three-way fatal/transient/fatal-write semantics), and ComputeHint impls (Linux full via /proc + optional `nvml` feature; macOS minimal via sysinfo). All four Layer-1 substrate impls now have working concrete backends with zero cloud creds required. Plans 02-04 (rollout-transport), 02-05 (rollout-plugin-host), 02-06 (rollout-coordinator), 02-07 (smoke + docs + CI) pending.
 
-**Current Plan:** 3 (of 8 in Phase 2)
-**Last completed plan:** 02-02-rollout-storage (2026-05-20) — Wave 2, 2 of 3 (rollout-storage)
+**Current Plan:** 4 (of 8 in Phase 2)
+**Last completed plan:** 02-03-rollout-cloud-local (2026-05-20) — Wave 2, 3 of 3 (rollout-cloud-local)
 
 ## Next Step
 
-Wave 2 in progress: 02-01 (rollout-proto) + 02-02 (rollout-storage) shipped 2026-05-20. Remaining Wave 2 plan: 02-03 (rollout-cloud-local) — sequential under the current orchestrator. Then Wave 3 = 02-04 (rollout-transport, depends on proto), Wave 4 = 02-05 + 02-06 (plugin-host + coordinator in parallel), Wave 5 = 02-07 (smoke + docs + CI). Run `/gsd:execute-phase 2` to continue.
+Wave 2 complete: 02-01 (rollout-proto) + 02-02 (rollout-storage) + 02-03 (rollout-cloud-local) all shipped 2026-05-20. Next: Wave 3 = 02-04 (rollout-transport, depends on rollout-proto), then Wave 4 = 02-05 + 02-06 (plugin-host + coordinator in parallel), Wave 5 = 02-07 (smoke + docs + CI). Run `/gsd:execute-phase 2` to continue.
 
 ## Progress
 
 | Phase | State | Notes |
 |---|---|---|
 | 1 — Core foundations | complete | All 4 waves shipped (01/02/07 + 03 + 04+05 + 06). 11-job CI workflow armed. Pending /gsd:verify-work. |
-| 2 — Local substrate | in progress | Wave 1 (plan 02-00 Wave-0 trait extensions) + first two slices of Wave 2 (plans 02-01 rollout-proto + 02-02 rollout-storage) shipped 2026-05-20. Plans 02-03..02-07 pending. |
+| 2 — Local substrate | in progress | Wave 1 (plan 02-00 Wave-0 trait extensions) + full Wave 2 (plans 02-01 rollout-proto + 02-02 rollout-storage + 02-03 rollout-cloud-local) shipped 2026-05-20. Plans 02-04..02-07 pending. |
 | 3 — Inference backend + batch | not started | |
 | 4 — SFT + RM + train-state snapshots | not started | |
 | 5 — Cloud layer + object-store snapshots | not started | |
@@ -60,6 +60,7 @@ Wave 2 in progress: 02-01 (rollout-proto) + 02-02 (rollout-storage) shipped 2026
 
 ## Recent Changes
 
+- 2026-05-20: Plan 02-03 (rollout-cloud-local crate) complete. The four Layer-1 substrate impls (ObjectStore + Queue + SecretStore + ComputeHint) now have working concrete backends with zero cloud creds. `FsObjectStore` ships content-addressed two-level sharded FS under `./data/object-store/<hex[0..2]>/<hex[2..4]>/<hex>` with sibling `.meta.json` (D-LOCAL-01); puts are idempotent (skips blob rewrite when target exists); tmp-then-rename for atomicity; missing get_bytes => Fatal(Internal) because a missing ContentId signals an upstream contract violation, not a transient I/O fault. `InMemQueue` runs a `tokio::sync::Mutex<VecDeque<_>>` hot path mirrored through `Storage` under namespace `cloudlocal_queue`; enqueue writes through, dequeue pops from RAM only, ack deletes from Storage, nack leaves Storage untouched + re-pushes to deque front so a subsequent restart still replays; `open(storage)` scans `cloudlocal_queue/*` and rebuilds the deque sorted by ULID (k-sortable, recovers FIFO enqueue order across restarts) — honors DIST-03 spirit (D-LOCAL-02). `EnvSecretStore` reads `ROLLOUT_SECRET_<NAME>` env vars filtered by config-defined allowlist with three-way semantics: outside-allowlist => Fatal(ConfigInvalid); allowed-but-unset => Recoverable(Transient, RetryHint::Never); put() => Fatal(ConfigInvalid) (read-only by design, D-LOCAL-03). `LinuxComputeHint` parses /proc/cpuinfo + /proc/meminfo with sysinfo fallback; instance_type from DMI product_name; GPU inventory behind `nvml` Cargo feature (default OFF, degrades to empty Vec when libnvml missing — never fails); `[package.metadata.cargo-machete] ignored = ["nvml-wrapper"]` keeps CI unused-deps job quiet per RESEARCH Pitfall 10. `MacosComputeHint` returns sysinfo cpu_count + memory; empty gpus; preemption_signal None (D-LOCAL-04). `hints::for_current_platform() -> Box<dyn ComputeHint>` uses compile_error! on platforms outside Linux+macOS in Phase 2. `BlockStore` skipped per D-LOCAL-05. 17 tests green on macOS dev host (object_store 6 + secrets 4 + queue_replay 5 + hints_macos 2); Linux integration tests gated by `#[cfg(target_os = "linux")]` so workspace cargo test --tests stays green on every host. **Rule-1 fixes during execution:** (1) plan snippet's `RetryHint::after_seconds(0)` doesn't exist on the Phase-1 enum (variants are Never/After/Backoff) — substituted RetryHint::Never; (2) FatalError variants are struct-form ({msg}) not tuple-form — same Wave-0 bug 02-02 already documented; (3) `std::env::set_var` does NOT require `unsafe` on Rust 1.88 edition 2021 + workspace `forbid(unsafe_code)` rejected the unsafe block — removed the unsafe wrapper. `docs/book/src/substrate/cloud-local.md` (~95 lines) substrate chapter + SUMMARY.md nesting shipped. End-to-end gates green: cargo build/test/clippy/doc -p rollout-cloud-local --all-features + cargo deny check + mdbook build + workspace-wide cargo test --tests. Commits: 4b51a16 (Task 1 — FsObjectStore + EnvSecretStore + scaffolding), 0a5f88e (Task 2 — InMemQueue restart replay + ComputeHint Linux+macOS + mdBook chapter).
 - 2026-05-20: Plan 02-02 (rollout-storage crate) complete. `EmbeddedStorage` ships as the Phase-2 default `Storage` impl over redb 2.5 with `Durability::Immediate` (D-STO-03), postcard value encoding (D-STO-04), and table-per-namespace layout (six tables: runs / workers / heartbeats / queue / plugins / cloudlocal_queue). `EmbeddedTxn` impls `StorageTxn` with publish-after-commit broadcast: pending: Vec<StorageEvent> drained AFTER `WriteTransaction::commit()` returns Ok; abort/Drop discards events (RESEARCH Pattern 2 — redb has no post-commit hook). `WatchRouter` ships per-prefix `tokio::sync::broadcast::Sender` fan-out (D-STO-02). Single-tuple postcard key encoding (`postcard::to_allocvec(&(&run_id, &path))`) — initial separator-byte layout collided with postcard `Option::None` discriminant (0x00) on the first scan test, switched to self-describing tuple form. `EmbeddedTxn` holds the `WriteTransaction` in `Option<>` and shuttles it through a `StageResult<T>` enum because redb's `Table` borrows the txn (can't move out across spawn_blocking while a Table is alive). 18 tests green across crud (5) / tables (2) / txn (5) / watch (5) / crash_safety (1 pass + 1 ignored placeholder for Phase-6 DIST-03 SIGKILL helper). `docs/book/src/substrate/storage.md` substrate chapter + SUMMARY.md nesting shipped. End-to-end gates green: cargo build/test/clippy/doc -p rollout-storage + cargo deny check + mdbook build + workspace-wide cargo test. Commits: 53dc78c (Task 1 — redb core + CRUD + tables), f16fb29 (Task 2 — watch publish + crash_safety + storage chapter).
 - 2026-05-20: Plan 02-01 (rollout-proto crate) complete. `crates/rollout-proto/proto/transport.proto` defines Heartbeat (unary) / Control (server-stream) / Work (bidi) services + BeatRequest/BeatResponse/WorkerState/ControlPush messages per spec 05 §3 (package `rollout.transport.v1`). `crates/rollout-proto/proto/plugin.proto` defines the sidecar Plugin service with Init/Preflight/Call/Reload/Shutdown rpcs per spec 03 §4 (package `rollout.plugin.v1`). `build.rs` runs `tonic_prost_build::configure().compile_protos(...)` once per workspace build with vendored protoc (D-PROTO-01); `src/lib.rs` exposes `transport::v1` + `plugin::v1` via `tonic::include_proto!`. 6 tests green (4 codegen.rs + 2 proto_files_present.rs). `xtask gen-protos [--out-dir PATH]` + `make protos` wire opt-in Python stub regen (degrades cleanly to exit 0 + helpful message when grpcio-tools is missing — Python sample sidecar uses stdlib framing per AGENTS.md §7). `python/rollout/_proto/` placeholder dir + `docs/book/src/substrate/proto.md` (~95 lines) + SUMMARY.md nesting all in place. **Rule-1 fixes during execution:** (1) tonic 0.14 feature `tls-rustls` does not exist — switched to `tls-ring`+transport+server+channel+router; (2) prost 0.13 -> 0.14 (tonic 0.14 alignment); (3) tonic-build 0.14 split protobuf codegen into `tonic-prost-build` — `tonic_build::configure()` is gone, use `tonic_prost_build::configure()`; (4) added `protoc-bin-vendored 3.0` build-dep + PROTOC env var so `cargo build` works without system protobuf-compiler. End-to-end gates green: cargo build/test/clippy/doc/deny + make -n protos + mdbook build + cargo fmt --check. Commits: f45e91e (Task 1 — proto schema + tonic-prost-build wiring), 376039a (Task 2 — xtask gen-protos + Makefile + mdBook chapter + Python placeholder).
 - 2026-05-19: Project initialized. All v1 specs written to `docs/specs/`. Root governance docs (`AGENTS.md`, `SKILLS.md`, `README.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `LICENSE`) in place. Planning artifacts in `.planning/`.
@@ -86,6 +87,7 @@ Wave 2 in progress: 02-01 (rollout-proto) + 02-02 (rollout-storage) shipped 2026
 | 02-local-substrate | 00 | 25min | 2 | 23 | 2026-05-20 |
 | Phase 02-local-substrate P01 | 35min | 2 tasks | 16 files |
 | Phase 02-local-substrate P02 | 9min | 2 tasks | 13 files |
+| Phase 02-local-substrate P03 | 7min | 2 tasks | 16 files |
 
 ## Decisions
 
@@ -135,11 +137,18 @@ Wave 2 in progress: 02-01 (rollout-proto) + 02-02 (rollout-storage) shipped 2026
 - [Phase 02-local-substrate]: (02-02): Publish-after-commit for Storage::watch — EmbeddedTxn buffers StorageEvents in pending: Vec<>; commit() drains them and calls WatchRouter::publish AFTER spawn_blocking(redb.commit()) returns Ok. abort()/Drop discards events. Matches RESEARCH Pattern 2.
 - [Phase 02-local-substrate]: (02-02): scan_bytes does full-table iteration + per-entry decode + key_has_prefix check rather than byte-range scan — acceptable for Phase 2 because per-namespace tables stay small; revisit with a StorageStream + byte-range layout if heartbeats/* grows hot in Phase 6.
 - [Phase 02-local-substrate]: (02-02): SIGKILL crash-safety test (crash_sigkill_helper_does_not_corrupt) #[ignore]'d in Phase 2 — needs a helper child binary + raw signal harness; tracked for Phase 6 DIST-03 (restart-from-storage). The active test exercises drop-without-commit + reopen + no-keys-visible, which covers the byte-level invariant.
+- [Phase 02-local-substrate]: (02-03): FsObjectStore is idempotent on duplicate-content puts (skips blob rewrite when target exists); meta sidecar is always rewritten for latest content-type/created_at.
+- [Phase 02-local-substrate]: (02-03): FsObjectStore.get_bytes on missing id => Fatal(Internal), not Recoverable. A missing ContentId signals an upstream contract violation; retrying won't change the outcome.
+- [Phase 02-local-substrate]: (02-03): InMemQueue restart order recovered via ULID lex sort — k-sortable IDs give FIFO replay without a separate insertion-order column.
+- [Phase 02-local-substrate]: (02-03): InMemQueue dequeue does NOT delete from Storage; ack commits the delete, nack leaves Storage untouched. Trades a tiny duplicate-delivery window for crash safety (at-least-once).
+- [Phase 02-local-substrate]: (02-03): EnvSecretStore three-way semantics — outside-allowlist Fatal(ConfigInvalid); allowed-but-unset Recoverable(Transient, RetryHint::Never); put() always Fatal (read-only by design).
+- [Phase 02-local-substrate]: (02-03): nvml feature is opt-in (default off); when on, NVML init failures degrade to empty gpus rather than erroring. cargo-machete ignore entry keeps CI unused-deps job quiet per RESEARCH Pitfall 10.
+- [Phase 02-local-substrate]: (02-03): hints::for_current_platform() uses compile_error! on platforms outside Linux+macOS (clearer than runtime-erroring); platform tests gated by #[cfg(target_os = ...)] so workspace cargo test --tests stays green on every host.
 
 ## Last Session
 
-- **Last session:** 2026-05-20T16:43:22.100Z
-- **Stopped at:** Completed 02-02-rollout-storage-PLAN.md (Wave 2, 2 of 3)
+- **Last session:** 2026-05-20T16:56:24.242Z
+- **Stopped at:** Completed 02-03-rollout-cloud-local-PLAN.md (Wave 2, 3 of 3)
 
 ## Things Not To Forget
 
