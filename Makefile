@@ -1,4 +1,4 @@
-.PHONY: lint test build check schema-gen validate-schema docs graphify help
+.PHONY: lint test build check schema-gen validate-schema docs graphify protos help
 
 export CARGO_TERM_COLOR := always
 
@@ -28,6 +28,9 @@ docs:
 graphify:
 	npx graphify-ts generate . --directed --svg
 
+protos:
+	cargo xtask gen-protos
+
 help:
 	@echo "lint             cargo fmt --check + clippy -D warnings"
 	@echo "test             cargo test --workspace --tests"
@@ -37,3 +40,4 @@ help:
 	@echo "validate-schema  meta-validate the JSON Schema (requires check-jsonschema)"
 	@echo "docs             mdbook build + cargo doc --workspace --no-deps --all-features"
 	@echo "graphify         build codebase knowledge graph via graphify-ts (out: graphify-out/)"
+	@echo "protos           regenerate python/rollout/_proto/ stubs (requires grpcio-tools; opt-in)"

@@ -9,11 +9,17 @@ fn transport_v1_types_present() {
     let _resp = rollout_proto::transport::v1::BeatResponse::default();
     assert_eq!(req.worker_id, "");
     // Enum discriminants match the .proto declaration.
-    assert_eq!(rollout_proto::transport::v1::WorkerState::Unspecified as i32, 0);
+    assert_eq!(
+        rollout_proto::transport::v1::WorkerState::Unspecified as i32,
+        0
+    );
     assert_eq!(rollout_proto::transport::v1::WorkerState::Init as i32, 1);
     assert_eq!(rollout_proto::transport::v1::WorkerState::Ready as i32, 2);
     assert_eq!(rollout_proto::transport::v1::WorkerState::Running as i32, 3);
-    assert_eq!(rollout_proto::transport::v1::WorkerState::Draining as i32, 4);
+    assert_eq!(
+        rollout_proto::transport::v1::WorkerState::Draining as i32,
+        4
+    );
 }
 
 #[test]

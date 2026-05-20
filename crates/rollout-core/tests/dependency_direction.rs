@@ -69,8 +69,8 @@ fn dep_direction_invariants_hold() {
 
 #[test]
 fn deliberate_violation_fixture_is_detected() {
-    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/violation/Cargo.toml");
+    let fixture =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/violation/Cargo.toml");
     let body = std::fs::read_to_string(&fixture)
         .unwrap_or_else(|e| panic!("read fixture {fixture:?}: {e}"));
 
@@ -111,7 +111,9 @@ fn deliberate_violation_plugin_host_transport_detected() {
     let pkg = toml_pkg_name(&body);
     let deps = toml_dep_names(&body);
 
-    let caught = deps.iter().any(|d| violation_plugin_host_uses_transport(&pkg, d));
+    let caught = deps
+        .iter()
+        .any(|d| violation_plugin_host_uses_transport(&pkg, d));
     assert!(
         caught,
         "fixture failed: expected plugin-host->transport violation, pkg={pkg} deps={deps:?}",

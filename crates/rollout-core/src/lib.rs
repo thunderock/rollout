@@ -16,9 +16,9 @@ pub use config::RunConfig;
 pub use errors::{CoreError, FatalError, RecoverableError, RetryHint};
 pub use ids::{ContentId, RunId, WorkerId};
 pub use traits::{
-    Clock, ComputeHint, ComputeInventory, Coordinator, DrainReason, EntrySpec, EnvHarness, Event,
-    EventEmitter, EventKind, EvalHarness, GpuInfo, Heartbeat, InferenceBackend, KeyRange, Level,
-    ObjectStore, Plugin, PluginDependencies, PluginHandle, PluginHost, PluginId, PluginKind,
+    Clock, ComputeHint, ComputeInventory, Coordinator, DrainReason, EntrySpec, EnvHarness,
+    EvalHarness, Event, EventEmitter, EventKind, GpuInfo, Heartbeat, InferenceBackend, KeyRange,
+    Level, ObjectStore, Plugin, PluginDependencies, PluginHandle, PluginHost, PluginId, PluginKind,
     PluginManifest, PluginMode, PolicyAlgorithm, PutHint, Queue, QueueItemId, RewardModel,
     RuntimeHints, Scheduler, SecretStore, SidecarProtocol, Snapshotter, SpanPhase, Storage,
     StorageEvent, StorageKey, StorageTxn, ToolHarness, Worker, WorkerContext, WorkerState,

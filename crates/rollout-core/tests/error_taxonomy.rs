@@ -3,7 +3,9 @@ use rollout_core::{CoreError, FatalError, RecoverableError, RetryHint};
 
 #[test]
 fn variants_exist() {
-    let r: CoreError = CoreError::Recoverable(RecoverableError::Preempted { hint: RetryHint::Never });
+    let r: CoreError = CoreError::Recoverable(RecoverableError::Preempted {
+        hint: RetryHint::Never,
+    });
     let f: CoreError = CoreError::Fatal(FatalError::Internal { msg: "x".into() });
     assert!(matches!(r, CoreError::Recoverable(_)));
     assert!(matches!(f, CoreError::Fatal(_)));
@@ -12,7 +14,9 @@ fn variants_exist() {
 #[test]
 fn from_propagation() {
     fn inner() -> Result<(), CoreError> {
-        Err(RecoverableError::Preempted { hint: RetryHint::Never })?;
+        Err(RecoverableError::Preempted {
+            hint: RetryHint::Never,
+        })?;
         Ok(())
     }
     let err = inner().expect_err("must error");
@@ -21,7 +25,9 @@ fn from_propagation() {
 
 #[test]
 fn display_formats_recoverable_and_fatal() {
-    let r = CoreError::Recoverable(RecoverableError::Throttled { hint: RetryHint::Never });
+    let r = CoreError::Recoverable(RecoverableError::Throttled {
+        hint: RetryHint::Never,
+    });
     assert!(format!("{r}").starts_with("recoverable: "));
     let f = CoreError::Fatal(FatalError::ConfigInvalid { msg: "bad".into() });
     assert!(format!("{f}").starts_with("fatal: "));

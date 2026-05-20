@@ -23,4 +23,6 @@ pub use plugin::{
     PluginManifest, PluginMode, RuntimeHints, SidecarProtocol,
 };
 pub use storage::{KeyRange, Snapshotter, Storage, StorageEvent, StorageKey, StorageTxn};
-pub use worker::{Coordinator, DrainReason, Heartbeat, Scheduler, Worker, WorkerContext, WorkerState};
+pub use worker::{
+    Coordinator, DrainReason, Heartbeat, Scheduler, Worker, WorkerContext, WorkerState,
+};

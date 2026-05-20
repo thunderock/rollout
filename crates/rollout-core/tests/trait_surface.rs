@@ -7,8 +7,8 @@
 #![allow(clippy::needless_pass_by_value)]
 
 use rollout_core::{
-    Clock, ComputeHint, ComputeInventory, Coordinator, EntrySpec, EnvHarness, Event, EventEmitter,
-    EventKind, EvalHarness, GpuInfo, Heartbeat, InferenceBackend, KeyRange, Level, ObjectStore,
+    Clock, ComputeHint, ComputeInventory, Coordinator, EntrySpec, EnvHarness, EvalHarness, Event,
+    EventEmitter, EventKind, GpuInfo, Heartbeat, InferenceBackend, KeyRange, Level, ObjectStore,
     Plugin, PluginDependencies, PluginHandle, PluginHost, PluginId, PluginKind, PluginManifest,
     PluginMode, PolicyAlgorithm, PutHint, Queue, QueueItemId, RewardModel, RuntimeHints, Scheduler,
     SecretStore, SidecarProtocol, Snapshotter, SpanPhase, Storage, StorageEvent, StorageKey,

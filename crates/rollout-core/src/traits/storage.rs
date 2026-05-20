@@ -56,15 +56,9 @@ pub trait Storage: Send + Sync {
     /// Read raw bytes at `key`. Downstream callers layer postcard on top.
     async fn get_bytes(&self, key: &StorageKey) -> Result<Option<Vec<u8>>, CoreError>;
     /// Batched point reads (principle 2: batching first).
-    async fn get_many_bytes(
-        &self,
-        keys: &[StorageKey],
-    ) -> Result<Vec<Option<Vec<u8>>>, CoreError>;
+    async fn get_many_bytes(&self, keys: &[StorageKey]) -> Result<Vec<Option<Vec<u8>>>, CoreError>;
     /// Prefix scan returning owned `(key, value)` pairs.
-    async fn scan_bytes(
-        &self,
-        range: KeyRange,
-    ) -> Result<Vec<(StorageKey, Vec<u8>)>, CoreError>;
+    async fn scan_bytes(&self, range: KeyRange) -> Result<Vec<(StorageKey, Vec<u8>)>, CoreError>;
     /// Subscribe to commits whose keys match `prefix`. In-process broadcast only.
     async fn watch(
         &self,
