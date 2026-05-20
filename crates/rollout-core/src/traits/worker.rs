@@ -1,17 +1,19 @@
 //! `Worker` / `Coordinator` / `Scheduler` traits.
 //!
-//! Phase 1 introduces minimal stub types for `WorkerContext` + `DrainReason`
-//! to keep the `Worker` trait spec-shaped; full types arrive in Phase 2
-//! (runtime substrate).
+//! Phase-2 surface: adds `Worker::init` / `Worker::ready` lifecycle hooks and
+//! `Coordinator::heartbeat` per spec 01 §2 + spec 05 §6. `WorkerContext` stays
+//! a unit struct until Phase 6 fleshes out the multi-node distribution story.
 
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+use std::time::SystemTime;
 
 use crate::{CoreError, RunId, WorkerId};
 
-/// Phase 1 stub for the runtime-injected worker context.
+/// Phase-1/2 stub for the runtime-injected worker context.
 pub struct WorkerContext;
 
-/// Phase 1 stub; full reason taxonomy lands in Phase 2.
+/// Reason a worker is being drained.
 pub enum DrainReason {
     /// Run was cancelled by the operator.
     Cancelled,
@@ -21,11 +23,42 @@ pub enum DrainReason {
     Shutdown,
 }
 
+/// Lifecycle state reported in a `Heartbeat`.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WorkerState {
+    /// Worker is initialising.
+    Init,
+    /// Worker has finished `ready()` and is awaiting work.
+    Ready,
+    /// Worker is actively running.
+    Running,
+    /// Worker is draining in-flight work.
+    Draining,
+}
+
+/// A worker's "I am alive" assertion, valid until `due_at`.
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+pub struct Heartbeat {
+    /// Worker emitting the heartbeat.
+    pub worker_id: WorkerId,
+    /// Run the worker is attached to.
+    pub run_id: RunId,
+    /// Self-reported lifecycle state.
+    pub state: WorkerState,
+    /// Deadline by which the next heartbeat must arrive.
+    pub due_at: SystemTime,
+}
+
 /// A worker process that runs one role for the duration of a run.
 #[async_trait]
 pub trait Worker: Send + Sync {
     /// Stable identity for routing and observability.
     fn id(&self) -> WorkerId;
+    /// One-shot bring-up before `ready()`.
+    async fn init(&mut self, ctx: &WorkerContext) -> Result<(), CoreError>;
+    /// Mark the worker ready to accept work.
+    async fn ready(&mut self) -> Result<(), CoreError>;
     /// Drive the worker to completion.
     async fn run(&mut self, ctx: &WorkerContext) -> Result<(), CoreError>;
     /// Cooperative shutdown — finish in-flight work, persist state.
@@ -41,6 +74,8 @@ pub trait Coordinator: Send + Sync {
     async fn register(&self, worker: WorkerId) -> Result<(), CoreError>;
     /// Mark a worker as drained / departed.
     async fn deregister(&self, worker: WorkerId) -> Result<(), CoreError>;
+    /// Accept a heartbeat from a worker (deadline-based health).
+    async fn heartbeat(&self, hb: Heartbeat) -> Result<(), CoreError>;
 }
 
 /// Assigns work items to workers.

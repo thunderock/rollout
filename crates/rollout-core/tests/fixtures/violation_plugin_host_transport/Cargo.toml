@@ -1,0 +1,9 @@
+# FIXTURE -- DO NOT BUILD. Read-only fixture for crates/rollout-core/tests/dependency_direction.rs.
+# Simulates a forbidden dependency edge: rollout-plugin-host listing rollout-transport.
+[package]
+name    = "rollout-plugin-host"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+rollout-transport = "0.1"

@@ -1,12 +1,18 @@
-//! Compile-time assertion that all 19 traits from CORE-01 are publicly
-//! exported, `Send + Sync`, and object-safe.
+//! Compile-time assertion that the Phase-1 trait surface and the Phase-2
+//! extensions are publicly exported, `Send + Sync`, and object-safe.
 
 #![allow(dead_code)]
+#![allow(clippy::let_underscore_future)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::needless_pass_by_value)]
 
 use rollout_core::{
-    Clock, ComputeHint, Coordinator, EnvHarness, EvalHarness, InferenceBackend, ObjectStore,
-    Plugin, PluginHost, PolicyAlgorithm, Queue, RewardModel, Scheduler, SecretStore, Snapshotter,
-    Storage, StorageTxn, ToolHarness, Worker,
+    Clock, ComputeHint, ComputeInventory, Coordinator, EntrySpec, EnvHarness, Event, EventEmitter,
+    EventKind, EvalHarness, GpuInfo, Heartbeat, InferenceBackend, KeyRange, Level, ObjectStore,
+    Plugin, PluginDependencies, PluginHandle, PluginHost, PluginId, PluginKind, PluginManifest,
+    PluginMode, PolicyAlgorithm, PutHint, Queue, QueueItemId, RewardModel, RuntimeHints, Scheduler,
+    SecretStore, SidecarProtocol, Snapshotter, SpanPhase, Storage, StorageEvent, StorageKey,
+    StorageTxn, ToolHarness, Worker, WorkerState,
 };
 use std::sync::Arc;
 
@@ -70,6 +76,9 @@ fn queue() {
 fn clock() {
     let _: Option<Arc<dyn Clock>> = None;
 }
+fn event_emitter() {
+    let _: Option<Arc<dyn EventEmitter>> = None;
+}
 
 // Send + Sync bounds.
 fn send_sync_bounds() {
@@ -92,10 +101,123 @@ fn send_sync_bounds() {
     assert_send_sync::<dyn ComputeHint>();
     assert_send_sync::<dyn Queue>();
     assert_send_sync::<dyn Clock>();
+    assert_send_sync::<dyn EventEmitter>();
 }
 
 #[test]
 fn trait_surface_counts_19() {
     // Marker test so `cargo test --test trait_surface` reports a passing test.
     // The real surface check is the compilation of this file.
+}
+
+// --- Phase-2 extensions ---------------------------------------------------------
+
+#[test]
+fn storage_trait_has_extended_surface() {
+    // Method-shape compile checks for the Phase-2 Storage surface.
+    fn _shape(s: &dyn Storage, k: StorageKey, ks: Vec<StorageKey>, r: KeyRange) {
+        let _ = s.begin();
+        let _ = s.get_bytes(&k);
+        let _ = s.get_many_bytes(&ks);
+        let _ = s.scan_bytes(r);
+        let _ = s.watch(k);
+        let _ = s.ping();
+    }
+}
+
+#[test]
+fn storage_txn_has_extended_surface() {
+    // Compile-only: assert StorageTxn carries put_bytes/delete/cas_bytes/commit/abort.
+    fn _shape(t: &mut dyn StorageTxn, k: StorageKey, v: Vec<u8>) {
+        let _ = t.put_bytes(k.clone(), v.clone());
+        let _ = t.delete(k.clone());
+        let _ = t.cas_bytes(k, Some(v.clone()), Some(v));
+    }
+    fn _commit_abort(t: Box<dyn StorageTxn>) {
+        // Method shape: commit and abort consume the boxed txn.
+        let _ = async move {
+            t.commit().await.ok();
+        };
+    }
+}
+
+#[test]
+fn plugin_host_has_extended_surface() {
+    fn _shape(h: &dyn PluginHost, m: PluginManifest, handle: &PluginHandle, payload: Vec<u8>) {
+        let _ = h.load(m);
+        let _ = h.call(handle, "method", payload.clone());
+        let _ = h.reload(handle, "reason");
+        let _ = h.unload(handle.clone());
+    }
+}
+
+#[test]
+fn coordinator_has_heartbeat() {
+    fn _shape(c: &dyn Coordinator, hb: Heartbeat) {
+        let _ = c.heartbeat(hb);
+    }
+}
+
+#[test]
+fn worker_has_lifecycle_hooks() {
+    fn _shape(w: &mut dyn Worker) {
+        let ctx = rollout_core::WorkerContext;
+        let _ = w.init(&ctx);
+        let _ = w.ready();
+    }
+}
+
+#[test]
+fn cloud_traits_match_spec_06() {
+    fn _os(o: &dyn ObjectStore, b: Vec<u8>, id: rollout_core::ContentId) {
+        let _ = o.put_bytes(b, PutHint::default());
+        let _ = o.get_bytes(&id);
+        let _ = o.exists(&id);
+    }
+    fn _q(q: &dyn Queue, b: Vec<u8>, id: QueueItemId) {
+        let _ = q.enqueue(b);
+        let _ = q.dequeue();
+        let _ = q.ack(id);
+        let _ = q.nack(id);
+    }
+    fn _s(s: &dyn SecretStore) {
+        let _ = s.get("k");
+        let _ = s.put("k", "v");
+    }
+    fn _c(c: &dyn ComputeHint) {
+        let _ = c.inventory();
+        let _ = c.preemption_signal();
+    }
+}
+
+#[test]
+fn new_types_exist() {
+    // Type-name compile checks for every new Phase-2 type.
+    fn _types(
+        _sk: StorageKey,
+        _kr: KeyRange,
+        _se: StorageEvent,
+        _pm: PluginManifest,
+        _ph: PluginHandle,
+        _pk: PluginKind,
+        _pmd: PluginMode,
+        _hb: Heartbeat,
+        _ws: WorkerState,
+        _put: PutHint,
+        _ci: ComputeInventory,
+        _gpu: GpuInfo,
+        _qid: QueueItemId,
+        _id: PluginId,
+        _es: EntrySpec,
+        _sp: SidecarProtocol,
+        _rh: RuntimeHints,
+        _pd: PluginDependencies,
+    ) {
+    }
+}
+
+#[test]
+fn event_emitter_trait_exists() {
+    fn _assert_object_safe(_: &dyn EventEmitter) {}
+    fn _types(_e: Event, _k: EventKind, _l: Level, _s: SpanPhase) {}
 }

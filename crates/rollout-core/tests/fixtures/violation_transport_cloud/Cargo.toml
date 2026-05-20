@@ -1,0 +1,9 @@
+# FIXTURE -- DO NOT BUILD. Read-only fixture for crates/rollout-core/tests/dependency_direction.rs.
+# Simulates a forbidden dependency edge: rollout-transport listing a cloud-layer crate.
+[package]
+name    = "rollout-transport"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+rollout-cloud-local = "0.1"

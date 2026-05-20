@@ -19,6 +19,8 @@ async-trait = { workspace = true }
 tracing = { workspace = true }
 ulid = { workspace = true }
 blake3 = { workspace = true }
+smol_str = { workspace = true }
+tokio = { workspace = true, features = ["sync"] }
 
 [dev-dependencies]
 cargo_metadata = { workspace = true }
