@@ -6,6 +6,11 @@ use serde::{Deserialize, Serialize};
 
 pub mod defaults;
 
+// Phase-3 (D-BACKEND-05): lift ModelRef + SamplingParams into the config namespace
+// so future config blocks (e.g., InferBatchConfig) compose them without crossing
+// trait module boundaries.
+pub use crate::traits::backend::{ModelRef, SamplingParams};
+
 /// Top-level run configuration.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]

@@ -95,6 +95,32 @@ pub struct TrainingBudget {
 
 Every algorithm reuses these. They live in `rollout-core` so config shape is identical across crates.
 
+## 2a. Phase 3 implementation notes
+
+Phase 3 Wave 0 extends the `InferenceBackend` trait surface from the single-method Phase-1 stub to the four-method shape spec 02 §2 calls for:
+
+```rust
+#[async_trait]
+pub trait InferenceBackend: Send + Sync {
+    async fn init(&mut self, model: &ModelRef) -> Result<(), CoreError>;
+    async fn generate(
+        &self,
+        prompts: &[Prompt],
+        params: &SamplingParams,
+    ) -> Result<Vec<Completion>, CoreError>;
+    fn model_id(&self) -> &ContentId;        // sync; no &self async lifetimes
+    async fn shutdown(&mut self) -> Result<(), CoreError>;
+}
+```
+
+The supporting types `Prompt` (newtype around `String`), `Completion { text, finish_reason, prompt_tokens, completion_tokens }`, and `SamplingParams { temperature, top_p, top_k, max_tokens, seed, stop, stream }` land in `rollout-core::traits::backend` and re-export through `rollout-core::config` so config blocks compose them.
+
+**`SamplingParams` is `#[non_exhaustive]`** (RESEARCH §"Pitfall 1") so external crates cannot add fields silently. Sample-ID derivation in `rollout-runtime-batch` prepends a `SAMPLING_PARAMS_SCHEMA_VERSION: u8 = 1` byte to the blake3 hasher input alongside the model content-id; bumping the version invalidates outstanding `Pending`/`Running` sample-IDs and forces a drain-then-resume migration.
+
+**Streaming is rejected at plan time** (D-BACKEND-03): `SamplingParams.stream = true` returns `Fatal { kind: ConfigInvalid, msg: "streaming generation is Phase 8 (INFER-01)" }`. The field exists so future phases can flip it without a schema break.
+
+**Training-mode forward/backward** remains a Phase 4 decision: Phase 4 may extend `InferenceBackend` with `forward` / `backward` methods or introduce a sibling `TrainableBackend: InferenceBackend` trait. The Phase 3 trait extension is inference-shaped only (D-BACKEND-01).
+
 ## 3. PPO (`rollout-algo-ppo`)
 
 Online, on-policy, KL-constrained policy gradient. The workhorse.

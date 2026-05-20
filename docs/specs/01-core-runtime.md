@@ -154,6 +154,22 @@ Every worker is a state machine over `WorkerState`:
 - A worker entering `drain` must finish in `drain_deadline` (configurable, default 5 minutes), then transition to `done` or `failed`.
 - `shutdown` is best-effort cleanup. The runtime kills the process if it does not return in `shutdown_deadline` (default 30 seconds).
 
+## 3a. Phase 3 implementation notes
+
+Phase 3 (Wave 0) extends `traits/worker.rs` with a `WorkerRole` enum used to tag each worker's purpose in a run:
+
+```rust
+pub enum WorkerRole {
+    Coordinator,
+    BatchInference,
+    BatchReader,     // Phase 6 — forward-compat for multi-node batch
+    BatchWriter,     // Phase 6 — forward-compat for multi-node batch
+    Custom(SmolStr), // out-of-tree workers
+}
+```
+
+Phase 3 wires only `BatchInference` (`rollout infer batch`); the reader/writer split lands in Phase 6 (`DIST-01..05`). The Coordinator variant tags `rollout-coordinator` instances from Phase 2. Serde uses `rename_all = "snake_case"` so TOML configs spell variants as `batch_inference` / `batch_reader` / `batch_writer`. `JsonSchema` is derived; the `SmolStr` payload renders as `String` in the JSON schema.
+
 ## 4. Heartbeats and deadline-based health
 
 The runtime uses **deadlines, never intervals**, for liveness.

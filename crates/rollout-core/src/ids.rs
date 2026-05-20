@@ -3,16 +3,18 @@
 //! `RunId` and `WorkerId` wrap a ULID (lexicographically sortable, k-sortable).
 //! `ContentId` is a blake3 hash of bytes — equal hashes imply equal content.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
 use ulid::Ulid;
 
 /// ULID-based identifier for a single run.
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(transparent)]
 pub struct RunId(
-    /// Underlying ULID.
+    /// Underlying ULID; JSON-schema represented as a 26-char Crockford string.
+    #[schemars(with = "String")]
     pub Ulid,
 );
 
@@ -30,10 +32,11 @@ impl FromStr for RunId {
 }
 
 /// ULID-based identifier for a worker process.
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(transparent)]
 pub struct WorkerId(
-    /// Underlying ULID.
+    /// Underlying ULID; JSON-schema represented as a 26-char Crockford string.
+    #[schemars(with = "String")]
     pub Ulid,
 );
 
@@ -51,9 +54,10 @@ impl FromStr for WorkerId {
 }
 
 /// blake3 content hash; equality implies content equality.
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct ContentId(
-    /// Raw 32-byte blake3 digest.
+    /// Raw 32-byte blake3 digest; JSON-schema represented as a 64-char hex string.
+    #[schemars(with = "String")]
     pub [u8; 32],
 );
 

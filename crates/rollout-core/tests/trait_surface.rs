@@ -7,12 +7,13 @@
 #![allow(clippy::needless_pass_by_value)]
 
 use rollout_core::{
-    Clock, ComputeHint, ComputeInventory, Coordinator, EntrySpec, EnvHarness, EvalHarness, Event,
-    EventEmitter, EventKind, GpuInfo, Heartbeat, InferenceBackend, KeyRange, Level, ObjectStore,
-    Plugin, PluginDependencies, PluginHandle, PluginHost, PluginId, PluginKind, PluginManifest,
-    PluginMode, PolicyAlgorithm, PutHint, Queue, QueueItemId, RewardModel, RuntimeHints, Scheduler,
-    SecretStore, SidecarProtocol, Snapshotter, SpanPhase, Storage, StorageEvent, StorageKey,
-    StorageTxn, ToolHarness, Worker, WorkerState,
+    Clock, Completion, ComputeHint, ComputeInventory, Coordinator, EntrySpec, EnvHarness,
+    EvalHarness, Event, EventEmitter, EventKind, GpuInfo, Heartbeat, InferenceBackend, KeyRange,
+    Level, ModelRef, ObjectStore, Plugin, PluginDependencies, PluginHandle, PluginHost, PluginId,
+    PluginKind, PluginManifest, PluginMode, PolicyAlgorithm, Prompt, PutHint, Queue, QueueItemId,
+    RewardModel, RuntimeHints, SamplingParams, Scheduler, SecretStore, SidecarProtocol,
+    Snapshotter, SpanPhase, Storage, StorageEvent, StorageKey, StorageTxn, ToolHarness, Worker,
+    WorkerRole, WorkerState,
 };
 use std::sync::Arc;
 
@@ -220,4 +221,62 @@ fn new_types_exist() {
 fn event_emitter_trait_exists() {
     fn _assert_object_safe(_: &dyn EventEmitter) {}
     fn _types(_e: Event, _k: EventKind, _l: Level, _s: SpanPhase) {}
+}
+
+// --- Phase-3 extensions ---------------------------------------------------------
+
+#[test]
+fn inference_backend_has_extended_surface() {
+    // Compile-only: assert the Phase-3 four-method shape resolves.
+    fn _shape(
+        b: &mut dyn InferenceBackend,
+        m: ModelRef,
+        prompts: Vec<Prompt>,
+        params: SamplingParams,
+    ) {
+        let _ = b.init(&m);
+        let _ = b.generate(&prompts, &params);
+        let _: &rollout_core::ContentId = b.model_id();
+        let _ = b.shutdown();
+    }
+}
+
+#[test]
+fn phase3_new_types_exist() {
+    fn _types(_p: Prompt, _c: Completion, _m: ModelRef, _s: SamplingParams) {}
+}
+
+#[test]
+fn sampling_params_has_serde_defaults() {
+    // Default values matter for resume determinism (RESEARCH Pitfall 4).
+    let sp = SamplingParams::default();
+    assert!((sp.temperature - 1.0).abs() < f32::EPSILON);
+    assert!((sp.top_p - 1.0).abs() < f32::EPSILON);
+    assert_eq!(sp.top_k, -1);
+    assert_eq!(sp.max_tokens, 16);
+    assert_eq!(sp.seed, None);
+    assert!(sp.stop.is_empty());
+    assert!(!sp.stream);
+}
+
+#[test]
+fn worker_role_variants_construct() {
+    use smol_str::SmolStr;
+    let variants = [
+        WorkerRole::Coordinator,
+        WorkerRole::BatchInference,
+        WorkerRole::BatchReader,
+        WorkerRole::BatchWriter,
+        WorkerRole::Custom(SmolStr::new("future-phase")),
+    ];
+    // Exhaustive pattern-match proves all five variants are public + constructible.
+    for v in variants {
+        match v {
+            WorkerRole::Coordinator
+            | WorkerRole::BatchInference
+            | WorkerRole::BatchReader
+            | WorkerRole::BatchWriter
+            | WorkerRole::Custom(_) => {}
+        }
+    }
 }

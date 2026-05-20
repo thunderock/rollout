@@ -5,7 +5,9 @@
 //! a unit struct until Phase 6 fleshes out the multi-node distribution story.
 
 use async_trait::async_trait;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use smol_str::SmolStr;
 use std::time::SystemTime;
 
 use crate::{CoreError, RunId, WorkerId};
@@ -35,6 +37,27 @@ pub enum WorkerState {
     Running,
     /// Worker is draining in-flight work.
     Draining,
+}
+
+/// The role a worker plays in a run. Phase 3 wires `BatchInference` only;
+/// the other variants are enumerated for forward-compat with Phase 6+.
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum WorkerRole {
+    /// Control-plane coordinator.
+    Coordinator,
+    /// Batch-inference worker (`rollout infer batch`).
+    BatchInference,
+    /// Phase 6 — split reader for multi-node batch.
+    BatchReader,
+    /// Phase 6 — split writer for multi-node batch.
+    BatchWriter,
+    /// Custom role for future phases / out-of-tree workers.
+    Custom(
+        /// Free-form role name; schema-rendered as a string.
+        #[schemars(with = "String")]
+        SmolStr,
+    ),
 }
 
 /// A worker's "I am alive" assertion, valid until `due_at`.

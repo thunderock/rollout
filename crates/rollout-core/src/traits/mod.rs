@@ -11,7 +11,7 @@ pub mod storage;
 pub mod worker;
 
 pub use algorithm::PolicyAlgorithm;
-pub use backend::InferenceBackend;
+pub use backend::{Completion, InferenceBackend, ModelRef, Prompt, SamplingParams};
 pub use clock::Clock;
 pub use cloud::{
     ComputeHint, ComputeInventory, GpuInfo, ObjectStore, PutHint, Queue, QueueItemId, SecretStore,
@@ -24,5 +24,5 @@ pub use plugin::{
 };
 pub use storage::{KeyRange, Snapshotter, Storage, StorageEvent, StorageKey, StorageTxn};
 pub use worker::{
-    Coordinator, DrainReason, Heartbeat, Scheduler, Worker, WorkerContext, WorkerState,
+    Coordinator, DrainReason, Heartbeat, Scheduler, Worker, WorkerContext, WorkerRole, WorkerState,
 };
