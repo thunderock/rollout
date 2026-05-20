@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 2 (of 8 in Phase 2)
+current_plan: 3 (of 8 in Phase 2)
 status: Executing Phase 02
-stopped_at: Completed 02-01-rollout-proto-PLAN.md (Wave 2, 1 of 3)
-last_updated: "2026-05-20T16:28:02.647Z"
+stopped_at: Completed 02-02-rollout-storage-PLAN.md (Wave 2, 2 of 3)
+last_updated: "2026-05-20T16:44:01.952Z"
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 15
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # STATE — Project Memory
@@ -25,19 +25,19 @@ Wave 1 complete: plan 02-00 (Wave-0 trait extensions) shipped. `rollout-core` tr
 
 Wave 2 in progress. Plan 02-01 (rollout-proto crate) shipped 2026-05-20: `transport.proto` + `plugin.proto` compile via `tonic_prost_build` in `crates/rollout-proto/build.rs` (single tonic-build site per D-PROTO-01); `rollout_proto::transport::v1::*` (Heartbeat/Control/Work) + `rollout_proto::plugin::v1::*` (Plugin sidecar Init/Preflight/Call/Reload/Shutdown) reachable via `tonic::include_proto!`. Workspace pins corrected: tonic features `tls-ring+transport+server+channel+router`, prost bumped 0.13 -> 0.14 (tonic 0.14 alignment), new `tonic-prost`/`tonic-prost-build`/`protoc-bin-vendored` deps. `make protos` + `cargo xtask gen-protos` ship as opt-in Python gRPC stub regen (degrades cleanly when grpcio-tools is missing — in-tree Python sidecar uses stdlib framing per AGENTS.md §7). `docs/book/src/substrate/proto.md` substrate chapter shipped. Plans 02-02 (rollout-storage), 02-03 (rollout-cloud-local), 02-04 (rollout-transport), 02-05 (rollout-plugin-host), 02-06 (rollout-coordinator), 02-07 (smoke + docs + CI) pending.
 
-**Current Plan:** 2 (of 8 in Phase 2)
-**Last completed plan:** 02-01-rollout-proto (2026-05-20) — Wave 2, 1 of 3 (rollout-proto)
+**Current Plan:** 3 (of 8 in Phase 2)
+**Last completed plan:** 02-02-rollout-storage (2026-05-20) — Wave 2, 2 of 3 (rollout-storage)
 
 ## Next Step
 
-Wave 2 in progress: 02-01 (rollout-proto) shipped 2026-05-20. Remaining Wave 2 plans: 02-02 (rollout-storage), 02-03 (rollout-cloud-local) — sequential under the current orchestrator. Then Wave 3 = 02-04 (rollout-transport, depends on proto), Wave 4 = 02-05 + 02-06 (plugin-host + coordinator in parallel), Wave 5 = 02-07 (smoke + docs + CI). Run `/gsd:execute-phase 2` to continue.
+Wave 2 in progress: 02-01 (rollout-proto) + 02-02 (rollout-storage) shipped 2026-05-20. Remaining Wave 2 plan: 02-03 (rollout-cloud-local) — sequential under the current orchestrator. Then Wave 3 = 02-04 (rollout-transport, depends on proto), Wave 4 = 02-05 + 02-06 (plugin-host + coordinator in parallel), Wave 5 = 02-07 (smoke + docs + CI). Run `/gsd:execute-phase 2` to continue.
 
 ## Progress
 
 | Phase | State | Notes |
 |---|---|---|
 | 1 — Core foundations | complete | All 4 waves shipped (01/02/07 + 03 + 04+05 + 06). 11-job CI workflow armed. Pending /gsd:verify-work. |
-| 2 — Local substrate | in progress | Wave 1 (plan 02-00 Wave-0 trait extensions) + first slice of Wave 2 (plan 02-01 rollout-proto) shipped 2026-05-20. Plans 02-02..02-07 pending. |
+| 2 — Local substrate | in progress | Wave 1 (plan 02-00 Wave-0 trait extensions) + first two slices of Wave 2 (plans 02-01 rollout-proto + 02-02 rollout-storage) shipped 2026-05-20. Plans 02-03..02-07 pending. |
 | 3 — Inference backend + batch | not started | |
 | 4 — SFT + RM + train-state snapshots | not started | |
 | 5 — Cloud layer + object-store snapshots | not started | |
@@ -60,6 +60,7 @@ Wave 2 in progress: 02-01 (rollout-proto) shipped 2026-05-20. Remaining Wave 2 p
 
 ## Recent Changes
 
+- 2026-05-20: Plan 02-02 (rollout-storage crate) complete. `EmbeddedStorage` ships as the Phase-2 default `Storage` impl over redb 2.5 with `Durability::Immediate` (D-STO-03), postcard value encoding (D-STO-04), and table-per-namespace layout (six tables: runs / workers / heartbeats / queue / plugins / cloudlocal_queue). `EmbeddedTxn` impls `StorageTxn` with publish-after-commit broadcast: pending: Vec<StorageEvent> drained AFTER `WriteTransaction::commit()` returns Ok; abort/Drop discards events (RESEARCH Pattern 2 — redb has no post-commit hook). `WatchRouter` ships per-prefix `tokio::sync::broadcast::Sender` fan-out (D-STO-02). Single-tuple postcard key encoding (`postcard::to_allocvec(&(&run_id, &path))`) — initial separator-byte layout collided with postcard `Option::None` discriminant (0x00) on the first scan test, switched to self-describing tuple form. `EmbeddedTxn` holds the `WriteTransaction` in `Option<>` and shuttles it through a `StageResult<T>` enum because redb's `Table` borrows the txn (can't move out across spawn_blocking while a Table is alive). 18 tests green across crud (5) / tables (2) / txn (5) / watch (5) / crash_safety (1 pass + 1 ignored placeholder for Phase-6 DIST-03 SIGKILL helper). `docs/book/src/substrate/storage.md` substrate chapter + SUMMARY.md nesting shipped. End-to-end gates green: cargo build/test/clippy/doc -p rollout-storage + cargo deny check + mdbook build + workspace-wide cargo test. Commits: 53dc78c (Task 1 — redb core + CRUD + tables), f16fb29 (Task 2 — watch publish + crash_safety + storage chapter).
 - 2026-05-20: Plan 02-01 (rollout-proto crate) complete. `crates/rollout-proto/proto/transport.proto` defines Heartbeat (unary) / Control (server-stream) / Work (bidi) services + BeatRequest/BeatResponse/WorkerState/ControlPush messages per spec 05 §3 (package `rollout.transport.v1`). `crates/rollout-proto/proto/plugin.proto` defines the sidecar Plugin service with Init/Preflight/Call/Reload/Shutdown rpcs per spec 03 §4 (package `rollout.plugin.v1`). `build.rs` runs `tonic_prost_build::configure().compile_protos(...)` once per workspace build with vendored protoc (D-PROTO-01); `src/lib.rs` exposes `transport::v1` + `plugin::v1` via `tonic::include_proto!`. 6 tests green (4 codegen.rs + 2 proto_files_present.rs). `xtask gen-protos [--out-dir PATH]` + `make protos` wire opt-in Python stub regen (degrades cleanly to exit 0 + helpful message when grpcio-tools is missing — Python sample sidecar uses stdlib framing per AGENTS.md §7). `python/rollout/_proto/` placeholder dir + `docs/book/src/substrate/proto.md` (~95 lines) + SUMMARY.md nesting all in place. **Rule-1 fixes during execution:** (1) tonic 0.14 feature `tls-rustls` does not exist — switched to `tls-ring`+transport+server+channel+router; (2) prost 0.13 -> 0.14 (tonic 0.14 alignment); (3) tonic-build 0.14 split protobuf codegen into `tonic-prost-build` — `tonic_build::configure()` is gone, use `tonic_prost_build::configure()`; (4) added `protoc-bin-vendored 3.0` build-dep + PROTOC env var so `cargo build` works without system protobuf-compiler. End-to-end gates green: cargo build/test/clippy/doc/deny + make -n protos + mdbook build + cargo fmt --check. Commits: f45e91e (Task 1 — proto schema + tonic-prost-build wiring), 376039a (Task 2 — xtask gen-protos + Makefile + mdBook chapter + Python placeholder).
 - 2026-05-19: Project initialized. All v1 specs written to `docs/specs/`. Root governance docs (`AGENTS.md`, `SKILLS.md`, `README.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `LICENSE`) in place. Planning artifacts in `.planning/`.
 - 2026-05-19: Plan 01-01 (workspace skeleton) complete. Workspace `Cargo.toml`, `rust-toolchain.toml`, `.cargo/config.toml`, and three crate skeletons (`rollout-core`, `rollout-cli`, `xtask`) added. `cargo build --workspace` and `cargo xtask schema-gen` both succeed.
@@ -84,6 +85,7 @@ Wave 2 in progress: 02-01 (rollout-proto) shipped 2026-05-20. Remaining Wave 2 p
 | 01-core-foundations | 06 | 2min | 2 | 2 | 2026-05-19 |
 | 02-local-substrate | 00 | 25min | 2 | 23 | 2026-05-20 |
 | Phase 02-local-substrate P01 | 35min | 2 tasks | 16 files |
+| Phase 02-local-substrate P02 | 9min | 2 tasks | 13 files |
 
 ## Decisions
 
@@ -128,11 +130,16 @@ Wave 2 in progress: 02-01 (rollout-proto) shipped 2026-05-20. Remaining Wave 2 p
 - [Phase 02-local-substrate]: (02-01): tonic 0.14 split protobuf codegen into a separate tonic-prost-build crate; legacy tonic_build::configure() is gone. build.rs uses tonic_prost_build::configure(); runtime dep tonic-prost added so generated tonic_prost::Codec references resolve.
 - [Phase 02-local-substrate]: (02-01): added protoc-bin-vendored 3.0 as a build-dep + set PROTOC env var if not overridden — tonic-build 0.14 / prost-build no longer bundle protoc. Keeps the build hermetic on dev machines without system protobuf-compiler.
 - [Phase 02-local-substrate]: (02-01): xtask gen-protos exits 0 (not error) when grpcio-tools is missing — Python sample sidecar uses stdlib length-prefixed framing per AGENTS.md §7 + RESEARCH Pitfall 9. make protos stays opt-in.
+- [Phase 02-local-substrate]: (02-02): EmbeddedStorage key encoding uses single-tuple postcard (postcard::to_allocvec(&(&run_id, &path))) — the initial separator-byte layout collided with postcard's Option::None discriminant (0x00). Single-tuple form is self-describing and decodes unambiguously.
+- [Phase 02-local-substrate]: (02-02): EmbeddedTxn holds the WriteTransaction in Option<> and shuttles it through a StageResult<T> enum (Ok(txn,T) | Err(txn,CoreError)) — required because redb's Table<'_,K,V> borrows the txn, blocking &mut self async methods from moving the txn into spawn_blocking while a Table is alive.
+- [Phase 02-local-substrate]: (02-02): Publish-after-commit for Storage::watch — EmbeddedTxn buffers StorageEvents in pending: Vec<>; commit() drains them and calls WatchRouter::publish AFTER spawn_blocking(redb.commit()) returns Ok. abort()/Drop discards events. Matches RESEARCH Pattern 2.
+- [Phase 02-local-substrate]: (02-02): scan_bytes does full-table iteration + per-entry decode + key_has_prefix check rather than byte-range scan — acceptable for Phase 2 because per-namespace tables stay small; revisit with a StorageStream + byte-range layout if heartbeats/* grows hot in Phase 6.
+- [Phase 02-local-substrate]: (02-02): SIGKILL crash-safety test (crash_sigkill_helper_does_not_corrupt) #[ignore]'d in Phase 2 — needs a helper child binary + raw signal harness; tracked for Phase 6 DIST-03 (restart-from-storage). The active test exercises drop-without-commit + reopen + no-keys-visible, which covers the byte-level invariant.
 
 ## Last Session
 
-- **Last session:** 2026-05-20T16:27:33.470Z
-- **Stopped at:** Completed 02-01-rollout-proto-PLAN.md (Wave 2, 1 of 3)
+- **Last session:** 2026-05-20T16:43:22.100Z
+- **Stopped at:** Completed 02-02-rollout-storage-PLAN.md (Wave 2, 2 of 3)
 
 ## Things Not To Forget
 
