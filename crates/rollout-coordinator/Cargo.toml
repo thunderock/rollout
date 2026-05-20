@@ -1,0 +1,18 @@
+[package]
+name = "rollout-coordinator"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "rollout-coordinator"
+path = "src/main.rs"
+
+[dependencies]
+# Filled by plan 02-06 — Wave-0 stub only.
+rollout-core = { path = "../rollout-core", version = "0.1" }

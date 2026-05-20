@@ -10,6 +10,10 @@ The cloud layer is the **only place** that mentions a specific cloud's SDK. Algo
 - Algorithms remain testable locally — the **local** cloud is just another implementation.
 - Cloud SDK upgrades cannot break algorithms.
 
+## 1a. Phase 2 implementation notes
+
+`Queue::ack` / `nack`, `ObjectStore::exists`, `ComputeHint::preemption_signal`, and `SecretStore::put` ship in `rollout-core` in Phase 2 (plan 02-00). Concrete impls land in `rollout-cloud-local` (Phase 2) and `rollout-cloud-aws` / `-gcp` (Phase 5). `ObjectStore` becomes content-addressed in Phase 2: `put_bytes(Vec<u8>, PutHint) -> ContentId`; the string-keyed Phase-1 stub had no impls and is replaced. `ComputeHint::instance_type` is folded into `ComputeInventory { cpu_count, memory_mib, gpus, instance_type }` returned by a single `inventory()` call. `Queue::enqueue` returns a `QueueItemId(Ulid)` handle and `ack` / `nack` use that handle (replacing the Phase-1 blob enqueue/dequeue).
+
 ## 2. Traits implemented by the cloud layer
 
 Every cloud crate (`rollout-cloud-<provider>`) implements four traits, all defined in `rollout-core`:

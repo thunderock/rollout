@@ -14,6 +14,10 @@ The runtime owns three responsibilities and nothing else:
 
 Everything else is delegated.
 
+## 1a. Phase 2 implementation notes
+
+`Worker::init` and `Worker::ready` lifecycle hooks land in `rollout-core` in Phase 2; `WorkerContext` remains a unit struct until Phase 6 (multi-node distribution) needs richer state. `Coordinator::heartbeat(Heartbeat)` ships in Phase 2; `Coordinator::pull` / `submit` / `control` land in Phase 6. `Heartbeat` carries `worker_id`, `run_id`, `state: WorkerState { Init | Ready | Running | Draining }`, and `due_at: SystemTime` — deadline-based health per spec 05 §6.
+
 ## 2. Trait surface (`rollout-core`)
 
 ```rust

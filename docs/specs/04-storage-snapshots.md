@@ -12,6 +12,10 @@ Three things are persisted in a run:
 
 `rollout` separates these by design. Metadata → `Storage` trait. Blobs → `ObjectStore` trait. Streams → observability layer (spec 09).
 
+## 1a. Phase 2 implementation notes
+
+Phase 2's `Storage::scan_bytes` returns `Vec<(StorageKey, Vec<u8>)>` rather than the `BoxStream` shown in §2 — object-safety with `dyn Storage` + `async_trait` is incompatible with stream-returning methods on stable Rust. Streaming `scan` is deferred to a later phase that introduces a `StorageStream` newtype. The Phase-2 `rollout-core` trait surface also lowers generic typed-payload methods (`get<T>`, `put<T>`, `cas<T>`) to `_bytes` variants (`get_bytes`, `put_bytes`, `cas_bytes`); downstream crates layer `postcard` on top per `02-CONTEXT.md` D-STO-04.
+
 ## 2. Storage trait (`rollout-core`)
 
 ```rust

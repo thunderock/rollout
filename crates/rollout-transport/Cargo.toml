@@ -1,0 +1,14 @@
+[package]
+name = "rollout-transport"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# Filled by plan 02-04 — Wave-0 stub only.
+rollout-core = { path = "../rollout-core", version = "0.1" }

@@ -14,6 +14,10 @@ A plugin is a user-supplied unit that implements one of the framework's open tra
 
 Plugins are the only sanctioned way to extend the framework. **There is no "edit core" path** for users.
 
+## 1a. Phase 2 implementation notes
+
+Phase 2 ships `PluginHost::call` with `Vec<u8>` payloads (`postcard` or JSON, plugin-defined). Typed-payload generic helpers may land in a later phase once Phase 3+ exercises real plugin workloads. The full `Plugin` cdylib trait surface lives in `rollout-plugin-host`'s ABI module — not in `rollout-core` — to keep `rollout-core` free of the cdylib FFI dance. `PluginManifest`, `PluginHandle`, `PluginKind`, `PluginMode`, `EntrySpec`, `SidecarProtocol`, `RuntimeHints`, and `PluginDependencies` all live in `rollout-core` as of Phase 2.
+
 ## 2. Plugin manifest
 
 Every plugin ships a `rollout-plugin.toml` at its package root:
