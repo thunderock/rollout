@@ -2283,6 +2283,7 @@ dependencies = [
  "rollout-cloud-local",
  "rollout-core",
  "rollout-storage",
+ "schemars",
  "serde",
  "serde_json",
  "smol_str",

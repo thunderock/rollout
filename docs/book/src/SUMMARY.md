@@ -13,4 +13,5 @@
   - [Smoke test](./substrate/smoke-test.md)
 - [Inference](./inference/index.md)
   - [vLLM backend](./inference/vllm-backend.md)
+  - [Batch runtime](./inference/batch-runtime.md)
 - [Examples](./examples/index.md)

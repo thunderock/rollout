@@ -13,15 +13,23 @@
 
 #![forbid(unsafe_code)]
 
+pub mod config;
+pub mod coordinator;
+pub mod io;
 pub mod state;
+pub mod worker;
 
 #[cfg(feature = "test-mock-backend")]
 pub mod mock_backend;
 
+pub use config::{InferBatchConfig, InputBlock, OutputBlock, WorkersBlock};
+pub use coordinator::{BatchCoordinator, InputItem};
+pub use io::{read_jsonl, write_jsonl, JsonlInput, JsonlOutput};
 pub use state::{
     sample_id, sample_key, try_claim, try_complete, try_fail, try_repending, SampleRecord,
     SampleState, DEFAULT_STALE_AFTER_MS, SAMPLING_PARAMS_SCHEMA_VERSION,
 };
+pub use worker::{BatchWorker, RunOutcome};
 
 #[cfg(feature = "test-mock-backend")]
 pub use mock_backend::MockBackend;
