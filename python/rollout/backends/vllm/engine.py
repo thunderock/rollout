@@ -44,20 +44,27 @@ def init(model_uri: str, **engine_args: object) -> str:
     """Bring up ``AsyncLLMEngine`` and return the resolved model SHA."""
     global _engine, _model_sha
     device = "cuda" if torch.cuda.is_available() else "cpu"  # Pitfall 9
-    kwargs: dict[str, object] = {
-        "model": model_uri,
-        "device": device,
-        "disable_log_stats": True,
-        "disable_log_requests": True,
-    }
-    if device == "cuda":
-        kwargs["gpu_memory_utilization"] = engine_args.get(
-            "gpu_memory_utilization", 0.85
-        )
+    gpu_memory_utilization = (
+        engine_args.get("gpu_memory_utilization", 0.85) if device == "cuda" else None
+    )
     tokenizer = engine_args.get("tokenizer")
-    if isinstance(tokenizer, str) and tokenizer:
-        kwargs["tokenizer"] = tokenizer
-    args = AsyncEngineArgs(**kwargs)  # type: ignore[arg-type]
+    if device == "cuda":
+        args = AsyncEngineArgs(
+            model=model_uri,
+            device=device,
+            disable_log_stats=True,
+            disable_log_requests=True,
+            gpu_memory_utilization=gpu_memory_utilization,
+            tokenizer=tokenizer if isinstance(tokenizer, str) and tokenizer else None,
+        )
+    else:
+        args = AsyncEngineArgs(
+            model=model_uri,
+            device=device,
+            disable_log_stats=True,
+            disable_log_requests=True,
+            tokenizer=tokenizer if isinstance(tokenizer, str) and tokenizer else None,
+        )
     _engine = AsyncLLMEngine.from_engine_args(args)
     # Resolve the HF repo SHA for content-addressed model_id; fall back to the
     # URI when the model is local or the API call fails (offline dev hosts).
