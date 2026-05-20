@@ -1,5 +1,18 @@
-//! `rollout-coordinator` — Phase-2 substrate crate; populated by plan 02-06.
+//! `rollout-coordinator` — Phase-2 minimal control plane.
 //!
-//! Wave-0 stub: this file exists so the workspace compiles and downstream
-//! crates can declare a `path = "../rollout-coordinator"` dependency. The
-//! real register / heartbeat / failure-scan impl lands in plan 02-06.
+//! Scope: register / deregister / heartbeat into Storage + deadline-based
+//! failure scan. Out of scope: work distribution, lease/CAS, multi-coordinator
+//! handoff (all Phase 6 DIST-01..05).
+#![forbid(unsafe_code)]
+
+pub mod config;
+pub mod emitter;
+pub mod failure_scan;
+pub mod heartbeat;
+pub mod registry;
+pub mod run;
+
+pub use config::CoordinatorConfig;
+pub use emitter::{NoopEmitter, StdoutJsonEmitter};
+pub use heartbeat::CoordinatorImpl;
+pub use run::run;

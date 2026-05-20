@@ -14,5 +14,26 @@ name = "rollout-coordinator"
 path = "src/main.rs"
 
 [dependencies]
-# Filled by plan 02-06 — Wave-0 stub only.
-rollout-core = { path = "../rollout-core", version = "0.1" }
+rollout-core      = { path = "../rollout-core",      version = "0.1" }
+rollout-storage   = { path = "../rollout-storage",   version = "0.1" }
+rollout-transport = { path = "../rollout-transport", version = "0.1" }
+rollout-proto     = { path = "../rollout-proto",     version = "0.1" }
+async-trait        = { workspace = true }
+serde              = { workspace = true }
+serde_json         = { workspace = true }
+schemars           = { workspace = true }
+thiserror          = { workspace = true }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }
+tokio              = { workspace = true, features = ["io-std"] }
+smol_str           = { workspace = true }
+postcard           = { workspace = true }
+clap               = { workspace = true }
+ulid               = { workspace = true }
+toml               = { workspace = true }
+tonic              = { workspace = true }
+prost-types        = { workspace = true }
+
+[dev-dependencies]
+tempfile           = { workspace = true }
+tokio              = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }
