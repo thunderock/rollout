@@ -10,4 +10,5 @@
   - [Plugin host](./substrate/plugin-host.md)
   - [Python bridge](./substrate/python-bridge.md)
   - [Coordinator](./substrate/coordinator.md)
+  - [Smoke test](./substrate/smoke-test.md)
 - [Examples](./examples/index.md)

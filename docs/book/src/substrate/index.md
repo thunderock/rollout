@@ -61,14 +61,16 @@ All trait contracts live in `rollout-core`. The Wave-0 extensions
   trait lives in `rollout-core` (plan 02-00); the `StdoutJsonEmitter` impl
   lands in `rollout-coordinator` (plan 02-06).
 
-## Per-crate chapters (placeholders — land in plan 02-07)
+## Per-crate chapters
 
-- Storage
-- Transport
-- Plugin host
-- Python bridge (PyO3 + `pyo3-async-runtimes` pin rationale)
-- cloud-local
-- Smoke test
+- [Proto crate](./proto.md)
+- [Storage](./storage.md)
+- [Cloud-local](./cloud-local.md)
+- [Transport](./transport.md)
+- [Plugin host](./plugin-host.md)
+- [Python bridge](./python-bridge.md) — PyO3 + `pyo3-async-runtimes` pin rationale
+- [Coordinator](./coordinator.md)
+- [Smoke test](./smoke-test.md) — the `make smoke` SUBSTR-02 acceptance gate
 
 ## Preflight
 

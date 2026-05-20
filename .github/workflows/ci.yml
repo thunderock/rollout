@@ -175,3 +175,35 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: bash scripts/check-docs-tests-touched.sh
+
+  smoke:
+    # SUBSTR-02 / SUBSTR-03 / SUBSTR-04 acceptance gate. Runs the end-to-end
+    # 1-coordinator + 2-workers + 1-cdylib + 1-Python-sidecar test from
+    # CONTEXT D-COORD-02. The architecture-lint invariant added by plan 02-07
+    # (rollout-coordinator ↛ rollout-plugin-host / rollout-cloud-*) is
+    # enforced by the existing architecture-lint job via the dep-direction
+    # test — no new YAML wiring needed for that.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-smoke
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install netcat (for smoke.sh port poll)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends netcat-openbsd
+      - name: Preflight
+        run: bash scripts/preflight.sh
+      - name: Run smoke test
+        run: make smoke
+      - name: Upload smoke logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-logs
+          path: data/smoke/logs/
+          if-no-files-found: ignore
