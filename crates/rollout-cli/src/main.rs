@@ -1,7 +1,8 @@
 //! rollout CLI binary.
 //!
 //! Phase-2 subcommands: `schema` (Phase-1 carryover), `coordinator run`,
-//! `worker run`. The worker loop registers via implicit-first-heartbeat,
+//! `worker run`. Phase 3 adds `infer batch` for the resumable batch-inference
+//! surface (D-CLI-01..05). The worker loop registers via implicit-first-heartbeat,
 //! beats every `heartbeat_interval`, loads plugins, and awaits SIGTERM.
 #![forbid(unsafe_code)]
 
@@ -10,6 +11,8 @@ use rollout_core::config::RunConfig;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
+mod infer;
+mod infer_config;
 mod worker;
 
 #[derive(Parser)]
@@ -37,6 +40,8 @@ enum Cmd {
         #[command(subcommand)]
         sub: CoordSub,
     },
+    /// Inference subcommand group (Phase-3 batch surface).
+    Infer(infer::InferCmd),
 }
 
 #[derive(Subcommand)]
@@ -89,7 +94,28 @@ fn main() -> ExitCode {
         Cmd::Schema { format } => schema(format),
         Cmd::Coordinator { sub: CoordSub::Run(a) } => coord_run(a),
         Cmd::Worker { sub: WorkerSub::Run(a) } => worker_run(a),
+        Cmd::Infer(c) => infer_dispatch(c),
     }
+}
+
+fn infer_dispatch(cmd: infer::InferCmd) -> ExitCode {
+    init_tracing();
+    let Ok(rt) = tokio::runtime::Runtime::new() else {
+        eprintln!("failed to start tokio runtime");
+        return ExitCode::from(2);
+    };
+    rt.block_on(async move {
+        let result = match cmd.sub {
+            infer::InferSub::Batch(args) => infer::run_infer_batch(&args).await,
+        };
+        match result {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("infer exit: {e}");
+                ExitCode::from(2)
+            }
+        }
+    })
 }
 
 fn schema(format: SchemaFormat) -> ExitCode {

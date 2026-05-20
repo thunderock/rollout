@@ -53,3 +53,26 @@ fn coordinator_top_level_help_lists_subcommand() {
         .success()
         .stdout(contains("run"));
 }
+
+#[test]
+fn infer_batch_help_parses() {
+    Command::cargo_bin("rollout")
+        .unwrap()
+        .args(["infer", "batch", "--help"])
+        .assert()
+        .success()
+        .stdout(contains("--config"))
+        .stdout(contains("--resume"))
+        .stdout(contains("--workers"))
+        .stdout(contains("--dry-run"));
+}
+
+#[test]
+fn infer_top_level_help_lists_subcommand() {
+    Command::cargo_bin("rollout")
+        .unwrap()
+        .args(["infer", "--help"])
+        .assert()
+        .success()
+        .stdout(contains("batch"));
+}

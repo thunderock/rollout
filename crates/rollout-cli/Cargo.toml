@@ -14,24 +14,36 @@ path = "src/main.rs"
 [lints]
 workspace = true
 
+[features]
+default              = []
+# Live vLLM engine path (--features vllm propagates to rollout-backend-vllm).
+vllm                 = ["rollout-backend-vllm/vllm"]
+# Swaps VllmBackend for MockBackend at runtime when ROLLOUT_TEST_MOCK_BACKEND=1.
+test-mock-backend    = ["rollout-runtime-batch/test-mock-backend"]
+
 [dependencies]
-rollout-core        = { path = "../rollout-core",        version = "0.1" }
-rollout-coordinator = { path = "../rollout-coordinator", version = "0.1" }
-rollout-transport   = { path = "../rollout-transport",   version = "0.1" }
-rollout-storage     = { path = "../rollout-storage",     version = "0.1" }
-rollout-plugin-host = { path = "../rollout-plugin-host", version = "0.1" }
-rollout-proto       = { path = "../rollout-proto",       version = "0.1" }
-clap                = { workspace = true }
-serde_json          = { workspace = true }
-schemars            = { workspace = true }
-serde               = { workspace = true }
-tokio               = { workspace = true, features = ["signal", "process"] }
-tracing             = { workspace = true }
-tracing-subscriber  = { workspace = true }
-toml                = { workspace = true }
-ulid                = { workspace = true }
-tonic               = { workspace = true }
-prost-types         = { workspace = true }
+rollout-core         = { path = "../rollout-core",          version = "0.1" }
+rollout-coordinator  = { path = "../rollout-coordinator",   version = "0.1" }
+rollout-transport    = { path = "../rollout-transport",     version = "0.1" }
+rollout-storage      = { path = "../rollout-storage",       version = "0.1" }
+rollout-plugin-host  = { path = "../rollout-plugin-host",   version = "0.1" }
+rollout-proto        = { path = "../rollout-proto",         version = "0.1" }
+rollout-cloud-local  = { path = "../rollout-cloud-local",   version = "0.1" }
+rollout-runtime-batch = { path = "../rollout-runtime-batch", version = "0.1" }
+rollout-backend-vllm = { path = "../rollout-backend-vllm",  version = "0.1" }
+clap                 = { workspace = true }
+serde_json           = { workspace = true }
+schemars             = { workspace = true }
+serde                = { workspace = true }
+tokio                = { workspace = true, features = ["signal", "process"] }
+tracing              = { workspace = true }
+tracing-subscriber   = { workspace = true }
+toml                 = { workspace = true }
+ulid                 = { workspace = true }
+tonic                = { workspace = true }
+prost-types          = { workspace = true }
+glob                 = "0.3"
+async-trait          = { workspace = true }
 
 [dev-dependencies]
 assert_cmd = { workspace = true }

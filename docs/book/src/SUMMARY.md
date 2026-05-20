@@ -14,4 +14,5 @@
 - [Inference](./inference/index.md)
   - [vLLM backend](./inference/vllm-backend.md)
   - [Batch runtime](./inference/batch-runtime.md)
+  - [CLI: rollout infer batch](./inference/cli.md)
 - [Examples](./examples/index.md)
