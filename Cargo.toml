@@ -54,10 +54,13 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 humantime-serde    = "1.1"
 
 # Phase 2 — transport
-tonic              = { version = "0.14", features = ["tls-rustls", "transport"] }
+tonic              = { version = "0.14", features = ["tls-ring", "transport", "server", "channel", "router"] }
 tonic-build        = "0.14"
-prost              = "0.13"
-prost-types        = "0.13"
+tonic-prost        = "0.14"
+tonic-prost-build  = "0.14"
+protoc-bin-vendored = "3.0"
+prost              = "0.14"
+prost-types        = "0.14"
 rustls             = { version = "0.23", default-features = false, features = ["ring", "std"] }
 rcgen              = "0.13"
 bytes              = "1.7"

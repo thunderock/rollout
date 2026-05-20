@@ -10,8 +10,13 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-# Filled by plan 02-01 — Wave-0 stub only.
-rollout-core = { path = "../rollout-core", version = "0.1" }
+tonic        = { workspace = true }
+tonic-prost  = { workspace = true }
+prost        = { workspace = true }
+prost-types  = { workspace = true }
+tokio-stream = { workspace = true }
 
 [build-dependencies]
-tonic-build = { workspace = true }
+tonic-build         = { workspace = true }
+tonic-prost-build   = { workspace = true }
+protoc-bin-vendored = { workspace = true }

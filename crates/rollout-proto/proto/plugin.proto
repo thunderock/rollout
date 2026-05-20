@@ -1,0 +1,48 @@
+// Source: spec 03 §3.3 + §4 + RESEARCH.md §"Sidecar gRPC proto (sketch)".
+// Plugin sidecar protocol consumed by rollout-plugin-host (plan 02-05).
+syntax = "proto3";
+package rollout.plugin.v1;
+
+import "google/protobuf/struct.proto";
+
+service Plugin {
+  // One-time init. Called once per worker per plugin instance.
+  rpc Init(InitRequest) returns (InitResponse);
+
+  // Optional preflight. Called after Init, before Run.
+  rpc Preflight(PreflightRequest) returns (PreflightResponse);
+
+  // Generic call. `method` is the typed entry-point name; `payload` is opaque
+  // JSON or postcard bytes (plugin-defined). Deps injected via dial-back UDS.
+  rpc Call(CallRequest) returns (CallResponse);
+
+  // Hot reload signal (host-side initiated; sidecar can refuse).
+  rpc Reload(ReloadRequest) returns (ReloadResponse);
+
+  // Cleanup. Sidecar exits cleanly after returning.
+  rpc Shutdown(ShutdownRequest) returns (ShutdownResponse);
+}
+
+message InitRequest {
+  string plugin_id = 1;
+  google.protobuf.Struct config = 2;
+}
+message InitResponse  { string version = 1; }
+
+message PreflightRequest  {}
+message PreflightResponse {}
+
+message CallRequest {
+  string method = 1;
+  bytes  payload = 2;                // postcard or json bytes; plugin-defined
+}
+message CallResponse {
+  bytes  payload = 1;
+  string error   = 2;                // empty on success
+}
+
+message ReloadRequest  { string reason = 1; }
+message ReloadResponse {}
+
+message ShutdownRequest  { string reason = 1; uint32 grace_secs = 2; }
+message ShutdownResponse {}

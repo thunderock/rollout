@@ -1,0 +1,58 @@
+// Source: spec 05 §3 + RESEARCH.md §"Transport proto (sketch)".
+// Three logical channels per CONTEXT D-TRANS-03: heartbeat (unary), control
+// (server-stream), work (bidi). Multiplexed over one connection.
+syntax = "proto3";
+package rollout.transport.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+// Heartbeat — unary, frequent (every heartbeat_interval = 500ms).
+service Heartbeat {
+  rpc Beat(BeatRequest) returns (BeatResponse);
+}
+
+message BeatRequest {
+  string worker_id = 1;
+  google.protobuf.Timestamp due_at = 2;          // worker's next deadline
+  WorkerState state = 3;
+  string run_id = 4;
+}
+
+message BeatResponse {
+  google.protobuf.Duration acknowledged_at_drift = 1;     // for clock-skew alarm
+  optional ControlPush pending_control = 2;               // optional fast-path
+}
+
+enum WorkerState {
+  WORKER_STATE_UNSPECIFIED = 0;
+  WORKER_STATE_INIT        = 1;
+  WORKER_STATE_READY       = 2;
+  WORKER_STATE_RUNNING     = 3;
+  WORKER_STATE_DRAINING    = 4;
+}
+
+// Control — server-streaming. Coordinator pushes drain/snapshot/cancel.
+service Control {
+  rpc Subscribe(ControlSubscribeRequest) returns (stream ControlPush);
+}
+message ControlSubscribeRequest { string worker_id = 1; string run_id = 2; }
+message ControlPush {
+  oneof event {
+    DrainRequest      drain = 1;
+    SnapshotRequest   snapshot = 2;
+    CancelRequest     cancel = 3;
+  }
+}
+message DrainRequest    { google.protobuf.Duration deadline = 1; }
+message SnapshotRequest { string snapshot_kind = 1; }
+message CancelRequest   { string reason = 1; }
+
+// Work — bidirectional streaming. Phase 2 ships a stub service definition;
+// pull/submit semantics are Phase 6 (DIST-01..02). Defined here so the proto
+// is forward-compatible.
+service Work {
+  rpc Stream(stream WorkUp) returns (stream WorkDown);
+}
+message WorkUp   { oneof up   { string ready = 1; bytes result = 2; } }
+message WorkDown { oneof down { bytes  item  = 1; string heartbeat = 2; } }
