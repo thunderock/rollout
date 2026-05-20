@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 7 (of 8 in Phase 2)
-status: Executing Phase 02
-stopped_at: Completed 02-06-rollout-coordinator-PLAN.md (Wave 5, solo)
-last_updated: "2026-05-20T17:58:33.724Z"
+current_plan: 8 (of 8 in Phase 2)
+status: Phase 02 complete
+stopped_at: Completed 02-07-smoke-and-docs-PLAN.md (Wave 6, solo) — Phase 2 closes
+last_updated: "2026-05-20T18:14:03.802Z"
 progress:
   total_phases: 2
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 15
-  completed_plans: 14
+  completed_plans: 15
 ---
 
 # STATE — Project Memory
@@ -29,12 +29,14 @@ Wave 4 plan 02-05 (rollout-plugin-host) shipped 2026-05-20 (SUBSTR-03). `rollout
 
 Wave 3 complete (solo): plan 02-04 (rollout-transport) shipped 2026-05-20. `rollout-transport` ships HTTP/2 tonic 0.14 + rustls 0.23 + mTLS-by-default as the plan-of-record per RESEARCH (tonic-h3 v0.0.5 stays opt-in EXPERIMENTAL behind a `quic` Cargo feature). Three logical channels (Heartbeat unary, Control server-stream, Work bidi-stub) multiplex over one H/2 connection. mTLS auto-bootstraps via rcgen-generated dev CA under `./data/tls/` (chmod 600 on private keys). Plan-time `TransportConfig::validate_cross_fields` enforces split-brain prevention (`self_fence < coord_failure`) + clock-skew bound (`skew < 2×hb`) per D-TIME-02. Deadline-based health helpers (`next_due_at`, `is_failed`) match spec 05 §6. Substrate/transport mdBook chapter ships. Plans 02-05 (rollout-plugin-host), 02-06 (rollout-coordinator), 02-07 (smoke + docs + CI) pending.
 
-**Current Plan:** 7 (of 8 in Phase 2)
-**Last completed plan:** 02-06-rollout-coordinator (2026-05-20) — Wave 5, solo
+**Current Plan:** 8 (of 8 in Phase 2)
+**Last completed plan:** 02-07-smoke-and-docs (2026-05-20) — Wave 6, solo
+
+**Phase 2 — Local substrate is COMPLETE.** All four exit criteria satisfied: embedded `Storage` (redb 2.x; 02-02), gRPC transport with deadline-based heartbeats (HTTP/2 plan-of-record + QUIC EXPERIMENTAL; 02-04), `rollout-plugin-host` with cdylib + PyO3 + sidecar modes + hot-reload (02-05), `rollout-cloud-local` (02-03), and `make smoke` end-to-end (02-07). `cargo test --workspace --tests` reports 103 passing + 4 ignored (env-gated). Architecture-lint now enforces 4 invariants. CI grew to 12 jobs.
 
 ## Next Step
 
-Wave 5 plan 02-06 (rollout-coordinator) shipped 2026-05-20. Next: 02-07 (smoke + docs + CI) — wires the `scripts/smoke.sh` driver + a `smoke` CI job + final substrate docs. Run `/gsd:execute-phase 2` to continue.
+Phase 2 complete. Next: kick off Phase 3 (inference backend) via `/gsd:discuss-phase 3` then `/gsd:plan-phase 3`.
 
 ## Progress
 
@@ -98,6 +100,7 @@ Wave 5 plan 02-06 (rollout-coordinator) shipped 2026-05-20. Next: 02-07 (smoke +
 | Phase 02-local-substrate P04 | 12min | 2 tasks | 14 files |
 | Phase 02-local-substrate P05 | 16min | 2 tasks | 33 files |
 | Phase 02-local-substrate P06 | 24min | 2 tasks | 17 files |
+| Phase 02 P07 | 7min | 2 tasks | 9 files |
 
 ## Decisions
 
@@ -172,11 +175,14 @@ Wave 5 plan 02-06 (rollout-coordinator) shipped 2026-05-20. Next: 02-07 (smoke +
 - [Phase 02-local-substrate]: 2026-05-20 (02-06): `StdoutJsonEmitter` wraps `tokio::io::Stdout` in a `tokio::sync::Mutex<Stdout>` + `flush()` after every emit. Required `features = ["io-std"]` on rollout-coordinator's tokio dep (the workspace default tokio feature set omits it). Line-level atomicity is the spec-09 wire contract.
 - [Phase 02-local-substrate]: 2026-05-20 (02-06): `CoordinatorConfig.storage` + `.transport` made `#[serde(default)]` so smoke-test fixtures can ship a minimal TOML (`run_id = "..."` only). The plan snippet declared them as required; relaxed to allow the smoke driver to lean on the Phase-2 defaults (`./data/rollout.db`, `127.0.0.1:50051`, `./data/tls`).
 - [Phase 02-local-substrate]: 2026-05-20 (02-06): Worker runtime starts in `Beat(state=Init)` and flips to `Ready` after the first successful beat round-trip. SIGTERM triggers a final `Beat(state=Draining)` then exit 0. Matches spec-05 state machine — coordinator sees `Init → Ready → ... → Draining` over the wire.
+- [Phase 02]: Per-worker storage paths derived at runtime via sed-rewrite of the single committed worker.toml (redb takes an exclusive file lock per Database::create — two workers sharing one file would deadlock)
+- [Phase 02]: Pre-allocated worker ULIDs (w1=01JFEAVS7C5DE5XEAEAB91EBT5, w2=...T6) baked into the smoke driver so the worker_failed grep is deterministic; coordinator persists by ULID, not alias
+- [Phase 02]: CI smoke job is the 12th and last job appended to ci.yml; the existing 11 jobs are byte-for-byte unchanged (no continue-on-error, no needs rewiring) per AGENTS.md §9.5
 
 ## Last Session
 
-- **Last session:** 2026-05-20T17:58:33.720Z
-- **Stopped at:** Completed 02-06-rollout-coordinator-PLAN.md (Wave 5, solo)
+- **Last session:** 2026-05-20T18:14:03.798Z
+- **Stopped at:** Completed 02-07-smoke-and-docs-PLAN.md (Wave 6, solo) — Phase 2 closes
 
 ## Things Not To Forget
 
