@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: Not started
-status: Milestone complete
-stopped_at: Completed 01-06-github-actions-ci-PLAN.md (last plan of Phase 1)
-last_updated: "2026-05-19T23:20:07.298Z"
+current_plan: 1
+status: Executing Phase 02
+stopped_at: Completed 02-00-wave0-trait-extensions-PLAN.md (Wave 1)
+last_updated: "2026-05-20T16:30:00.000Z"
 progress:
-  total_phases: 1
+  total_phases: 2
   completed_phases: 1
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 15
+  completed_plans: 8
 ---
 
 # STATE — Project Memory
@@ -19,23 +19,23 @@ This file tracks current project state. Updated at phase transitions.
 
 ## Current Phase
 
-**Phase 1 — Core foundations (COMPLETE).**
+**Phase 2 — Local substrate (IN PROGRESS).**
 
-All 7 plans shipped across 4 waves. Workspace builds cleanly, `cargo xtask schema-gen` regenerates deterministic schema artifacts, dep-direction lint enforced via integration test, `cargo deny` configured, `make docs` succeeds end-to-end, §9.3 rustdoc gate passes for all binary crates, and `.github/workflows/ci.yml` with 11 jobs (lint, test, deny, commitlint, schema-drift, architecture-lint, unused-deps, rustdoc-check, docs-build, docs-deploy, docs-test-policy) is armed for branch-protection on first PR.
+Wave 1 complete: plan 02-00 (Wave-0 trait extensions) shipped. `rollout-core` trait surface now matches the subset of spec 01/03/04/06 that Phase 2 consumes (Storage put/get/scan/watch/cas/abort; PluginHost call/reload/unload; Coordinator heartbeat; Worker init/ready; ObjectStore content-addressed; Queue ack/nack; ComputeHint inventory + preemption). `EventEmitter` trait + Event/EventKind/Level/SpanPhase types landed per spec 09 §2 (D-OBSERVE-01). Six Phase-2 crate stubs (rollout-proto/storage/cloud-local/transport/plugin-host/coordinator) registered. Phase-2 dependency pins (redb 2.5, tonic 0.14, pyo3 0.28, rustls 0.23, ...) added to `[workspace.dependencies]`. Two dep-direction invariants added (rollout-transport ↛ rollout-cloud-*; rollout-plugin-host ↛ rollout-transport). `scripts/preflight.sh` gates `make smoke` on python3 ≥ 3.11. mdBook `docs/book/src/substrate/index.md` landing page wired. Specs 01/03/04/06 annotated with Phase-2 implementation notes (per AGENTS.md §4).
 
-**Current Plan:** Not started
-**Last completed plan:** 01-06-github-actions-ci (2026-05-19) — Wave 4 complete
+**Current Plan:** 1 (of 8 in Phase 2)
+**Last completed plan:** 02-00-wave0-trait-extensions (2026-05-20) — Wave 1 complete
 
 ## Next Step
 
-Phase 1 complete. Run `/gsd:verify-work` to confirm exit criteria. Next: kick off Phase 2 (Local substrate) — embedded KV `Storage` backend (sled vs redb vs rocksdb benchmark), `rollout-cloud-local` filesystem object store + in-memory queue + env-var secret store, gRPC-over-QUIC `rollout-transport` deadline-based heartbeats, `rollout-plugin-host` (PyO3 + subprocess RPC).
+Wave 1 done. Wave 2 = the three parallel streams 02-01 (rollout-proto), 02-02 (rollout-storage), 02-03 (rollout-cloud-local) — none cross-depend; planner should fan out. Then Wave 3 = 02-04 (rollout-transport, depends on proto), Wave 4 = 02-05 + 02-06 (plugin-host + coordinator in parallel), Wave 5 = 02-07 (smoke + docs + CI). Run `/gsd:execute-phase 2` to continue.
 
 ## Progress
 
 | Phase | State | Notes |
 |---|---|---|
 | 1 — Core foundations | complete | All 4 waves shipped (01/02/07 + 03 + 04+05 + 06). 11-job CI workflow armed. Pending /gsd:verify-work. |
-| 2 — Local substrate | not started | |
+| 2 — Local substrate | in progress | Wave 1 (plan 02-00 Wave-0 trait extensions) shipped 2026-05-20. Waves 2–5 pending. |
 | 3 — Inference backend + batch | not started | |
 | 4 — SFT + RM + train-state snapshots | not started | |
 | 5 — Cloud layer + object-store snapshots | not started | |
@@ -65,6 +65,7 @@ Phase 1 complete. Run `/gsd:verify-work` to confirm exit criteria. Next: kick of
 - 2026-05-19: Plan 01-03 (rollout-core content) complete. All 19 traits from CORE-01 (PolicyAlgorithm, Worker, Coordinator, Scheduler, Plugin, PluginHost, EnvHarness, ToolHarness, EvalHarness, RewardModel, InferenceBackend, Storage, StorageTxn, Snapshotter, ObjectStore, SecretStore, ComputeHint, Queue, Clock) public from `rollout-core` with one-line rustdocs + Send+Sync + object-safe; CoreError taxonomy (Recoverable | Fatal, RetryHint, #[from] propagation) per CORE-03; RunId(Ulid), WorkerId(Ulid), ContentId(blake3 [u8;32]) per CORE-05; RunConfig type tree with `JsonSchema` + `deny_unknown_fields` + `schemars(range(min=1,max=1))` for CORE-04 foundation. Wave 0 RED-first tests (id_types, error_taxonomy, trait_surface — 10 tests total) all green. `cargo test -p rollout-core` + `cargo clippy -p rollout-core --all-targets -- -D warnings` + DOCS-03 rustdoc gate all pass. Commits: 87143f1 (Task 1 — IDs + errors), ee41907 (Task 2 — traits), 13cb09b (Task 3 — RunConfig). Wave 2 closes here.
 - 2026-05-19: Plan 01-04 (schema-gen pipeline) complete. `cargo xtask schema-gen` now regenerates 3 artifacts deterministically (`schemas/rollout.schema.json`, `python/rollout/_config_stubs.py`, `docs/schema-reference.md`) with a `--out-dir` flag; xtask invokes `datamodel-codegen 0.57.0` subprocess + strips the embedded `#   timestamp:` line for byte-deterministic regeneration. `rollout schema --format json|pretty` is fully wired in `rollout-cli` via `clap::ValueEnum`. `scripts/check-schema.sh` wraps `check-jsonschema --check-metaschema` and exits 0 (CORE-04 exit criterion). `crates/rollout-core/tests/schema_drift.rs` ships 3 drift tests (JSON + Python stubs + structural defense), all green. `cargo clippy --workspace --all-targets -- -D warnings` clean. Commits: 1bfa115 (Task 1 — drift tests + xtask pipeline + initial artifacts), 857d659 (Task 2 — CLI + check-schema.sh), 5fe912f (clippy fix + Cargo.lock refresh).
 - 2026-05-19: Plan 01-06 (GitHub Actions CI) complete. `.github/workflows/ci.yml` with 11 jobs landed (lint/test/deny/commitlint/schema-drift/architecture-lint/unused-deps/rustdoc-check/docs-build/docs-deploy/docs-test-policy). Pinned action versions per RESEARCH.md (dtolnay/rust-toolchain@1.88.0, Swatinem/rust-cache@v2, EmbarkStudios/cargo-deny-action@v2, bnjbvr/cargo-machete@v0.9.2, peaceiris/actions-mdbook@v2 + mdbook 0.4.40, actions/configure-pages@v5 + upload-pages-artifact@v3 + deploy-pages@v4). Per-job rust-cache shared-keys (ci-lint/ci-test/ci-schema-drift/ci-arch-lint/ci-rustdoc/ci-docs-build). Top-level `permissions: { contents: read, pages: write, id-token: write }` + `concurrency: pages-${{ github.ref }}`. `scripts/check-docs-tests-touched.sh` shipped (executable, `[skip-docs-check]` bypass, inline `///`/`//!`/`"""` doc-comment fallback). CORE-02 + CORE-04 + DOCS-01..03 CI gates operational. YAML parses cleanly; 11/11 jobs present via python set-comparison. Commits: 9b3a372 (Task 1 — 7 core jobs), d26870b (Task 2 — 4 docs-policy jobs + script). Wave 4 closes here; Phase 1 complete (pending /gsd:verify-work).
+- 2026-05-20: Plan 02-00 (Wave-0 trait extensions) complete. `rollout-core` trait surface extended to Phase-2 spec subset: Storage/StorageTxn gain get_bytes/get_many_bytes/scan_bytes/watch/put_bytes/delete/cas_bytes/abort + StorageKey/KeyRange/StorageEvent types; PluginHost gains call/reload/unload + PluginManifest/PluginHandle/PluginKind/PluginMode/EntrySpec; Worker gains init/ready; Coordinator gains heartbeat(Heartbeat) + WorkerState enum; ObjectStore content-addressed put_bytes/get_bytes/exists + PutHint; Queue ack/nack with QueueItemId; ComputeHint inventory()/preemption_signal() + ComputeInventory/GpuInfo; SecretStore::put; new observability module with EventEmitter trait + Event/EventKind/Level/SpanPhase per spec 09 §2 (D-OBSERVE-01). Six Phase-2 crate stubs (rollout-proto/storage/cloud-local/transport/plugin-host/coordinator) registered in workspace with `[lints] workspace = true` + `rollout-core = { path, version = "0.1" }` (cargo-deny no-wildcard rule). Phase-2 dependency pin table added to `[workspace.dependencies]` (redb 2.5, postcard 1.0, tonic/tonic-build 0.14, prost/prost-types 0.13, pyo3 + pyo3-async-runtimes 0.28, libloading 0.8, rustls 0.23, rcgen 0.13, bytes 1.7, sysinfo 0.33, nvml-wrapper 0.11, tokio-util 0.7, tokio-stream 0.1, tracing-subscriber 0.3, humantime-serde 1.1, toml 0.8, hex 0.4, tempfile 3.10, proptest 1.5, assert_cmd 2.0, predicates 3.1; smol_str pinned `=0.3.2` to keep MSRV at 1.88.0). Dep-direction lint extended with two new invariants (rollout-transport ↛ rollout-cloud-*; rollout-plugin-host ↛ rollout-transport) + matching fixture detection tests. `scripts/preflight.sh` ships executable (verifies cargo + make + python3 ≥ 3.11). `docs/book/src/substrate/index.md` landing page added + wired into SUMMARY.md. Specs 01/03/04/06 each gain a `## 1a. Phase 2 implementation notes` section per AGENTS.md §4. End-to-end gates green: cargo build/test/clippy/doc/deny + cargo xtask schema-gen + mdbook build. Commits: 91c9733 (Task 1 — rollout-core traits), 5e15893 (Task 2 — stubs + workspace deps + preflight + specs).
 - 2026-05-19: Plan 01-05 (dep-direction + cargo-deny) complete. `deny.toml` at workspace root with `version = 2` on `[advisories]` + `[licenses]`, full vector-style allowlist (Apache/MIT/BSD/ISC/Unicode-DFS-2016+Unicode-3.0/CC0/Zlib/0BSD/MPL-2.0/CDLA-Permissive-2.0), and `[bans] openssl + openssl-sys` (use rustls when TLS arrives). `crates/rollout-core/tests/dependency_direction.rs` ships 2 tests via `cargo_metadata`: positive workspace scan (vacuously green in Phase 1) + load-bearing negative test against `tests/fixtures/violation/Cargo.toml` (hand-rolled manifest simulating rollout-algo-ppo → rollout-cloud-aws, not a workspace member, not auto-discovered). 15 workspace tests now green (13 + 2 new). `cargo build --workspace` + `cargo clippy --workspace --all-targets -- -D warnings` clean. CORE-02 closed locally; functional `cargo deny check` runs in CI (Plan 01-06). Commits: c5c15a3 (Task 1 — deny.toml), a251c79 (Task 2 RED — failing test + fixture), f9b323b (Task 2 GREEN — cargo_metadata dev-dep + clippy fix). Wave 3 closes here.
 
 ## Performance Metrics
@@ -78,6 +79,7 @@ Phase 1 complete. Run `/gsd:verify-work` to confirm exit criteria. Next: kick of
 | 01-core-foundations | 04 | 4min | 2 | 8 | 2026-05-19 |
 | 01-core-foundations | 05 | 2min | 2 | 6 | 2026-05-19 |
 | 01-core-foundations | 06 | 2min | 2 | 2 | 2026-05-19 |
+| 02-local-substrate | 00 | 25min | 2 | 23 | 2026-05-20 |
 
 ## Decisions
 
@@ -108,11 +110,20 @@ Phase 1 complete. Run `/gsd:verify-work` to confirm exit criteria. Next: kick of
 - [Phase 01-core-foundations]: 2026-05-19 (01-06): `docs-build` always builds on PRs for verification but only uploads the Pages artifact on `push:main`; `docs-deploy` `needs: [docs-build, test, lint]` so a green book never ships while tests are red.
 - [Phase 01-core-foundations]: 2026-05-19 (01-06): `docs-test-policy` gated `if: github.event_name == 'pull_request'` only — skipped entirely on direct main pushes (bootstrap exemption per D-DOCS-03 / AGENTS.md §9.2). `[skip-docs-check]` trailer matched via `grep -qF` (literal, not regex) against the head commit message.
 - [Phase 01-core-foundations]: 2026-05-19 (01-06): `scripts/check-docs-tests-touched.sh` inline doc-comment fallback uses `git diff -U0` and matches added lines containing `///`, `//!`, or `"""` — a commit editing only rustdoc/Python docstrings on changed code files passes without a separate `docs/` or `tests/` file change.
+- [Phase 02-local-substrate]: 2026-05-20 (02-00): smol_str pinned `=0.3.2` not floating `0.3` — 0.3.4+ raises MSRV to 1.89 but workspace `rust-toolchain.toml` is 1.88.0; 0.3.3 is yanked.
+- [Phase 02-local-substrate]: 2026-05-20 (02-00): nvml-wrapper workspace pin omits `optional = true` (cargo rejects optional on `[workspace.dependencies]`); per-crate optionality re-introduced at the consumer site in plan 02-03 under a `linux-gpu` feature.
+- [Phase 02-local-substrate]: 2026-05-20 (02-00): Storage::scan_bytes returns `Vec<(StorageKey, Vec<u8>)>` rather than the spec-04 §2 `BoxStream` — async_trait + dyn-safety constraint on stable Rust. Documented in spec 04 §1a Phase 2 implementation notes per AGENTS.md §4.
+- [Phase 02-local-substrate]: 2026-05-20 (02-00): PluginHost::call uses `Vec<u8>` payloads in Phase 2; typed-payload generic helpers deferred to a later phase. Documented in spec 03 §1a.
+- [Phase 02-local-substrate]: 2026-05-20 (02-00): ObjectStore Phase-1 string-keyed put/get had no impls and was replaced with content-addressed `put_bytes(Vec<u8>, PutHint) -> ContentId` + `get_bytes(&ContentId)` + `exists(&ContentId)`. Spec 06 §1a documents the trade-off.
+- [Phase 02-local-substrate]: 2026-05-20 (02-00): ComputeHint::instance_type folded into ComputeInventory.instance_type; the single `inventory()` call replaces spec-06's 4 separate getters (region/zone/instance_type/gpu_inventory). Documented in spec 06 §1a.
+- [Phase 02-local-substrate]: 2026-05-20 (02-00): EventEmitter trait + Event/EventKind/Level/SpanPhase land in `rollout-core` in Phase 2 (D-OBSERVE-01); stdout-JSON impl ships in plan 02-06 alongside the coordinator binary.
+- [Phase 02-local-substrate]: 2026-05-20 (02-00): Each Phase-2 stub crate uses `rollout-core = { path = "../rollout-core", version = "0.1" }` (not bare `path = ...`) because cargo-deny's no-wildcard rule does not honor `allow-wildcard-paths` for public crates per crates.io rules. Matches the Phase-1 `rollout-cli` pattern.
+- [Phase 02-local-substrate]: 2026-05-20 (02-00): trait_surface.rs test file allows `clippy::let_underscore_future`, `clippy::too_many_arguments`, and `clippy::needless_pass_by_value` — these are appropriate for type-shape compile checks where the future is never executed and arguments exist solely to prove a method/type compiles.
 
 ## Last Session
 
-- **Last session:** 2026-05-19T23:01:23Z
-- **Stopped at:** Completed 01-06-github-actions-ci-PLAN.md (last plan of Phase 1)
+- **Last session:** 2026-05-20T04:57:12.233Z
+- **Stopped at:** Phase 2 context gathered
 
 ## Things Not To Forget
 
