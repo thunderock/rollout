@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 1
+current_plan: 2 (of 8 in Phase 2)
 status: Executing Phase 02
-stopped_at: Completed 02-00-wave0-trait-extensions-PLAN.md (Wave 1)
-last_updated: "2026-05-20T16:30:00.000Z"
+stopped_at: Completed 02-01-rollout-proto-PLAN.md (Wave 2, 1 of 3)
+last_updated: "2026-05-20T16:28:02.647Z"
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 15
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # STATE — Project Memory
@@ -21,21 +21,23 @@ This file tracks current project state. Updated at phase transitions.
 
 **Phase 2 — Local substrate (IN PROGRESS).**
 
-Wave 1 complete: plan 02-00 (Wave-0 trait extensions) shipped. `rollout-core` trait surface now matches the subset of spec 01/03/04/06 that Phase 2 consumes (Storage put/get/scan/watch/cas/abort; PluginHost call/reload/unload; Coordinator heartbeat; Worker init/ready; ObjectStore content-addressed; Queue ack/nack; ComputeHint inventory + preemption). `EventEmitter` trait + Event/EventKind/Level/SpanPhase types landed per spec 09 §2 (D-OBSERVE-01). Six Phase-2 crate stubs (rollout-proto/storage/cloud-local/transport/plugin-host/coordinator) registered. Phase-2 dependency pins (redb 2.5, tonic 0.14, pyo3 0.28, rustls 0.23, ...) added to `[workspace.dependencies]`. Two dep-direction invariants added (rollout-transport ↛ rollout-cloud-*; rollout-plugin-host ↛ rollout-transport). `scripts/preflight.sh` gates `make smoke` on python3 ≥ 3.11. mdBook `docs/book/src/substrate/index.md` landing page wired. Specs 01/03/04/06 annotated with Phase-2 implementation notes (per AGENTS.md §4).
+Wave 1 complete: plan 02-00 (Wave-0 trait extensions) shipped. `rollout-core` trait surface now matches the subset of spec 01/03/04/06 that Phase 2 consumes (Storage put/get/scan/watch/cas/abort; PluginHost call/reload/unload; Coordinator heartbeat; Worker init/ready; ObjectStore content-addressed; Queue ack/nack; ComputeHint inventory + preemption). `EventEmitter` trait + Event/EventKind/Level/SpanPhase types landed per spec 09 §2 (D-OBSERVE-01). Six Phase-2 crate stubs (rollout-proto/storage/cloud-local/transport/plugin-host/coordinator) registered. Phase-2 dependency pins added to `[workspace.dependencies]`.
 
-**Current Plan:** 1 (of 8 in Phase 2)
-**Last completed plan:** 02-00-wave0-trait-extensions (2026-05-20) — Wave 1 complete
+Wave 2 in progress. Plan 02-01 (rollout-proto crate) shipped 2026-05-20: `transport.proto` + `plugin.proto` compile via `tonic_prost_build` in `crates/rollout-proto/build.rs` (single tonic-build site per D-PROTO-01); `rollout_proto::transport::v1::*` (Heartbeat/Control/Work) + `rollout_proto::plugin::v1::*` (Plugin sidecar Init/Preflight/Call/Reload/Shutdown) reachable via `tonic::include_proto!`. Workspace pins corrected: tonic features `tls-ring+transport+server+channel+router`, prost bumped 0.13 -> 0.14 (tonic 0.14 alignment), new `tonic-prost`/`tonic-prost-build`/`protoc-bin-vendored` deps. `make protos` + `cargo xtask gen-protos` ship as opt-in Python gRPC stub regen (degrades cleanly when grpcio-tools is missing — in-tree Python sidecar uses stdlib framing per AGENTS.md §7). `docs/book/src/substrate/proto.md` substrate chapter shipped. Plans 02-02 (rollout-storage), 02-03 (rollout-cloud-local), 02-04 (rollout-transport), 02-05 (rollout-plugin-host), 02-06 (rollout-coordinator), 02-07 (smoke + docs + CI) pending.
+
+**Current Plan:** 2 (of 8 in Phase 2)
+**Last completed plan:** 02-01-rollout-proto (2026-05-20) — Wave 2, 1 of 3 (rollout-proto)
 
 ## Next Step
 
-Wave 1 done. Wave 2 = the three parallel streams 02-01 (rollout-proto), 02-02 (rollout-storage), 02-03 (rollout-cloud-local) — none cross-depend; planner should fan out. Then Wave 3 = 02-04 (rollout-transport, depends on proto), Wave 4 = 02-05 + 02-06 (plugin-host + coordinator in parallel), Wave 5 = 02-07 (smoke + docs + CI). Run `/gsd:execute-phase 2` to continue.
+Wave 2 in progress: 02-01 (rollout-proto) shipped 2026-05-20. Remaining Wave 2 plans: 02-02 (rollout-storage), 02-03 (rollout-cloud-local) — sequential under the current orchestrator. Then Wave 3 = 02-04 (rollout-transport, depends on proto), Wave 4 = 02-05 + 02-06 (plugin-host + coordinator in parallel), Wave 5 = 02-07 (smoke + docs + CI). Run `/gsd:execute-phase 2` to continue.
 
 ## Progress
 
 | Phase | State | Notes |
 |---|---|---|
 | 1 — Core foundations | complete | All 4 waves shipped (01/02/07 + 03 + 04+05 + 06). 11-job CI workflow armed. Pending /gsd:verify-work. |
-| 2 — Local substrate | in progress | Wave 1 (plan 02-00 Wave-0 trait extensions) shipped 2026-05-20. Waves 2–5 pending. |
+| 2 — Local substrate | in progress | Wave 1 (plan 02-00 Wave-0 trait extensions) + first slice of Wave 2 (plan 02-01 rollout-proto) shipped 2026-05-20. Plans 02-02..02-07 pending. |
 | 3 — Inference backend + batch | not started | |
 | 4 — SFT + RM + train-state snapshots | not started | |
 | 5 — Cloud layer + object-store snapshots | not started | |
@@ -58,6 +60,7 @@ Wave 1 done. Wave 2 = the three parallel streams 02-01 (rollout-proto), 02-02 (r
 
 ## Recent Changes
 
+- 2026-05-20: Plan 02-01 (rollout-proto crate) complete. `crates/rollout-proto/proto/transport.proto` defines Heartbeat (unary) / Control (server-stream) / Work (bidi) services + BeatRequest/BeatResponse/WorkerState/ControlPush messages per spec 05 §3 (package `rollout.transport.v1`). `crates/rollout-proto/proto/plugin.proto` defines the sidecar Plugin service with Init/Preflight/Call/Reload/Shutdown rpcs per spec 03 §4 (package `rollout.plugin.v1`). `build.rs` runs `tonic_prost_build::configure().compile_protos(...)` once per workspace build with vendored protoc (D-PROTO-01); `src/lib.rs` exposes `transport::v1` + `plugin::v1` via `tonic::include_proto!`. 6 tests green (4 codegen.rs + 2 proto_files_present.rs). `xtask gen-protos [--out-dir PATH]` + `make protos` wire opt-in Python stub regen (degrades cleanly to exit 0 + helpful message when grpcio-tools is missing — Python sample sidecar uses stdlib framing per AGENTS.md §7). `python/rollout/_proto/` placeholder dir + `docs/book/src/substrate/proto.md` (~95 lines) + SUMMARY.md nesting all in place. **Rule-1 fixes during execution:** (1) tonic 0.14 feature `tls-rustls` does not exist — switched to `tls-ring`+transport+server+channel+router; (2) prost 0.13 -> 0.14 (tonic 0.14 alignment); (3) tonic-build 0.14 split protobuf codegen into `tonic-prost-build` — `tonic_build::configure()` is gone, use `tonic_prost_build::configure()`; (4) added `protoc-bin-vendored 3.0` build-dep + PROTOC env var so `cargo build` works without system protobuf-compiler. End-to-end gates green: cargo build/test/clippy/doc/deny + make -n protos + mdbook build + cargo fmt --check. Commits: f45e91e (Task 1 — proto schema + tonic-prost-build wiring), 376039a (Task 2 — xtask gen-protos + Makefile + mdBook chapter + Python placeholder).
 - 2026-05-19: Project initialized. All v1 specs written to `docs/specs/`. Root governance docs (`AGENTS.md`, `SKILLS.md`, `README.md`, `ARCHITECTURE.md`, `ROADMAP.md`, `LICENSE`) in place. Planning artifacts in `.planning/`.
 - 2026-05-19: Plan 01-01 (workspace skeleton) complete. Workspace `Cargo.toml`, `rust-toolchain.toml`, `.cargo/config.toml`, and three crate skeletons (`rollout-core`, `rollout-cli`, `xtask`) added. `cargo build --workspace` and `cargo xtask schema-gen` both succeed.
 - 2026-05-19: Plan 01-02 (top-level Makefile + graphify dev dep) complete. `Makefile` ships all 9 targets (lint/test/build/check/schema-gen/validate-schema/docs/graphify/help) — `make -n` parses every target, `make help` runs. Root `package.json` declares `@mohammednagy/graphify-ts ^0.22.9` as a dev dep; `.gitignore` excludes `node_modules/`, `graphify-out/`, `*.tsbuildinfo`. README quick-start points users to `make help`. SUMMARY authored separately from the three pre-existing feat commits (3cb1b07, f047b1e, 7af8903).
@@ -80,6 +83,7 @@ Wave 1 done. Wave 2 = the three parallel streams 02-01 (rollout-proto), 02-02 (r
 | 01-core-foundations | 05 | 2min | 2 | 6 | 2026-05-19 |
 | 01-core-foundations | 06 | 2min | 2 | 2 | 2026-05-19 |
 | 02-local-substrate | 00 | 25min | 2 | 23 | 2026-05-20 |
+| Phase 02-local-substrate P01 | 35min | 2 tasks | 16 files |
 
 ## Decisions
 
@@ -119,11 +123,16 @@ Wave 1 done. Wave 2 = the three parallel streams 02-01 (rollout-proto), 02-02 (r
 - [Phase 02-local-substrate]: 2026-05-20 (02-00): EventEmitter trait + Event/EventKind/Level/SpanPhase land in `rollout-core` in Phase 2 (D-OBSERVE-01); stdout-JSON impl ships in plan 02-06 alongside the coordinator binary.
 - [Phase 02-local-substrate]: 2026-05-20 (02-00): Each Phase-2 stub crate uses `rollout-core = { path = "../rollout-core", version = "0.1" }` (not bare `path = ...`) because cargo-deny's no-wildcard rule does not honor `allow-wildcard-paths` for public crates per crates.io rules. Matches the Phase-1 `rollout-cli` pattern.
 - [Phase 02-local-substrate]: 2026-05-20 (02-00): trait_surface.rs test file allows `clippy::let_underscore_future`, `clippy::too_many_arguments`, and `clippy::needless_pass_by_value` — these are appropriate for type-shape compile checks where the future is never executed and arguments exist solely to prove a method/type compiles.
+- [Phase 02-local-substrate]: (02-01): tonic 0.14 feature tls-rustls does not exist; correct feature is tls-ring (rustls backend). Workspace pin updated to features=['tls-ring','transport','server','channel','router'].
+- [Phase 02-local-substrate]: (02-01): prost bumped 0.13 -> 0.14 in workspace.dependencies — tonic 0.14 requires prost 0.14; surfaced by 130 Codec trait-mismatch errors during the first build.
+- [Phase 02-local-substrate]: (02-01): tonic 0.14 split protobuf codegen into a separate tonic-prost-build crate; legacy tonic_build::configure() is gone. build.rs uses tonic_prost_build::configure(); runtime dep tonic-prost added so generated tonic_prost::Codec references resolve.
+- [Phase 02-local-substrate]: (02-01): added protoc-bin-vendored 3.0 as a build-dep + set PROTOC env var if not overridden — tonic-build 0.14 / prost-build no longer bundle protoc. Keeps the build hermetic on dev machines without system protobuf-compiler.
+- [Phase 02-local-substrate]: (02-01): xtask gen-protos exits 0 (not error) when grpcio-tools is missing — Python sample sidecar uses stdlib length-prefixed framing per AGENTS.md §7 + RESEARCH Pitfall 9. make protos stays opt-in.
 
 ## Last Session
 
-- **Last session:** 2026-05-20T04:57:12.233Z
-- **Stopped at:** Phase 2 context gathered
+- **Last session:** 2026-05-20T16:27:33.470Z
+- **Stopped at:** Completed 02-01-rollout-proto-PLAN.md (Wave 2, 1 of 3)
 
 ## Things Not To Forget
 

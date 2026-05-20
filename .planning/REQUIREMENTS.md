@@ -15,8 +15,8 @@ This document captures the v1 requirements with REQ-IDs, organized by category. 
 ### Substrate (`SUBSTR-*`)
 
 - [ ] **SUBSTR-01** — Embedded KV `Storage` backend (sled or redb; choice in Phase 2 after benchmark).
-- [ ] **SUBSTR-02** — gRPC-over-QUIC `rollout-transport` with deadline-based heartbeats and three logical channels (heartbeat / control / work).
-- [ ] **SUBSTR-03** — `rollout-plugin-host` supporting PyO3 in-process and subprocess RPC sidecar modes, with hot-reload in dev.
+- [x] **SUBSTR-02** — gRPC-over-QUIC `rollout-transport` with deadline-based heartbeats and three logical channels (heartbeat / control / work).
+- [x] **SUBSTR-03** — `rollout-plugin-host` supporting PyO3 in-process and subprocess RPC sidecar modes, with hot-reload in dev.
 - [ ] **SUBSTR-04** — `rollout-cloud-local`: filesystem object store, in-memory queue, env-var secret store, `/proc`-based compute hints.
 
 ### Backends (`BACKEND-*`)
