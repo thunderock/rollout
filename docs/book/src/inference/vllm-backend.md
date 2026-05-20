@@ -8,11 +8,12 @@ Python OS-thread pattern hardened in plan 02-05; the first was
 [03-plugin-system §3.2][spec-03] and the trait surface in spec
 [02-algorithms §2 / §2a][spec-02].
 
-> **Status (plan 03-01):** Wave-2 skeleton only. The PyO3 dedicated-thread
-> bootstrap, `mpsc::Sender<VllmTask>` dispatch shape, and Python module stub
-> all ship; `generate` returns a typed
-> `Fatal(PluginContract { msg: "vllm engine not yet wired (Wave 2 …)" })`
-> until plan 03-03 (Wave 3) lands the real `AsyncLLMEngine` bridge.
+> **Status (plan 03-03):** Wave-3 lives. The PyO3 dedicated thread now imports
+> `rollout.backends.vllm.engine`, which wraps `vllm.AsyncLLMEngine`; `generate`
+> drives the engine through a fresh asyncio event loop on the worker thread
+> via `pyo3_async_runtimes::tokio::run_until_complete`. The default-features
+> (no-`vllm`) build keeps the Wave-2 stub worker so
+> `cargo test -p rollout-backend-vllm` still runs without Python / vLLM.
 
 ## Architecture
 
@@ -56,8 +57,15 @@ install, no CUDA required for `cargo test -p rollout-backend-vllm`.
 
 With `--features vllm` **on**, the worker thread calls
 `Python::attach(|py| py.import("rollout.backends.vllm.engine"))` once at
-startup. Plan 03-03 swaps the stub Python module for the real
-`AsyncLLMEngine` wrapper.
+startup. The Python module top-imports `vllm.AsyncLLMEngine` (plan 03-03).
+
+**vLLM version pin:** `vllm>=0.10,<0.22`. The lower bound is the first
+release where `AsyncLLMEngine` is an alias for the new v1 engine
+(`vllm.v1.engine.async_llm.AsyncLLM`); the upper bound guards against
+future-version drops of the alias. The pin is documented but NOT enforced
+in `Cargo.toml` — vLLM is a Python install. The engine module's import
+falls back to `from vllm.engine.async_llm_engine import …` if the
+top-level alias is removed in a future version.
 
 ## Pitfall 10: env-write before import
 
@@ -90,10 +98,97 @@ live engine.
 | PyO3 dedicated thread (`rollout-py-vllm-…`)        | shipped             | inherited           |
 | `VllmTask` enum + `mpsc::Sender` dispatch          | shipped             | inherited           |
 | `VllmBackend: InferenceBackend` impl shape         | shipped (stub)      | live engine         |
-| `python/rollout/backends/vllm/engine.py` stub      | shipped             | replaced            |
+| `python/rollout/backends/vllm/engine.py`           | stub                | real `AsyncLLMEngine` |
 | `AsyncLLMEngine.from_engine_args` wiring           | —                   | shipped             |
-| `py.detach(\|\| rt.block_on(into_future(coro)))`   | —                   | shipped             |
-| Plan-time HF model probe (`HF_TOKEN`, repo SHA)    | —                   | shipped             |
+| `pyo3_async_runtimes::tokio::run_until_complete`   | —                   | shipped             |
+| Explicit `torch.cuda.is_available()` device probe  | —                   | shipped             |
+| `HF_TOKEN` env-write before `import vllm`          | wired (passthrough) | exercised           |
+| Content-addressed `model_id` from HF repo SHA      | —                   | shipped             |
+| `criterion` throughput bench + raw-vllm baseline   | placeholder         | shipped             |
+
+## Bridging the asyncio ↔ Tokio gap (RESEARCH Pitfall 2)
+
+`vllm.AsyncLLMEngine.generate(prompt, sampling, request_id)` returns an
+async generator that vLLM's own scheduler drives. To consume it from Rust,
+we:
+
+1. Build a coroutine on the GIL by calling `engine.generate_one(...)`
+   (the Python module's wrapper that drives the async-for loop to
+   completion and returns the final `RequestOutput` as a dict).
+2. Create a fresh `asyncio` event loop on the worker thread.
+3. Hand the coroutine to
+   `pyo3_async_runtimes::tokio::run_until_complete(event_loop, async move {
+   into_future(coro).await })`. The Python C-level
+   `event_loop.run_until_complete` releases the GIL whenever the loop has
+   nothing to do — which is exactly when our Rust `await` yields. That is
+   what lets vLLM's background scheduler tasks (also on this asyncio
+   event loop) make progress.
+
+The contract is verified on every CI build by
+[`tests/pyo3_bridge_smoke.rs`][smoke]: a Python `async def smoke()` spawns a
+background `threading.Thread` that polls a flag; the assertion fails if the
+background thread does not see the flag set, proving the GIL would have
+been held across the await (Pitfall 2 regression).
+
+[smoke]: ../../../../crates/rollout-backend-vllm/tests/pyo3_bridge_smoke.rs
+
+## Pitfall 9: explicit device probe
+
+vLLM's `EngineArgs(device="auto")` is unreliable on partially-installed CUDA
+hosts (silent CPU fallback). The Python glue probes
+`torch.cuda.is_available()` and passes an explicit `device="cuda"` or
+`device="cpu"` to `AsyncEngineArgs`. CONTEXT D-VLLM-04's earlier `"auto"`
+guidance is superseded by this probe.
+
+```python
+import torch
+device = "cuda" if torch.cuda.is_available() else "cpu"
+args = AsyncEngineArgs(model=model_uri, device=device, ...)
+```
+
+## Live integration tests (gated)
+
+Two `#[ignore]`'d integration tests under
+`crates/rollout-backend-vllm/tests/` exercise the live engine:
+
+- `vllm_init.rs` — bring up `facebook/opt-125m`; assert
+  `backend.model_id()` is content-addressed and stable across two `init()`
+  calls of the same URI.
+- `vllm_generate.rs` — bring up `Qwen/Qwen2.5-0.5B-Instruct` and run a
+  1 prompt × 8 tokens round-trip with a 300 s timeout (RESEARCH Pitfall 8
+  CPU mode is slow).
+
+Both tests skip unless `ROLLOUT_VLLM_AVAILABLE=1` is set in the
+environment. Run them with:
+
+```bash
+ROLLOUT_VLLM_AVAILABLE=1 cargo test \
+    -p rollout-backend-vllm --features vllm \
+    --test vllm_init --test vllm_generate -- --include-ignored
+```
+
+The default workspace `cargo test` skips them.
+
+## Benchmark methodology
+
+`crates/rollout-backend-vllm/benches/throughput.rs` runs a 64-prompt ×
+64-token criterion bench against `facebook/opt-125m`; the companion
+`scripts/raw_vllm_baseline.py` drives the same prompt set through raw
+`vllm.LLM` (sync API). Compare the two tokens/sec numbers to verify the
+BACKEND-02 `<10% overhead` exit criterion — a ratio ≥ 0.9 passes.
+
+The bench is gated behind `--features vllm` and `ROLLOUT_VLLM_AVAILABLE=1`.
+CI does not run it by default; the perf check lives on the self-hosted GPU
+runner per CONTEXT D-CLI-05.
+
+```bash
+# rollout side:
+ROLLOUT_VLLM_AVAILABLE=1 cargo bench \
+    -p rollout-backend-vllm --features vllm --bench throughput
+
+# baseline side:
+python scripts/raw_vllm_baseline.py facebook/opt-125m
+```
 
 ## Cross-references
 

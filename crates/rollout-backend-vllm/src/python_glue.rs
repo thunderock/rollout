@@ -15,7 +15,6 @@ use crate::errors::py_to_core;
 
 /// Marshal `SamplingParams` into the kwarg dict shape consumed by
 /// `python/rollout/backends/vllm/engine.py::generate_one`.
-#[allow(dead_code)] // Consumed by plan 03-03's live-engine `Generate` arm.
 pub(crate) fn samplingparams_to_pydict<'py>(
     py: Python<'py>,
     p: &SamplingParams,

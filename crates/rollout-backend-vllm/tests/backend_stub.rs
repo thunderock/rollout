@@ -1,8 +1,16 @@
-//! `VllmBackend` Wave-2 skeleton contract.
+//! `VllmBackend` Wave-2 default-features contract.
 //!
-//! Verifies: (a) Send + Sync auto-trait bounds hold, (b) `generate` returns a
-//! typed `Fatal(PluginContract { … "Wave 2" … })` until plan 03-03 wires the
-//! real `AsyncLLMEngine`, (c) `model_id()` returns a stable handle.
+//! Verifies (default features only — no `vllm` feature, no Python required):
+//! (a) `Send + Sync` auto-trait bounds hold, (b) `generate` returns a typed
+//! `Fatal(PluginContract { … "Wave 2" … })` sentinel from the pure-Rust stub
+//! worker, (c) `model_id()` returns a stable handle.
+//!
+//! Under `--features vllm`, plan 03-03 replaces the stub worker with the
+//! live `AsyncLLMEngine` bridge — this test is therefore gated to default
+//! features. The live path is exercised by `vllm_init.rs` /
+//! `vllm_generate.rs` (`#[ignore]`'d behind `ROLLOUT_VLLM_AVAILABLE=1`).
+
+#![cfg(not(feature = "vllm"))]
 
 use rollout_backend_vllm::VllmBackend;
 use rollout_core::{CoreError, FatalError, InferenceBackend, Prompt, SamplingParams};

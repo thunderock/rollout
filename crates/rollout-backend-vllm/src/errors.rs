@@ -10,7 +10,7 @@ use rollout_core::{CoreError, FatalError, RecoverableError, RetryHint};
 const PLUGIN: &str = "rollout-backend-vllm";
 
 #[cfg(feature = "vllm")]
-#[allow(dead_code, clippy::needless_pass_by_value)] // Plan 03-03 consumes `e` by value.
+#[allow(clippy::needless_pass_by_value)] // `e` is consumed for its Display impl.
 pub(crate) fn py_to_core(e: pyo3::PyErr) -> CoreError {
     CoreError::Fatal(FatalError::PluginContract {
         plugin: PLUGIN.to_owned(),
@@ -29,10 +29,18 @@ pub(crate) fn internal(msg: impl Into<String>) -> CoreError {
     CoreError::Fatal(FatalError::Internal { msg: msg.into() })
 }
 
+/// Default-features (no-vllm) stub error from the `Generate` arm.
+///
+/// The substring `"Wave 2"` is the sentinel `backend_stub::generate_returns_wave2_stub_error`
+/// asserts on — the live `AsyncLLMEngine` bridge ships in plan 03-03 behind
+/// `--features vllm`, but the default build keeps the Wave-2 sentinel so callers
+/// running without Python see a typed error rather than a panic.
+#[cfg_attr(feature = "vllm", allow(dead_code))]
 pub(crate) fn wave2_stub() -> CoreError {
     CoreError::Fatal(FatalError::PluginContract {
         plugin: PLUGIN.to_owned(),
-        msg: "vllm engine not yet wired (Wave 2 skeleton; real AsyncLLMEngine lands in 03-03)"
+        msg: "vllm engine not wired in default features (Wave 2 stub); rebuild with \
+              --features vllm and set ROLLOUT_VLLM_AVAILABLE=1 for the live AsyncLLMEngine"
             .to_owned(),
     })
 }
