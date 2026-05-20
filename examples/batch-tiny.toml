@@ -1,0 +1,21 @@
+# Phase-3 exit-criterion config. Runs in <60 s on a Linux CPU host.
+[model]
+uri = "Qwen/Qwen2.5-0.5B-Instruct"
+
+[sampling]
+temperature = 0.7
+top_p       = 0.9
+top_k       = -1
+max_tokens  = 16
+seed        = 42
+stop        = []
+stream      = false
+
+[input]
+glob = "examples/batch-tiny-prompts.jsonl"
+
+[output]
+dir = "data/completions/batch-tiny"
+
+[workers]
+count = 1

@@ -94,6 +94,7 @@ impl BatchWorker {
     /// # Errors
     /// Returns `Fatal(Internal)` on unexpected substrate failures; backend errors
     /// are absorbed via `try_fail` and reported as `RunOutcome::Failed`.
+    #[allow(clippy::too_many_lines)]
     pub async fn run_one(&self) -> Result<RunOutcome, CoreError> {
         let Some((qid, payload)) = self.queue.dequeue().await? else {
             return Ok(RunOutcome::Drained);
@@ -185,6 +186,13 @@ impl BatchWorker {
                     }));
                 }
                 txn.commit().await?;
+                // Spec-09 event for plan 03-05 restart_no_duplicates test detection.
+                tracing::info!(
+                    topic = "sample_completed",
+                    sample = %running.id,
+                    worker = %self.worker_id,
+                    "sample completed"
+                );
                 RunOutcome::Completed
             }
             Err(e) => {

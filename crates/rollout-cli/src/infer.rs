@@ -206,12 +206,21 @@ async fn run_pool(
 
     let run_id = resolve_run_id(args, &cfg.output.dir).await?;
 
-    let coord = BatchCoordinator::new(
+    let mut coord = BatchCoordinator::new(
         storage.clone(),
         queue.clone(),
         object_store.clone(),
         run_id,
     );
+    // Test hook: shorten the stale-claim window so plan 03-05's
+    // restart_no_duplicates integration test can re-enqueue mid-flight samples
+    // immediately on restart instead of waiting the default 5 minutes (RESEARCH
+    // Pitfall 5). Never set in production deployments.
+    if let Ok(ms) = std::env::var("ROLLOUT_TEST_STALE_AFTER_MS") {
+        if let Ok(ms) = ms.parse::<u64>() {
+            coord = coord.with_stale_after_ms(ms);
+        }
+    }
     let model_cid = *backend.model_id();
     let enqueued = coord
         .scan_and_enqueue(&inputs, &model_cid, &cfg.sampling)
@@ -228,6 +237,9 @@ async fn run_pool(
     let mut set: tokio::task::JoinSet<Result<usize, CoreError>> = tokio::task::JoinSet::new();
     for w in 0..workers_count {
         let worker_id = WorkerId(ulid::Ulid::new());
+        // NOTE: workers keep the default `stale_after_ms` so intra-process
+        // races between peer workers stay correct. Only the coordinator's
+        // `stale_after_ms` is shortened in the test path (see above).
         let worker = BatchWorker::new(
             backend.clone(),
             storage.clone(),
