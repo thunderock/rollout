@@ -21,8 +21,8 @@ This document captures the v1 requirements with REQ-IDs, organized by category. 
 
 ### Backends (`BACKEND-*`)
 
-- [ ] **BACKEND-01** — `rollout-backend-vllm` implementing `InferenceBackend` for both inference and training-mode forward/backward.
-- [ ] **BACKEND-02** — `rollout infer batch` end-to-end with content-addressed sample IDs; resumable with zero duplicates.
+- [x] **BACKEND-01** — `rollout-backend-vllm` implementing `InferenceBackend` for both inference and training-mode forward/backward.
+- [x] **BACKEND-02** — `rollout infer batch` end-to-end with content-addressed sample IDs; resumable with zero duplicates.
 
 ### Training (`TRAIN-*`)
 
