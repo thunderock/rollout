@@ -15,7 +15,25 @@ path = "src/main.rs"
 workspace = true
 
 [dependencies]
-rollout-core = { path = "../rollout-core", version = "0.1" }
-clap = { workspace = true }
-serde_json = { workspace = true }
-schemars = { workspace = true }
+rollout-core        = { path = "../rollout-core",        version = "0.1" }
+rollout-coordinator = { path = "../rollout-coordinator", version = "0.1" }
+rollout-transport   = { path = "../rollout-transport",   version = "0.1" }
+rollout-storage     = { path = "../rollout-storage",     version = "0.1" }
+rollout-plugin-host = { path = "../rollout-plugin-host", version = "0.1" }
+rollout-proto       = { path = "../rollout-proto",       version = "0.1" }
+clap                = { workspace = true }
+serde_json          = { workspace = true }
+schemars            = { workspace = true }
+serde               = { workspace = true }
+tokio               = { workspace = true, features = ["signal", "process"] }
+tracing             = { workspace = true }
+tracing-subscriber  = { workspace = true }
+toml                = { workspace = true }
+ulid                = { workspace = true }
+tonic               = { workspace = true }
+prost-types         = { workspace = true }
+
+[dev-dependencies]
+assert_cmd = { workspace = true }
+predicates = { workspace = true }
+tempfile   = { workspace = true }

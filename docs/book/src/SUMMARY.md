@@ -9,4 +9,5 @@
   - [Transport](./substrate/transport.md)
   - [Plugin host](./substrate/plugin-host.md)
   - [Python bridge](./substrate/python-bridge.md)
+  - [Coordinator](./substrate/coordinator.md)
 - [Examples](./examples/index.md)
