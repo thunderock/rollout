@@ -9,6 +9,46 @@ repository.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = ["h2"]
+# HTTP/2 plan-of-record. Always on by default.
+h2 = []
+# EXPERIMENTAL: gRPC-over-QUIC via tonic-h3 v0.0.x. Bidi-streaming not
+# documented as supported as of 2025-11-01. Do NOT use in production.
+# See RESEARCH §"Pitfall 2".
+quic = ["dep:quinn", "dep:tonic-h3", "dep:h3", "dep:h3-quinn"]
+
 [dependencies]
-# Filled by plan 02-04 — Wave-0 stub only.
-rollout-core = { path = "../rollout-core", version = "0.1" }
+rollout-core    = { path = "../rollout-core", version = "0.1" }
+rollout-proto   = { path = "../rollout-proto", version = "0.1" }
+async-trait     = { workspace = true }
+serde           = { workspace = true }
+schemars        = { workspace = true }
+thiserror       = { workspace = true }
+tracing         = { workspace = true }
+tokio           = { workspace = true }
+tokio-stream    = { workspace = true }
+humantime-serde = { workspace = true }
+tonic           = { workspace = true }
+tonic-prost     = { workspace = true }
+prost           = { workspace = true }
+prost-types     = { workspace = true }
+rustls          = { workspace = true }
+# x509-parser feature enables CertificateParams::from_ca_cert_pem for client/server cert issuance.
+rcgen           = { workspace = true, features = ["x509-parser"] }
+bytes           = { workspace = true }
+ulid            = { workspace = true }
+
+# quic stretch (EXPERIMENTAL; not pulled by default features)
+quinn    = { version = "0.11", optional = true }
+tonic-h3 = { version = "0.0.5", optional = true }
+h3       = { version = "0.0.6", optional = true }
+h3-quinn = { version = "0.0.7", optional = true }
+
+[package.metadata.cargo-machete]
+ignored = ["quinn", "tonic-h3", "h3", "h3-quinn"]
+
+[dev-dependencies]
+tempfile       = { workspace = true }
+tokio          = { workspace = true, features = ["macros", "rt-multi-thread"] }
+rustls-pemfile = "2"
