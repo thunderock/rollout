@@ -27,17 +27,16 @@ If any single requirement defines success: **plan-time validation catches all co
 
 ### Validated
 
-(None yet — pre-implementation. Validates after each phase ships.)
+- [x] **SUBSTR-01** Embedded KV storage backend — **redb** chosen. *Validated in Phase 2: Local substrate.*
+- [x] **SUBSTR-02** gRPC transport with deadline-based heartbeats — **HTTP/2 + rustls** plan-of-record (tonic 0.14), `quic` feature behind EXPERIMENTAL gate. Deadline-based health: 500ms heartbeat / 4s self-fence / 5s coord-failure / 250ms skew budget. *Validated in Phase 2: Local substrate (smoke test).*
+- [x] **SUBSTR-03** Plugin host — three modes (Rust cdylib via libloading + PyO3 in-process via pyo3-async-runtimes 0.28 dedicated-thread pattern + Python sidecar via stdlib JSON-over-UDS); full hot-reload behind `dev-hot-reload` feature. *Validated in Phase 2: Local substrate.*
+- [x] **SUBSTR-04** Local cloud — content-addressed sharded FS object store + RAM queue with Storage spill + env-var SecretStore (read-only allowlist) + ComputeHint (Linux full / macOS stub). *Validated in Phase 2: Local substrate.*
 
 ### Active (v1 hypotheses)
 
 - [ ] **CORE-01** Rust core (`rollout-core`) with the full trait surface and single-source-of-truth config schema.
 - [ ] **CORE-02** Workspace dependency lint enforcing layered architecture (algorithm crates cannot depend on cloud crates).
 - [ ] **CORE-03** Error taxonomy: `Recoverable { Throttled / Transient / Preempted }` vs `Fatal { ConfigInvalid / SchemaViolation / PluginContract / Internal }`.
-- [ ] **SUBSTR-01** Embedded KV storage backend (sled or redb — chosen Phase 2).
-- [ ] **SUBSTR-02** gRPC-over-QUIC transport with deadline-based heartbeats.
-- [ ] **SUBSTR-03** Plugin host supporting PyO3 in-process and subprocess RPC sidecars.
-- [ ] **SUBSTR-04** Local cloud (`rollout-cloud-local`) so the rest of the stack has a Layer 1 target for tests.
 - [ ] **BACKEND-01** vLLM inference backend as default.
 - [ ] **BACKEND-02** Batch inference end-to-end with content-addressed sample IDs (resumable).
 - [ ] **TRAIN-01** SFT algorithm.
@@ -114,4 +113,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-19 after initialization*
+*Last updated: 2026-05-20 after Phase 2 (Local substrate) completion*
