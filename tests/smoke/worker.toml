@@ -1,0 +1,16 @@
+# Phase-2 smoke worker fixture. Shared by w1 and w2 — per-worker `--worker-id`
+# is passed on the CLI. Storage is shared (workers run in different processes;
+# redb opens its own file handle), but each worker's own ULID disambiguates.
+run_id = "01JFEAVS7C5DE5XEAEAB91EBT5"
+coordinator_addr = "https://127.0.0.1:50051"
+coordinator_domain = "localhost"
+
+[storage]
+path = "./data/smoke/worker.db"
+
+[transport]
+tls_dir = "./data/smoke/tls"
+heartbeat_interval = "500ms"
+worker_self_fence_timeout = "4s"
+coordinator_failure_timeout = "5s"
+clock_skew_budget = "250ms"

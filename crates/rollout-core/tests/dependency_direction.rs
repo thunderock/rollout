@@ -28,6 +28,11 @@ const ALGO_AND_ABOVE: &[&str] = &[
 
 const TRANSPORT_CRATES: &[&str] = &["rollout-transport"];
 const PLUGIN_HOST_CRATES: &[&str] = &["rollout-plugin-host"];
+const COORDINATOR_CRATES: &[&str] = &["rollout-coordinator"];
+// Crates the coordinator must NOT depend on: the plugin host (plugins are a
+// worker concern) and any cloud-layer crate (the coordinator is cloud-agnostic).
+const COORDINATOR_FORBIDDEN: &[&str] =
+    &["rollout-plugin-host", "rollout-cloud-local", "rollout-cloud-aws", "rollout-cloud-gcp"];
 
 fn violation_algo_uses_cloud(pkg: &str, dep: &str) -> bool {
     ALGO_AND_ABOVE.contains(&pkg) && CLOUD_CRATES.contains(&dep)
@@ -41,19 +46,26 @@ fn violation_plugin_host_uses_transport(pkg: &str, dep: &str) -> bool {
     PLUGIN_HOST_CRATES.contains(&pkg) && dep == "rollout-transport"
 }
 
+fn violation_coordinator_uses_disallowed(pkg: &str, dep: &str) -> bool {
+    COORDINATOR_CRATES.contains(&pkg) && COORDINATOR_FORBIDDEN.contains(&dep)
+}
+
 fn any_violation(pkg: &str, dep: &str) -> bool {
     violation_algo_uses_cloud(pkg, dep)
         || violation_transport_uses_cloud(pkg, dep)
         || violation_plugin_host_uses_transport(pkg, dep)
+        || violation_coordinator_uses_disallowed(pkg, dep)
 }
 
 #[test]
 fn dep_direction_invariants_hold() {
-    // Phase-2 broadens the lint with two new invariants beyond Phase 1's
-    // algo→cloud rule:
-    //   * rollout-transport must not depend on any cloud-layer crate
-    //   * rollout-plugin-host must not depend on rollout-transport (sidecar IPC
-    //     goes through rollout-proto + UDS, not the QUIC/H2 transport)
+    // Phase-2 enforces four invariants total:
+    //   * algo crates ↛ cloud crates (Phase 1)
+    //   * rollout-transport ↛ any cloud-layer crate (Wave 0)
+    //   * rollout-plugin-host ↛ rollout-transport (Wave 0; sidecar IPC uses
+    //     rollout-proto + UDS, not the QUIC/H2 transport)
+    //   * rollout-coordinator ↛ rollout-plugin-host / any cloud crate
+    //     (plan 02-07; the coordinator is cloud-agnostic and plugin-unaware)
     let meta = MetadataCommand::new().exec().expect("cargo metadata");
     for pkg in meta.workspace_packages() {
         for dep in &pkg.dependencies {
@@ -117,6 +129,25 @@ fn deliberate_violation_plugin_host_transport_detected() {
     assert!(
         caught,
         "fixture failed: expected plugin-host->transport violation, pkg={pkg} deps={deps:?}",
+    );
+}
+
+#[test]
+fn deliberate_violation_coord_detected() {
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/violation_coord_uses_plugin_host/Cargo.toml");
+    let body = std::fs::read_to_string(&fixture)
+        .unwrap_or_else(|e| panic!("read fixture {fixture:?}: {e}"));
+
+    let pkg = toml_pkg_name(&body);
+    let deps = toml_dep_names(&body);
+
+    let caught = deps
+        .iter()
+        .any(|d| violation_coordinator_uses_disallowed(&pkg, d));
+    assert!(
+        caught,
+        "fixture failed: expected coordinator->forbidden violation, pkg={pkg} deps={deps:?}",
     );
 }
 

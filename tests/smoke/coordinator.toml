@@ -1,0 +1,15 @@
+# Phase-2 smoke coordinator fixture. CONTEXT D-TIME-01 defaults are inherited
+# from TransportConfig::default() via serde(default), so this file only sets
+# the run_id and overrides per-fixture storage / tls paths.
+run_id = "01JFEAVS7C5DE5XEAEAB91EBT5"
+
+[storage]
+path = "./data/smoke/coord.db"
+
+[transport]
+listen_addr = "127.0.0.1:50051"
+tls_dir = "./data/smoke/tls"
+heartbeat_interval = "500ms"
+worker_self_fence_timeout = "4s"
+coordinator_failure_timeout = "5s"
+clock_skew_budget = "250ms"
