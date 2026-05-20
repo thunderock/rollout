@@ -7,5 +7,21 @@
 //! (RESEARCH §"Restart-resume test design").
 //!
 //! Crate split rationale: keeps `rollout-backend-vllm` cloud-agnostic
-//! (spec 10 + dep-direction invariants #5 / #6). Real wiring lands in
-//! plans 03-02 (state machine + coordinator + worker) and 03-04 (CLI).
+//! (spec 10 + dep-direction invariants #5 / #6). The runtime composes any
+//! `Arc<dyn InferenceBackend>` so production (vLLM) and tests (`MockBackend`)
+//! both flow through the same coordinator/worker code.
+
+#![forbid(unsafe_code)]
+
+pub mod state;
+
+#[cfg(feature = "test-mock-backend")]
+pub mod mock_backend;
+
+pub use state::{
+    sample_id, sample_key, try_claim, try_complete, try_fail, try_repending, SampleRecord,
+    SampleState, DEFAULT_STALE_AFTER_MS, SAMPLING_PARAMS_SCHEMA_VERSION,
+};
+
+#[cfg(feature = "test-mock-backend")]
+pub use mock_backend::MockBackend;

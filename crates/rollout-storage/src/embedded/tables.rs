@@ -18,11 +18,13 @@ pub const T_QUEUE: BytesTable = TableDefinition::new("queue");
 pub const T_PLUGINS: BytesTable = TableDefinition::new("plugins");
 /// `cloudlocal_queue/*` — `cloud-local` Queue's restart-replay mirror.
 pub const T_CLOUDLOCAL: BytesTable = TableDefinition::new("cloudlocal_queue");
+/// `infer/*` — Phase-3 batch-inference sample-state KV (`infer/<run>/samples/*`).
+pub const T_INFER: BytesTable = TableDefinition::new("infer");
 
 /// Map `StorageKey.namespace` to its `TableDefinition`.
 ///
 /// # Errors
-/// Returns `Fatal(ConfigInvalid)` for namespaces not registered in Phase 2.
+/// Returns `Fatal(ConfigInvalid)` for namespaces not registered.
 pub fn table_for(namespace: &str) -> Result<BytesTable, CoreError> {
     Ok(match namespace {
         "runs" => T_RUNS,
@@ -31,6 +33,7 @@ pub fn table_for(namespace: &str) -> Result<BytesTable, CoreError> {
         "queue" => T_QUEUE,
         "plugins" => T_PLUGINS,
         "cloudlocal_queue" => T_CLOUDLOCAL,
+        "infer" => T_INFER,
         other => {
             return Err(CoreError::Fatal(FatalError::ConfigInvalid {
                 msg: format!("unknown storage namespace: {other}"),
@@ -39,10 +42,10 @@ pub fn table_for(namespace: &str) -> Result<BytesTable, CoreError> {
     })
 }
 
-/// All known Phase-2 table definitions (used by `get_many_bytes` / scans that
+/// All known table definitions (used by `get_many_bytes` / scans that
 /// want to walk every namespace).
 #[must_use]
-pub fn all_tables() -> [(&'static str, BytesTable); 6] {
+pub fn all_tables() -> [(&'static str, BytesTable); 7] {
     [
         ("runs", T_RUNS),
         ("workers", T_WORKERS),
@@ -50,5 +53,6 @@ pub fn all_tables() -> [(&'static str, BytesTable); 6] {
         ("queue", T_QUEUE),
         ("plugins", T_PLUGINS),
         ("cloudlocal_queue", T_CLOUDLOCAL),
+        ("infer", T_INFER),
     ]
 }

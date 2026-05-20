@@ -109,6 +109,7 @@ impl Storage for EmbeddedStorage {
                     "queue" => "queue",
                     "plugins" => "plugins",
                     "cloudlocal_queue" => "cloudlocal_queue",
+                    "infer" => "infer",
                     _ => unreachable!("table_for would have errored"),
                 };
                 by_table.entry(static_ns).or_default().push(i);
