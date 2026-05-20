@@ -4,9 +4,7 @@
 //! `cargo build --manifest-path tests/smoke/plugins/rust_cdylib_sample/Cargo.toml --release`.
 //! Plan 02-07 (smoke) wires the build into the smoke test driver.
 
-use rollout_core::{
-    EntrySpec, PluginHost, PluginKind, PluginManifest, PluginMode, RuntimeHints,
-};
+use rollout_core::{EntrySpec, PluginHost, PluginKind, PluginManifest, PluginMode, RuntimeHints};
 use rollout_plugin_host::PluginHostImpl;
 use std::path::PathBuf;
 

@@ -7,4 +7,6 @@
   - [Storage](./substrate/storage.md)
   - [Cloud-local](./substrate/cloud-local.md)
   - [Transport](./substrate/transport.md)
+  - [Plugin host](./substrate/plugin-host.md)
+  - [Python bridge](./substrate/python-bridge.md)
 - [Examples](./examples/index.md)

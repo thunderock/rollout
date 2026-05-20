@@ -84,8 +84,7 @@ impl SidecarState {
         });
         let body = serde_json::to_vec(&req)
             .map_err(|e| internal(format!("sidecar request encode: {e}")))?;
-        let len = u32::try_from(body.len())
-            .map_err(|_| internal("sidecar request too large"))?;
+        let len = u32::try_from(body.len()).map_err(|_| internal("sidecar request too large"))?;
         stream
             .write_all(&len.to_be_bytes())
             .await
@@ -126,8 +125,7 @@ impl SidecarState {
             let _ = stream.flush().await;
         }
         if let Some(mut child) = self.child.take() {
-            let waited =
-                tokio::time::timeout(Duration::from_secs(2), child.wait()).await;
+            let waited = tokio::time::timeout(Duration::from_secs(2), child.wait()).await;
             if waited.is_err() {
                 let _ = child.kill().await;
             }
@@ -145,14 +143,14 @@ impl SidecarState {
             if let Some(pid) = child.id() {
                 #[cfg(feature = "sidecar")]
                 {
-                    // SAFETY: pid is owned by `child`; nix::sys::signal::kill
-                    // is the documented way to send SIGTERM to a known PID.
-                    let raw = nix::unistd::Pid::from_raw(pid as i32);
+                    // pid u32 → i32 wrap-safe in practice (PIDs are positive
+                    // and well below i32::MAX on Linux/macOS).
+                    let pid_i32 = i32::try_from(pid).unwrap_or(i32::MAX);
+                    let raw = nix::unistd::Pid::from_raw(pid_i32);
                     let _ = nix::sys::signal::kill(raw, nix::sys::signal::Signal::SIGTERM);
                 }
             }
-            let waited =
-                tokio::time::timeout(Duration::from_secs(2), child.wait()).await;
+            let waited = tokio::time::timeout(Duration::from_secs(2), child.wait()).await;
             if waited.is_err() {
                 let _ = child.kill().await;
             }
@@ -180,12 +178,7 @@ async fn connect_with_retry(
             Err(_) if tokio::time::Instant::now() < deadline => {
                 tokio::time::sleep(Duration::from_millis(50)).await;
             }
-            Err(e) => {
-                return Err(internal(format!(
-                    "connect {}: {e}",
-                    path.display()
-                )))
-            }
+            Err(e) => return Err(internal(format!("connect {}: {e}", path.display()))),
         }
     }
 }

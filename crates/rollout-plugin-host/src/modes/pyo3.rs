@@ -141,16 +141,12 @@ fn worker_main(
             while let Some(task) = rx.blocking_recv() {
                 match task {
                     PyTask::Call { reply, .. } => {
-                        let _ = reply.send(Err(contract(
-                            plugin_name,
-                            format!("pyo3 init failed: {e}"),
-                        )));
+                        let _ = reply
+                            .send(Err(contract(plugin_name, format!("pyo3 init failed: {e}"))));
                     }
                     PyTask::Reload { reply } => {
-                        let _ = reply.send(Err(contract(
-                            plugin_name,
-                            format!("pyo3 init failed: {e}"),
-                        )));
+                        let _ = reply
+                            .send(Err(contract(plugin_name, format!("pyo3 init failed: {e}"))));
                     }
                     PyTask::Shutdown => break,
                 }
@@ -187,9 +183,9 @@ fn worker_main(
                     let module = py
                         .import(module_name)
                         .map_err(|e| contract(plugin_name, format!("import {module_name}: {e}")))?;
-                    let reloaded = importlib.call_method1("reload", (module,)).map_err(|e| {
-                        contract(plugin_name, format!("reload {module_name}: {e}"))
-                    })?;
+                    let reloaded = importlib
+                        .call_method1("reload", (module,))
+                        .map_err(|e| contract(plugin_name, format!("reload {module_name}: {e}")))?;
                     let factory = reloaded.getattr(factory_name).map_err(|e| {
                         contract(plugin_name, format!("getattr {factory_name}: {e}"))
                     })?;

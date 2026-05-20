@@ -1,0 +1,15 @@
+name = "sample-inproc"
+version = "0.1.0"
+kind = "env-harness"
+trait_id = "rollout_core::Plugin"
+mode = "pyo3"
+network_allowlist = []
+
+[runtime]
+python_min = "3.11"
+gpu = false
+memory_mib = 64
+
+[entry.pyo3]
+module = "sample_inproc.plugin"
+factory = "create_plugin"

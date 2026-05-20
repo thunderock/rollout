@@ -140,9 +140,7 @@ impl PluginHost for PluginHostImpl {
                     .sidecar_root
                     .join(format!("{name}-{}.sock", std::process::id()));
                 tracing::info!(target: "plugin_host", plugin_id = %id.0, mode = "sidecar", socket = %sock.display(), "plugin_loaded");
-                HandleState::Sidecar(Box::new(
-                    SidecarState::spawn(&command, sock, &name).await?,
-                ))
+                HandleState::Sidecar(Box::new(SidecarState::spawn(&command, sock, &name).await?))
             }
             (mode, entry) => {
                 return Err(contract(

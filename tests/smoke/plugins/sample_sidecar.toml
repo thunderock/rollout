@@ -1,0 +1,15 @@
+name = "sample-sidecar"
+version = "0.1.0"
+kind = "env-harness"
+trait_id = "rollout_core::Plugin"
+mode = "sidecar"
+network_allowlist = []
+
+[runtime]
+gpu = false
+memory_mib = 64
+
+[entry.sidecar]
+command = ["python3", "-m", "sample_sidecar"]
+protocol = "framed-json-uds"
+socket_template = "./data/sidecars/{name}-{pid}.sock"
