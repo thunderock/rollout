@@ -19,9 +19,12 @@ use std::sync::Arc;
 
 fn assert_send_sync<T: Send + Sync + ?Sized>() {}
 
-// Object-safety: if any of these fail to compile, the trait is not dyn-compatible.
-fn algorithm() {
-    let _: Option<Arc<dyn PolicyAlgorithm>> = None;
+// Phase-4 (D-WAVE0-02): `PolicyAlgorithm` carries an associated `Settings` type,
+// so the trait is no longer object-safe (Phase-1 placeholder was). We check it
+// compiles + Send + Sync via a generic bound instead of a trait object.
+fn algorithm<T: PolicyAlgorithm>() {
+    fn check_send_sync<T: Send + Sync>() {}
+    check_send_sync::<T>();
 }
 fn worker() {
     let _: Option<Arc<dyn Worker>> = None;
@@ -83,7 +86,9 @@ fn event_emitter() {
 
 // Send + Sync bounds.
 fn send_sync_bounds() {
-    assert_send_sync::<dyn PolicyAlgorithm>();
+    // PolicyAlgorithm is no longer object-safe (Phase-4 added an associated
+    // `Settings` type). Send + Sync is checked via the generic `algorithm<T>`
+    // function above.
     assert_send_sync::<dyn Worker>();
     assert_send_sync::<dyn Coordinator>();
     assert_send_sync::<dyn Scheduler>();
@@ -267,16 +272,93 @@ fn worker_role_variants_construct() {
         WorkerRole::BatchInference,
         WorkerRole::BatchReader,
         WorkerRole::BatchWriter,
+        WorkerRole::LearnerWorker,
         WorkerRole::Custom(SmolStr::new("future-phase")),
     ];
-    // Exhaustive pattern-match proves all five variants are public + constructible.
+    // Exhaustive pattern-match proves all six variants are public + constructible.
     for v in variants {
         match v {
             WorkerRole::Coordinator
             | WorkerRole::BatchInference
             | WorkerRole::BatchReader
             | WorkerRole::BatchWriter
+            | WorkerRole::LearnerWorker
             | WorkerRole::Custom(_) => {}
         }
+    }
+}
+
+// --- Phase-4 extensions ---------------------------------------------------------
+
+#[test]
+fn trainable_backend_is_object_safe_and_send_sync() {
+    use rollout_core::TrainableBackend;
+    fn _accept(_: Box<dyn TrainableBackend>) {}
+    assert_send_sync::<dyn TrainableBackend>();
+}
+
+#[test]
+fn snapshotter_phase4_is_object_safe_and_send_sync() {
+    use rollout_core::Snapshotter;
+    fn _accept(_: Box<dyn Snapshotter>) {}
+    assert_send_sync::<dyn Snapshotter>();
+}
+
+#[test]
+fn snapshot_kind_serde_round_trip() {
+    use rollout_core::SnapshotKind;
+    let s = serde_json::to_string(&SnapshotKind::TrainState).unwrap();
+    assert_eq!(s, "\"train_state\"");
+    let back: SnapshotKind = serde_json::from_str(&s).unwrap();
+    assert!(matches!(back, SnapshotKind::TrainState));
+}
+
+#[test]
+fn worker_role_learner_serde_round_trip() {
+    let s = serde_json::to_string(&WorkerRole::LearnerWorker).unwrap();
+    assert_eq!(s, "\"learner_worker\"");
+    let back: WorkerRole = serde_json::from_str(&s).unwrap();
+    assert!(matches!(back, WorkerRole::LearnerWorker));
+}
+
+#[test]
+fn snapshot_filter_default() {
+    use rollout_core::SnapshotFilter;
+    let f = SnapshotFilter::default();
+    assert!(f.run_id.is_none() && f.kind.is_none() && f.label_contains.is_none());
+}
+
+#[test]
+fn phase4_new_types_exist() {
+    use rollout_core::{
+        AlgoContext, AlgoDependencies, AlgorithmId, ConfigViolation, GradHandle, LossOutput,
+        LossScope, MaskSpec, PeriodicPolicy, Plan, PrunePolicy, RestoreTarget, RetentionPolicy,
+        RunOutcome, Snapshot, SnapshotFilter, SnapshotId, SnapshotKind, SnapshotPart,
+        SnapshotPolicy, SnapshotRequest, TrainBatch,
+    };
+    fn _types(
+        _ac: Option<AlgoContext<'_>>,
+        _ad: Option<AlgoDependencies>,
+        _ai: AlgorithmId,
+        _cv: ConfigViolation,
+        _gh: GradHandle,
+        _lo: Option<LossOutput>,
+        _ls: LossScope,
+        _ms: MaskSpec,
+        _pp: PeriodicPolicy,
+        _pl: Plan,
+        _pr: PrunePolicy,
+        _rt: RestoreTarget,
+        _rp: RetentionPolicy,
+        _ro: RunOutcome,
+        _s: Snapshot,
+        _sf: SnapshotFilter,
+        _si: SnapshotId,
+        _sk: SnapshotKind,
+        _sp: SnapshotPart,
+        _spl: SnapshotPolicy,
+        _sr: SnapshotRequest,
+        _tb: TrainBatch,
+    ) {
     }
 }

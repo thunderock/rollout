@@ -22,6 +22,11 @@ blake3 = { workspace = true }
 smol_str = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 
+# Phase 4 — Snapshotter timestamps + parallel watch_stream + cancellation token
+chrono = { workspace = true }
+futures = { workspace = true }
+tokio-util = { workspace = true }
+
 [dev-dependencies]
 cargo_metadata = { workspace = true }
 postcard = { workspace = true }

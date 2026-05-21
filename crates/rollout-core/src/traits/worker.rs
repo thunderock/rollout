@@ -52,6 +52,8 @@ pub enum WorkerRole {
     BatchReader,
     /// Phase 6 — split writer for multi-node batch.
     BatchWriter,
+    /// Phase-4 training learner worker (SFT, RM; Phase 9 PPO learner).
+    LearnerWorker,
     /// Custom role for future phases / out-of-tree workers.
     Custom(
         /// Free-form role name; schema-rendered as a string.

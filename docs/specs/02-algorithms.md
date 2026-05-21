@@ -121,6 +121,57 @@ The supporting types `Prompt` (newtype around `String`), `Completion { text, fin
 
 **Training-mode forward/backward** remains a Phase 4 decision: Phase 4 may extend `InferenceBackend` with `forward` / `backward` methods or introduce a sibling `TrainableBackend: InferenceBackend` trait. The Phase 3 trait extension is inference-shaped only (D-BACKEND-01).
 
+## 2a. Phase 4 implementation notes
+
+Phase 4 Wave 0 lands the full `PolicyAlgorithm` surface §2 calls for, plus the
+training-side backend trait. Resolved decisions:
+
+- **`TrainableBackend: InferenceBackend` sibling trait** (D-TRAIN-PATH-01).
+  Backends opt in by implementing both `InferenceBackend` (inference path,
+  Phase 3) and `TrainableBackend` (training path, Phase 4). Methods:
+  `set_train_mode`, `forward_with_loss`, `optimizer_step`, `save_weights`,
+  `load_weights`. The opaque `GradHandle` is passed verbatim from
+  `forward_with_loss` to `optimizer_step` — the Rust side never inspects
+  Python-side gradient tensors. Phase 4 ships two impls: `VllmBackend` under
+  `--features train` in `rollout-backend-vllm` (HF transformers + accelerate
+  path) and `MockBackend` under `--features test-mock-backend` in
+  `rollout-runtime-batch` (deterministic SGD against fake weights).
+
+- **Extended `PolicyAlgorithm` shape** (D-WAVE0-02). The Phase-1 single-method
+  placeholder is replaced by the eight-method §2 surface: `id`, `Settings`
+  associated type, `from_settings`, `required_roles`, `validate_plan`, `run`,
+  `snapshot_save`, `snapshot_restore`. Because of the associated `Settings`
+  type, the trait is no longer object-safe; callers thread it as a generic
+  parameter (`fn run<A: PolicyAlgorithm>(...)`) rather than `Arc<dyn ...>`.
+
+- **`AlgoDependencies` slots** (spec 02 §2). Algorithms speak to the outside
+  world exclusively through five trait-object slots: `backend:
+  Arc<dyn TrainableBackend>`, `storage`, `object`, `snapshots`, `events`. No
+  algorithm crate imports cloud SDKs or transport types directly — the
+  dep-direction lint added in Plan 04-00-b enforces this.
+
+- **Algorithm-internal state (D-DETERM-05).** The backend's weights / optimizer
+  / RNG are captured by `accelerate.save_state` at the `Snapshotter` layer; the
+  algorithm's `snapshot_save` captures "extras" (curriculum cursor, schedule
+  overrides) into `Snapshot.meta: serde_json::Value`. Framework owns
+  step/RNG/optimizer; algorithm owns the rest.
+
+- **`WorkerRole::LearnerWorker`** lands so SFT/RM (and the Phase 9 PPO learner)
+  can declare `required_roles()`.
+
+- **~25 supporting types** land in `rollout-core::traits::{algorithm, backend,
+  snapshot}` and `rollout-core::config::training`: `AlgorithmId`,
+  `AlgoDependencies`, `AlgoContext`, `Plan`, `RunOutcome`, `ConfigViolation`,
+  `GradHandle`, `TrainBatch`, `LossOutput`, `LossScope`, `MaskSpec`,
+  `SnapshotId`, `SnapshotKind`, `Snapshot`, `SnapshotPart`, `RestoreTarget`,
+  `SnapshotRequest`, `SnapshotFilter`, `PrunePolicy`, `RetentionPolicy`,
+  `SnapshotPolicy`, `PeriodicPolicy`, `OptimizerSettings`, `OptimizerKind`,
+  `LrSchedule`, `TrainingBudget`, `DatasetRef`, `PackingPolicy`, `PackingKind`,
+  `SftSettings`, `RmSettings`, `RmHeadKind`.
+
+**Lands in:** plan `04-00-a` (this trait surface), plan `04-00-b` (crate
+registrations + dep-lint), plans `04-01..07` (concrete impls).
+
 ## 3. PPO (`rollout-algo-ppo`)
 
 Online, on-policy, KL-constrained policy gradient. The workhorse.

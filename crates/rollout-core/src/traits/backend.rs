@@ -8,6 +8,7 @@ use async_trait::async_trait;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::config::training::OptimizerSettings;
 use crate::{ContentId, CoreError};
 
 /// A prompt string. Newtype for content-addressing affordance (RESEARCH OQ 3).
@@ -124,4 +125,113 @@ pub trait InferenceBackend: Send + Sync {
     fn model_id(&self) -> &ContentId;
     /// Cooperative shutdown — release engine resources.
     async fn shutdown(&mut self) -> Result<(), CoreError>;
+}
+
+// --- Phase-4 training surface ---------------------------------------------------
+
+/// Opaque handle to gradients computed by `forward_with_loss`.
+///
+/// Real backends wrap a Python-side reference (under `--features train`); the
+/// `MockBackend` used in tests carries a monotonic step counter. The Rust side
+/// never inspects the inner; it's passed verbatim back to `optimizer_step`.
+#[derive(Debug, Default)]
+pub struct GradHandle {
+    /// Monotonic step counter (`MockBackend` uses; real backend ignores).
+    pub step: u64,
+}
+
+/// A training batch handed to `forward_with_loss`.
+///
+/// Tokenization happens inside the backend; this carries raw text rows plus
+/// bookkeeping metrics the algorithm needs (spec 02 §11 tokenizer-ownership).
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+#[non_exhaustive]
+pub struct TrainBatch {
+    /// Number of sequences in this minibatch.
+    pub n_sequences: u32,
+    /// Total tokens across all sequences in this minibatch.
+    pub n_tokens: u32,
+    /// Raw text rows (the backend tokenizes).
+    pub rows: Vec<String>,
+}
+
+impl TrainBatch {
+    /// Construct an empty batch (used in stubs / tests).
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Number of tokens in this batch.
+    #[must_use]
+    pub fn n_tokens(&self) -> u32 {
+        self.n_tokens
+    }
+}
+
+/// Loss + opaque gradient handle returned by `forward_with_loss`.
+#[derive(Debug)]
+#[non_exhaustive]
+pub struct LossOutput {
+    /// Scalar loss for this batch.
+    pub loss: f32,
+    /// Opaque handle to be passed verbatim into `optimizer_step`.
+    pub grad_handle: GradHandle,
+    /// Total tokens consumed (for throughput accounting).
+    pub n_tokens: u32,
+}
+
+/// Selector for which tokens contribute to the loss in supervised training.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum LossScope {
+    /// Mask loss to assistant-role spans (chat-template aware).
+    AssistantOnly,
+    /// Compute loss across all tokens.
+    Full,
+    /// Custom mask specification (placeholder; Phase 7+).
+    Custom(MaskSpec),
+}
+
+/// Placeholder for a custom loss-mask specification.
+///
+/// Phase 4 ships an empty struct; Phase 7+ expands when harnesses need it.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct MaskSpec {}
+
+/// Sibling trait of `InferenceBackend` — adds the training methods.
+///
+/// Backends opt in by impl'ing both `InferenceBackend` and `TrainableBackend`.
+/// Phase 4 ships two implementors: `VllmBackend` under `--features train` in
+/// rollout-backend-vllm (HF transformers + accelerate path) and `MockBackend`
+/// under `--features test-mock-backend` in rollout-runtime-batch (deterministic
+/// SGD against fake weights).
+#[async_trait]
+pub trait TrainableBackend: InferenceBackend {
+    /// Switch this backend between inference and training modes. Idempotent.
+    /// Phase 4 algorithms call this with `enabled=true` at the start of `run()`.
+    async fn set_train_mode(&mut self, enabled: bool) -> Result<(), CoreError>;
+
+    /// Compute forward + loss for a training batch. Returns the loss value
+    /// and an opaque `GradHandle` for `optimizer_step`.
+    async fn forward_with_loss(
+        &self,
+        batch: &TrainBatch,
+        loss_scope: &LossScope,
+    ) -> Result<LossOutput, CoreError>;
+
+    /// Apply accumulated gradients using `opt` settings.
+    async fn optimizer_step(
+        &mut self,
+        grads: GradHandle,
+        opt: &OptimizerSettings,
+    ) -> Result<(), CoreError>;
+
+    /// Persist current weights as a content-addressed blob; returns the ID.
+    async fn save_weights(&self) -> Result<ContentId, CoreError>;
+
+    /// Restore weights from a previously-saved blob.
+    async fn load_weights(&mut self, weights_id: &ContentId) -> Result<(), CoreError>;
 }

@@ -5,11 +5,19 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub mod defaults;
+pub mod training;
 
 // Phase-3 (D-BACKEND-05): lift ModelRef + SamplingParams into the config namespace
 // so future config blocks (e.g., InferBatchConfig) compose them without crossing
 // trait module boundaries.
 pub use crate::traits::backend::{ModelRef, SamplingParams};
+
+// Phase-4 (D-WAVE0-03): re-export training-side config types for downstream-
+// consumer convenience.
+pub use training::{
+    DatasetRef, LrSchedule, OptimizerKind, OptimizerSettings, PackingKind, PackingPolicy,
+    RmHeadKind, RmSettings, TrainingBudget,
+};
 
 /// Top-level run configuration.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -64,19 +72,10 @@ pub enum StorageConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, tag = "kind", rename_all = "snake_case")]
 pub enum AlgorithmConfig {
-    /// Supervised fine-tuning.
-    Sft(SftSettings),
-    /// Proximal policy optimization.
+    /// Supervised fine-tuning. References Phase-4 `training::SftSettings`.
+    Sft(Box<crate::config::training::SftSettings>),
+    /// Proximal policy optimization (Phase 9 placeholder).
     Ppo(PpoSettings),
-}
-
-/// SFT settings.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct SftSettings {
-    /// Learning rate override.
-    #[serde(default)]
-    pub learning_rate: Option<f64>,
 }
 
 /// PPO settings.

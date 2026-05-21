@@ -1,4 +1,4 @@
-//! `Storage`, `StorageTxn`, `Snapshotter`.
+//! `Storage` + `StorageTxn`.
 //!
 //! Phase-2 surface per spec 04 §2: `Storage` carries point/batch/scan reads,
 //! per-prefix `watch`, and a transactional write surface on `StorageTxn`.
@@ -6,6 +6,11 @@
 //! trait and live in downstream crates (Phase 2 simplification: `scan_bytes`
 //! returns an owned `Vec` rather than the `BoxStream` shown in the spec text;
 //! see the spec's "Phase 2 implementation notes" section).
+//!
+//! Phase-4 addition: `Storage::watch_stream` gives Postgres backends a uniform
+//! stream-shaped subscription surface that complements the in-process broadcast
+//! returned by `watch`. The legacy 2-method `Snapshotter` placeholder that used
+//! to live here is gone — see `traits::snapshot` for the spec-04 §5.2 surface.
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -64,6 +69,16 @@ pub trait Storage: Send + Sync {
         &self,
         prefix: StorageKey,
     ) -> Result<tokio::sync::broadcast::Receiver<StorageEvent>, CoreError>;
+    /// Subscribe to commits whose keys match `prefix` as a `BoxStream`.
+    ///
+    /// Phase-4 addition: gives Postgres backends (which can fan out LISTEN/NOTIFY
+    /// across processes) a uniform stream-shaped surface, complementing the
+    /// in-process `watch()` broadcast channel. The embedded backend wraps its
+    /// broadcast receiver in `tokio_stream::wrappers::BroadcastStream`.
+    async fn watch_stream(
+        &self,
+        prefix: StorageKey,
+    ) -> Result<futures::stream::BoxStream<'static, StorageEvent>, CoreError>;
     /// Health probe.
     async fn ping(&self) -> Result<(), CoreError>;
 }
@@ -86,13 +101,4 @@ pub trait StorageTxn: Send + Sync {
     async fn commit(self: Box<Self>) -> Result<(), CoreError>;
     /// Abort the transaction explicitly.
     async fn abort(self: Box<Self>) -> Result<(), CoreError>;
-}
-
-/// Persists and restores algorithm-internal snapshot bytes.
-#[async_trait]
-pub trait Snapshotter: Send + Sync {
-    /// Write a snapshot blob.
-    async fn save(&self, key: &str, bytes: &[u8]) -> Result<(), CoreError>;
-    /// Read a snapshot blob.
-    async fn load(&self, key: &str) -> Result<Vec<u8>, CoreError>;
 }

@@ -185,6 +185,20 @@ impl Storage for EmbeddedStorage {
         Ok(self.watch.subscribe(&prefix))
     }
 
+    async fn watch_stream(
+        &self,
+        prefix: StorageKey,
+    ) -> Result<futures::stream::BoxStream<'static, StorageEvent>, CoreError> {
+        use futures::StreamExt;
+        let rx = self.watch.subscribe(&prefix);
+        let stream = tokio_stream::wrappers::BroadcastStream::new(rx).filter_map(|ev| async move {
+            // Drop Lagged errors; the broadcast version of watch_stream is
+            // lossy under backpressure (same semantics as the broadcast channel).
+            ev.ok()
+        });
+        Ok(stream.boxed())
+    }
+
     async fn ping(&self) -> Result<(), CoreError> {
         let db = Arc::clone(&self.db);
         spawn_blocking(move || db.begin_read().map(|_| ()))
