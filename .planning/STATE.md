@@ -5,12 +5,12 @@ milestone_name: milestone
 current_plan: 2
 status: Executing Phase 04
 stopped_at: Completed 04-00-b-wave0-crate-registrations-PLAN.md
-last_updated: "2026-05-21T21:30:00.000Z"
+last_updated: "2026-05-21T21:27:13.023Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 30
-  completed_plans: 23
+  completed_plans: 24
 ---
 
 # STATE — Project Memory
@@ -118,6 +118,7 @@ Phase 3 Wave 3 complete: plan 03-04 shipped 2026-05-20 — `rollout infer batch 
 | Phase 03-inference-batch P03 | 49min | 1 tasks | 12 files |
 | Phase 04-train-sft-rm-snapshots P00-a | 19min | 2 tasks | 18 files |
 | Phase 04-train-sft-rm-snapshots P00-b | 14min | 2 tasks | 19 files |
+| Phase 04 P01 | 9m | 2 tasks | 14 files |
 
 ## Decisions
 
@@ -214,6 +215,8 @@ Phase 3 Wave 3 complete: plan 03-04 shipped 2026-05-20 — `rollout infer batch 
 - [Phase 04-train-sft-rm-snapshots]: (04-00-b): rollout-storage postgres feature is OFF by default; sqlx/uuid/tokio-stream/futures moved to `optional = true` with `dep:<crate>` references in the feature list. Phase-2 embedded-only default build remains unaffected.
 - [Phase 04-train-sft-rm-snapshots]: (04-00-b): rollout-backend-vllm `train = ["vllm"]` (train implies vllm) — shares the same dedicated Python OS thread infrastructure. TrainableBackend wiring lands in plan 04-05.
 - [Phase 04-train-sft-rm-snapshots]: (04-00-b): Fixture-violation crates reuse the real algo/snapshots crate names ("rollout-algo-sft" etc.) because the lint's predicate matches on package name. Fixtures are NOT workspace members; the lint reads their Cargo.toml as text via the toml_pkg_name/toml_dep_names helpers (matches Phase-3 #5/#6 pattern; no parallel cargo_metadata idiom introduced).
+- [Phase 04]: Plan 04-01: JSON (not postcard) for snapshot metadata rows — postcard refuses to encode self-describing serde_json::Value; JSON keeps Snapshot.meta opaque + human-readable on disk.
+- [Phase 04]: Plan 04-01: SnapshotterImpl exposes public save_train_state / restore_train_state escape hatches — Snapshotter::save trait method has no accelerate_dir to thread, so the trait methods return Fatal { PluginContract } directing callers to the explicit-dir methods.
 
 ## Last Session
 
