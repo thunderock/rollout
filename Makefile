@@ -1,4 +1,4 @@
-.PHONY: lint test build check schema-gen validate-schema docs graphify protos smoke help
+.PHONY: lint test build check schema-gen validate-schema docs graphify protos smoke infer-smoke help
 
 export CARGO_TERM_COLOR := always
 
@@ -34,6 +34,9 @@ protos:
 smoke:
 	bash scripts/smoke.sh
 
+infer-smoke:
+	bash scripts/infer-smoke.sh
+
 help:
 	@echo "lint             cargo fmt --check + clippy -D warnings"
 	@echo "test             cargo test --workspace --tests"
@@ -45,3 +48,4 @@ help:
 	@echo "graphify         build codebase knowledge graph via graphify-ts (out: graphify-out/)"
 	@echo "protos           regenerate python/rollout/_proto/ stubs (requires grpcio-tools; opt-in)"
 	@echo "smoke            end-to-end Phase-2 substrate test (1 coord + 2 workers + plugins; kills w1; asserts deadline detection)"
+	@echo "infer-smoke      Phase-3 end-to-end batch-inference smoke (requires ROLLOUT_VLLM_AVAILABLE=1)"

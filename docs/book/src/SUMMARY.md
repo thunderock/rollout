@@ -15,4 +15,7 @@
   - [vLLM backend](./inference/vllm-backend.md)
   - [Batch runtime](./inference/batch-runtime.md)
   - [CLI: rollout infer batch](./inference/cli.md)
+  - [CPU mode](./inference/cpu-mode.md)
+  - [Resume: zero-duplicate batch restart](./inference/resume.md)
+  - [Dev loop on macOS (Apple Silicon)](./inference/dev-on-macos.md)
 - [Examples](./examples/index.md)

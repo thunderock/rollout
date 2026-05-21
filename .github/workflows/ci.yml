@@ -215,3 +215,33 @@ jobs:
           name: smoke-logs
           path: data/smoke/logs/
           if-no-files-found: ignore
+
+  infer-smoke:
+    # BACKEND-02 live acceptance gate. Opt-in: only fires when
+    # ROLLOUT_VLLM_AVAILABLE=1 is set on the workflow run (manual dispatch,
+    # self-hosted runner, or repo-level env override). Default public-runner CI
+    # leaves this job out of the required set so a missing vLLM install does
+    # not block PRs. The deterministic restart-no-duplicates proof
+    # (BACKEND-02 exit criterion b) runs in the standard `test` job via
+    # MockBackend — no GPU/vLLM required there. This job covers exit criterion
+    # (a): `rollout infer batch --config examples/batch-tiny.toml` on a real
+    # model. See docs/book/src/inference/cli.md.
+    runs-on: ubuntu-latest
+    if: ${{ vars.ROLLOUT_VLLM_AVAILABLE == '1' }}
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-infer-smoke
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install vLLM
+        run: pip install 'vllm>=0.10,<0.22'
+      - name: Run infer-smoke
+        env:
+          ROLLOUT_VLLM_AVAILABLE: "1"
+        run: make infer-smoke
