@@ -9,6 +9,11 @@ repository.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = []
+# Phase 4: Postgres backend alongside embedded. sqlx 0.8 + PgListener.
+postgres = ["dep:sqlx", "dep:uuid", "dep:tokio-stream", "dep:futures"]
+
 [dependencies]
 rollout-core = { path = "../rollout-core", version = "0.1" }
 async-trait  = { workspace = true }
@@ -20,6 +25,12 @@ tokio        = { workspace = true }
 smol_str     = { workspace = true }
 redb         = { workspace = true }
 postcard     = { workspace = true }
+
+# Phase 4 — optional Postgres backend deps; gated by `postgres` feature.
+sqlx         = { workspace = true, optional = true }
+uuid         = { workspace = true, optional = true }
+tokio-stream = { workspace = true, optional = true }
+futures      = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

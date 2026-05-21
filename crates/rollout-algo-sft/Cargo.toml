@@ -1,0 +1,25 @@
+[package]
+name = "rollout-algo-sft"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Supervised fine-tuning (SFT) algorithm impl for the rollout framework — TRAIN-01."
+
+[lints]
+workspace = true
+
+[dependencies]
+rollout-core = { path = "../rollout-core", version = "0.1" }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+schemars = { workspace = true }
+smol_str = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

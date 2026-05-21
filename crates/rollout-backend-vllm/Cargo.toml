@@ -14,6 +14,10 @@ workspace = true
 default = []
 # Gates the live PyO3 init path; tests are #[ignore]'d unless ROLLOUT_VLLM_AVAILABLE=1.
 vllm = []
+# Phase 4: training-mode forward/backward through HF transformers + accelerate
+# via the SAME dedicated Python OS thread. Implies `vllm` because the thread
+# infrastructure is shared. Trait wiring lands in plan 04-05.
+train = ["vllm"]
 
 [dependencies]
 rollout-core         = { path = "../rollout-core", version = "0.1" }

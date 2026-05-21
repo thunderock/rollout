@@ -1,2 +1,8 @@
 [alias]
 xtask = "run --package xtask --"
+
+# Pitfall 4 prevention: SQLX_OFFLINE must NOT live in .env (sqlx-cli reads .env
+# and refuses to talk to the DB during `cargo sqlx prepare`). Put it here.
+# See .planning/phases/04-train-sft-rm-snapshots/04-RESEARCH.md §"Pitfall 4".
+[env]
+SQLX_OFFLINE = "true"

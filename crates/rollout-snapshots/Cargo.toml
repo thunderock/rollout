@@ -1,0 +1,31 @@
+[package]
+name = "rollout-snapshots"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Snapshot orchestration (TrainState; Buffer/Process/EpisodicMemory enumerated) — TRAIN-03."
+
+[lints]
+workspace = true
+
+[dependencies]
+rollout-core = { path = "../rollout-core", version = "0.1" }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+schemars = { workspace = true }
+smol_str = { workspace = true }
+thiserror = { workspace = true }
+blake3 = { workspace = true }
+chrono = { workspace = true }
+tar = { workspace = true }
+walkdir = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+postcard = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
