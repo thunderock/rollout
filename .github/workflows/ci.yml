@@ -216,6 +216,31 @@ jobs:
           path: data/smoke/logs/
           if-no-files-found: ignore
 
+  postgres-integration:
+    # TRAIN-04 acceptance gate. testcontainers Postgres 16 on ubuntu-latest;
+    # default-fires on every PR. The integration tests carry
+    # `#[ignore = "requires Docker / testcontainers"]` so `cargo test
+    # --workspace --tests` keeps a Docker-free macOS dev loop green; this
+    # job opts into them via `-- --include-ignored`.
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-postgres-integration
+      - name: Offline-mode compile check
+        env:
+          SQLX_OFFLINE: "true"
+        run: cargo check -p rollout-storage --features postgres
+      - name: Run testcontainers Postgres integration tests
+        env:
+          SQLX_OFFLINE: "true"
+          RUST_LOG: rollout_storage=info,sqlx=warn
+        run: cargo test -p rollout-storage --features postgres --test postgres_integration -- --include-ignored --test-threads=1
+
   infer-smoke:
     # BACKEND-02 live acceptance gate. Opt-in: only fires when
     # ROLLOUT_VLLM_AVAILABLE=1 is set on the workflow run (manual dispatch,

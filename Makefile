@@ -1,4 +1,4 @@
-.PHONY: lint test build check schema-gen validate-schema docs graphify protos smoke infer-smoke help
+.PHONY: lint test build check schema-gen validate-schema docs graphify protos smoke infer-smoke postgres-test train-smoke help
 
 export CARGO_TERM_COLOR := always
 
@@ -37,6 +37,14 @@ smoke:
 infer-smoke:
 	bash scripts/infer-smoke.sh
 
+postgres-test:
+	@docker info >/dev/null 2>&1 || { echo "Docker not running; start Docker and retry"; exit 1; }
+	SQLX_OFFLINE=true cargo test -p rollout-storage --features postgres --test postgres_integration -- --include-ignored --test-threads=1
+
+train-smoke:
+	@echo "train-smoke lands in plan 04-07-examples-docs-smoke"
+	@exit 1
+
 help:
 	@echo "lint             cargo fmt --check + clippy -D warnings"
 	@echo "test             cargo test --workspace --tests"
@@ -49,3 +57,5 @@ help:
 	@echo "protos           regenerate python/rollout/_proto/ stubs (requires grpcio-tools; opt-in)"
 	@echo "smoke            end-to-end Phase-2 substrate test (1 coord + 2 workers + plugins; kills w1; asserts deadline detection)"
 	@echo "infer-smoke      Phase-3 end-to-end batch-inference smoke (requires ROLLOUT_VLLM_AVAILABLE=1)"
+	@echo "postgres-test    Phase-4 testcontainers Postgres integration tests (requires Docker)"
+	@echo "train-smoke      Phase-4 end-to-end train smoke (placeholder; lands in plan 04-07)"

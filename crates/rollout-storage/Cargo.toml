@@ -41,3 +41,7 @@ ulid         = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+# Phase 4 — testcontainers Postgres 16 integration test
+testcontainers          = { workspace = true }
+testcontainers-modules  = { workspace = true }
+tracing-subscriber      = { workspace = true }
