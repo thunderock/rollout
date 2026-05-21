@@ -1,15 +1,11 @@
 //! `rollout-algo-sft` — supervised fine-tuning algorithm (TRAIN-01).
 //!
-//! Phase-4 skeleton. The full `SftAlgo` impl lands in plan `04-02`.
-//! See `docs/book/src/training/sft.md`.
+//! See `docs/book/src/training/sft.md` for the architecture chapter.
 
 #![doc(html_root_url = "https://docs.rs/rollout-algo-sft/0.1.0")]
 
-use rollout_core::PolicyAlgorithm;
+pub mod algo;
+pub mod data;
 
-/// Placeholder — full impl in plan 04-02.
-pub struct SftAlgo;
-
-// Compile-time witness that PolicyAlgorithm is reachable from this crate.
-#[allow(dead_code)]
-fn _algo_trait_reachable<T: PolicyAlgorithm>() {}
+pub use algo::SftAlgo;
+pub use data::{load_jsonl, DataRow};

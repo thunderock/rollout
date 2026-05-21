@@ -18,8 +18,17 @@ serde_json = { workspace = true }
 schemars = { workspace = true }
 smol_str = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["fs", "io-util"] }
 tracing = { workspace = true }
+chrono = { workspace = true }
+ulid = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+rollout-runtime-batch = { path = "../rollout-runtime-batch", features = ["test-mock-backend"] }
+rollout-snapshots = { path = "../rollout-snapshots", version = "0.1" }
+rollout-storage = { path = "../rollout-storage", version = "0.1" }
+rollout-cloud-local = { path = "../rollout-cloud-local", version = "0.1" }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+ndarray = { workspace = true }
+ulid = { workspace = true }

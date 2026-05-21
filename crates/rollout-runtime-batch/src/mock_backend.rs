@@ -170,7 +170,7 @@ impl TrainableBackend for MockBackend {
     }
 
     async fn optimizer_step(
-        &mut self,
+        &self,
         grads: GradHandle,
         opt: &OptimizerSettings,
     ) -> Result<(), CoreError> {

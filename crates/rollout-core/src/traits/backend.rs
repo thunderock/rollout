@@ -251,8 +251,12 @@ pub trait TrainableBackend: InferenceBackend {
     ) -> Result<LossOutput, CoreError>;
 
     /// Apply accumulated gradients using `opt` settings.
+    ///
+    /// Takes `&self` (not `&mut self`) so backends invoked through
+    /// `Arc<dyn TrainableBackend>` (as `AlgoDependencies` holds them) can step.
+    /// Implementors use interior mutability for the weight buffer + step counter.
     async fn optimizer_step(
-        &mut self,
+        &self,
         grads: GradHandle,
         opt: &OptimizerSettings,
     ) -> Result<(), CoreError>;
