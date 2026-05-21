@@ -21,6 +21,7 @@ thiserror = { workspace = true }
 tokio = { workspace = true, features = ["fs", "io-util"] }
 tracing = { workspace = true }
 chrono = { workspace = true }
+ulid = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
