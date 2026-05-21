@@ -163,6 +163,20 @@ impl TrainBatch {
         Self::default()
     }
 
+    /// Construct a `TrainBatch` from raw text rows + counts.
+    ///
+    /// Required because `TrainBatch` is `#[non_exhaustive]` — external crates
+    /// (e.g. `rollout-algo-sft`, `rollout-runtime-batch::MockBackend`) cannot
+    /// use struct-literal syntax.
+    #[must_use]
+    pub fn with_rows(n_sequences: u32, n_tokens: u32, rows: Vec<String>) -> Self {
+        Self {
+            n_sequences,
+            n_tokens,
+            rows,
+        }
+    }
+
     /// Number of tokens in this batch.
     #[must_use]
     pub fn n_tokens(&self) -> u32 {
@@ -180,6 +194,20 @@ pub struct LossOutput {
     pub grad_handle: GradHandle,
     /// Total tokens consumed (for throughput accounting).
     pub n_tokens: u32,
+}
+
+impl LossOutput {
+    /// Construct a `LossOutput`. Required because the type is `#[non_exhaustive]`
+    /// and external crates (e.g. `rollout-runtime-batch::MockBackend`) cannot use
+    /// struct-literal syntax.
+    #[must_use]
+    pub fn new(loss: f32, grad_handle: GradHandle, n_tokens: u32) -> Self {
+        Self {
+            loss,
+            grad_handle,
+            n_tokens,
+        }
+    }
 }
 
 /// Selector for which tokens contribute to the loss in supervised training.

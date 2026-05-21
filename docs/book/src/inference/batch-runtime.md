@@ -203,6 +203,28 @@ to the output row. `write_jsonl` writes one JSON object per line; the CLI
 sorts on `SampleRecord.input_idx` before calling `write_jsonl` so output order
 matches input order regardless of which worker finished which sample first.
 
+## Phase 4 — `TrainableBackend` impl on `MockBackend`
+
+Beyond the Phase-3 `InferenceBackend` impl, `MockBackend` ships a
+`TrainableBackend` impl gated behind the same `test-mock-backend` feature.
+The training extension drives plan 04-02's LOAD-BEARING `snapshot_resume.rs`
+byte-compare test (TRAIN-03) — no Python, no GPU, runs on every CI build.
+
+- `MockBackend::new_train(seed)` initialises an `ndarray::Array1<f32>` of length 8
+  with every element set to `(seed as f32) / 1000.0`.
+- `forward_with_loss` returns `loss = 0.5` and a `GradHandle { step: prev + 1 }`.
+- `optimizer_step` applies a deterministic SGD delta
+  `(seed + grad_handle.step) * lr` to every weight element.
+- `save_weights` returns `ContentId::of(postcard::to_stdvec(&weights))`.
+- `load_weights` is a no-op; `new_train_with_weights(seed, weights)` is the
+  test-side restore hook so the byte-compare assertion in `snapshot_resume.rs`
+  is meaningful.
+
+Determinism contract: two `MockBackend`s constructed with the same seed produce
+byte-equal weights after K identical `optimizer_step` calls. Plan 04-02's test
+proves bit-identical resume by running 10 uninterrupted steps versus 5-snapshot-5
+and asserting the two final weight vectors are equal.
+
 ## See also
 
 - RESEARCH §"Pitfall 1" — schema-version byte rationale.
@@ -210,3 +232,4 @@ matches input order regardless of which worker finished which sample first.
 - `docs/specs/02-algorithms.md` §2a — `InferenceBackend` extension shape.
 - `docs/specs/04-storage-snapshots.md` §2 — `Storage` + `StorageTxn` + CAS.
 - `docs/specs/06-cloud-layer.md` §3 — `Queue` + `ObjectStore`.
+- Plan 04-02 — SFT skeleton + the snapshot-resume byte-compare proof.
