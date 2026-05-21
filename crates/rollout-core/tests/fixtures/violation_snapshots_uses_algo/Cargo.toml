@@ -1,0 +1,10 @@
+# FIXTURE -- DO NOT BUILD. Read-only fixture for crates/rollout-core/tests/dependency_direction.rs.
+# Simulates a forbidden dependency edge: rollout-snapshots listing an algorithm crate.
+# Exercises Phase-4 invariant #9 (snapshots ↛ algo-*).
+[package]
+name    = "rollout-snapshots"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+rollout-algo-sft = "0.1"

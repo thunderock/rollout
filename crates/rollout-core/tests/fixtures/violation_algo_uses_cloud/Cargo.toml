@@ -1,0 +1,10 @@
+# FIXTURE -- DO NOT BUILD. Read-only fixture for crates/rollout-core/tests/dependency_direction.rs.
+# Simulates a forbidden dependency edge: an algorithm crate (rollout-algo-sft) listing a cloud-layer crate.
+# Exercises Phase-4 invariant #7 (algo-* ↛ cloud-*).
+[package]
+name    = "rollout-algo-sft"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+rollout-cloud-local = "0.1"

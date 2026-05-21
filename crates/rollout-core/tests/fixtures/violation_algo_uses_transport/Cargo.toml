@@ -1,0 +1,10 @@
+# FIXTURE -- DO NOT BUILD. Read-only fixture for crates/rollout-core/tests/dependency_direction.rs.
+# Simulates a forbidden dependency edge: an algorithm crate (rollout-algo-rm) listing rollout-transport.
+# Exercises Phase-4 invariant #8 (algo-* ↛ rollout-transport).
+[package]
+name    = "rollout-algo-rm"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+rollout-transport = "0.1"

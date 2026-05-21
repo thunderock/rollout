@@ -75,6 +75,8 @@ Total: **23 crates**, of which **17 are publishable** to crates.io.
 
 The lint enforced in CI: **no upward arrows** (a lower-layer crate cannot depend on a higher one).
 
+Invariants #7 (algo ↛ cloud), #8 (algo ↛ transport), #9 (snapshots ↛ algo) added in Phase 4. See `crates/rollout-core/tests/dependency_direction.rs` for the full list (Phases 1-4 fold into nine machine-checked invariants).
+
 ## 3. PyPI packages
 
 Python publishing mirrors the crate split but consolidates where ergonomics matter.
