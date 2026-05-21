@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: 2
 status: Executing Phase 04
-stopped_at: Completed 04-00-b-wave0-crate-registrations-PLAN.md
-last_updated: "2026-05-21T21:27:13.023Z"
+stopped_at: Completed 04-03-postgres-backend-PLAN.md
+last_updated: "2026-05-21T21:28:55.924Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 30
-  completed_plans: 24
+  completed_plans: 25
 ---
 
 # STATE — Project Memory
@@ -119,6 +119,7 @@ Phase 3 Wave 3 complete: plan 03-04 shipped 2026-05-20 — `rollout infer batch 
 | Phase 04-train-sft-rm-snapshots P00-a | 19min | 2 tasks | 18 files |
 | Phase 04-train-sft-rm-snapshots P00-b | 14min | 2 tasks | 19 files |
 | Phase 04 P01 | 9m | 2 tasks | 14 files |
+| Phase 04-train-sft-rm-snapshots P03 | 10min | 2 tasks | 15 files |
 
 ## Decisions
 
@@ -217,11 +218,14 @@ Phase 3 Wave 3 complete: plan 03-04 shipped 2026-05-20 — `rollout infer batch 
 - [Phase 04-train-sft-rm-snapshots]: (04-00-b): Fixture-violation crates reuse the real algo/snapshots crate names ("rollout-algo-sft" etc.) because the lint's predicate matches on package name. Fixtures are NOT workspace members; the lint reads their Cargo.toml as text via the toml_pkg_name/toml_dep_names helpers (matches Phase-3 #5/#6 pattern; no parallel cargo_metadata idiom introduced).
 - [Phase 04]: Plan 04-01: JSON (not postcard) for snapshot metadata rows — postcard refuses to encode self-describing serde_json::Value; JSON keeps Snapshot.meta opaque + human-readable on disk.
 - [Phase 04]: Plan 04-01: SnapshotterImpl exposes public save_train_state / restore_train_state escape hatches — Snapshotter::save trait method has no accelerate_dir to thread, so the trait methods return Fatal { PluginContract } directing callers to the explicit-dir methods.
+- [Phase 04-train-sft-rm-snapshots]: (04-03): Use runtime sqlx::query (not query! macro) so cargo build -p rollout-storage --features postgres succeeds in offline mode without a live DB / pre-populated .sqlx cache. Switch to compile-time query! macros once the SQL surface stabilizes.
+- [Phase 04-train-sft-rm-snapshots]: (04-03): PostgresStorage::watch returns Fatal(PluginContract) — broadcast is in-process only; cross-process callers MUST use watch_stream (PgListener-backed).
+- [Phase 04-train-sft-rm-snapshots]: (04-03): testcontainers integration tests all carry #[ignore = 'requires Docker / testcontainers']; default cargo test --workspace --tests stays Docker-free. CI postgres-integration job opts in via -- --include-ignored --test-threads=1.
 
 ## Last Session
 
-- **Last session:** 2026-05-21T21:30:00.000Z
-- **Stopped at:** Completed 04-00-b-wave0-crate-registrations-PLAN.md
+- **Last session:** 2026-05-21T21:28:55.920Z
+- **Stopped at:** Completed 04-03-postgres-backend-PLAN.md
 
 ## Things Not To Forget
 
