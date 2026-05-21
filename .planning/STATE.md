@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_plan: 2
-status: Executing Phase 04
-stopped_at: Completed 04-03-postgres-backend-PLAN.md
-last_updated: "2026-05-21T21:28:55.924Z"
+status: Paused Phase 04 — Opus quota cap (resets 2026-05-31)
+stopped_at: WIP 04-02 task-2 (commit 9bec30f) — 04-01 + 04-03 complete; 04-04..04-07 not started
+last_updated: "2026-05-21T21:32:00.000Z"
 progress:
   total_phases: 4
   completed_phases: 3
