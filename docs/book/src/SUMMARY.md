@@ -20,5 +20,6 @@
   - [Dev loop on macOS (Apple Silicon)](./inference/dev-on-macos.md)
 - [Training](./training/index.md)
   - [Snapshots](./training/snapshots.md)
+  - [SFT](./training/sft.md)
   - [Postgres backend](./training/postgres-backend.md)
 - [Examples](./examples/index.md)

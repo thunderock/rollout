@@ -4,7 +4,7 @@
 //! ARCHITECTURE.md §5 + spec 10.
 #![allow(missing_docs)]
 
-use cargo_metadata::MetadataCommand;
+use cargo_metadata::{DependencyKind, MetadataCommand};
 use std::path::PathBuf;
 
 const CLOUD_CRATES: &[&str] = &[
@@ -105,6 +105,12 @@ fn dep_direction_invariants_hold() {
     let meta = MetadataCommand::new().exec().expect("cargo metadata");
     for pkg in meta.workspace_packages() {
         for dep in &pkg.dependencies {
+            // Architecture rules apply to production deps. Dev / build deps
+            // (tests, examples) may freely pull in any workspace crate — they
+            // never ship in the dependency closure of a production binary.
+            if dep.kind != DependencyKind::Normal {
+                continue;
+            }
             let pkg_name = pkg.name.as_str();
             let dep_name = dep.name.as_str();
             assert!(

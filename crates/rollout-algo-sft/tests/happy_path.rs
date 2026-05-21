@@ -1,4 +1,4 @@
-//! Happy-path SFT test: SftAlgo + MockBackend run 2 steps without error.
+//! Happy-path SFT test: `SftAlgo` + `MockBackend` run 2 steps without error.
 
 use std::path::PathBuf;
 use std::sync::Arc;

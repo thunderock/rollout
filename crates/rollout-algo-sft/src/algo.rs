@@ -10,6 +10,9 @@ use rollout_core::{
     Plan, PolicyAlgorithm, RunOutcome, Snapshot, SnapshotKind, SnapshotPart, TrainBatch,
     TrainableBackend, WorkerRole,
 };
+// `step_once` uses `optimizer_step(&self, …)` — the Phase-4 trait switched
+// to interior-mutability so backends invoked through `Arc<dyn …>` can step
+// (see crates/rollout-core/src/traits/backend.rs).
 use smol_str::SmolStr;
 
 use crate::data;
@@ -30,7 +33,7 @@ impl SftAlgo {
     /// trait); `run()` calls this in a loop bounded by the budget.
     ///
     /// # Errors
-    /// Propagates backend errors (forward / optimizer_step).
+    /// Propagates backend errors (`forward_with_loss` / `optimizer_step`).
     pub async fn step_once(&mut self) -> Result<(), CoreError> {
         // Phase-4 skeleton: synthesize a `TrainBatch` with one fake row.
         // Plan 04-05 replaces this with real tokenized batches from the dataset.
@@ -40,20 +43,10 @@ impl SftAlgo {
             .forward_with_loss(&batch, &self.settings.loss_on)
             .await?;
 
-        // `optimizer_step` needs `&mut Backend`; the Arc<dyn TrainableBackend>
-        // shape requires unique ownership via `Arc::get_mut`. Tests own only
-        // the algo's Arc plus a separate test-helper Arc for inspection; the
-        // helper Arc is downcast-only and never used to invoke `&mut`-taking
-        // trait methods, so `get_mut` succeeds.
-        let backend_mut = Arc::get_mut(&mut self.backend).ok_or_else(|| {
-            CoreError::Fatal(FatalError::PluginContract {
-                plugin: "rollout-algo-sft".into(),
-                msg: "SftAlgo expects exclusive backend ownership (Arc::get_mut failed); tests \
-                      must hold a separate test-helper Arc for inspection only."
-                    .into(),
-            })
-        })?;
-        backend_mut
+        // `optimizer_step` is `&self` (interior mutability) so the algo can
+        // step through `Arc<dyn TrainableBackend>` even while tests hold a
+        // sibling Arc for `weights_snapshot()` inspection.
+        self.backend
             .optimizer_step(loss.grad_handle, &self.settings.optimizer)
             .await?;
         self.step += 1;

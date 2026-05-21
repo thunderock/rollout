@@ -140,6 +140,12 @@ async fn bit_identical_resume_at_step_5() {
     std::fs::create_dir_all(&scratch_b2).unwrap();
     let backend_b2 = Arc::new(MockBackend::new_train_with_weights(42, weights_after_5));
     let backend_b2_view = Arc::clone(&backend_b2);
+    // Restore the backend step counter so the next `forward_with_loss` produces
+    // `GradHandle { step: 6 }` — without this, the resume run reuses step
+    // numbers 1..=5 and the byte-compare fails (TRAIN-03 contract). The algo
+    // sees only `Arc<dyn TrainableBackend>` so the test pushes the counter
+    // through the MockBackend test helper directly.
+    backend_b2_view.set_step(5);
     let (mut algo_b2, _s, _o, _sn) = build_algo(backend_b2, dataset.clone(), &scratch_b2).await;
     algo_b2.snapshot_restore(snapshot).await.unwrap();
     for _ in 0..5 {

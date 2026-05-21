@@ -105,6 +105,24 @@ impl MockBackend {
             .lock()
             .unwrap()
     }
+
+    /// Set the internal step counter (test helper used by `snapshot_resume.rs`
+    /// when resuming from a captured snapshot — the next `forward_with_loss`
+    /// hands back `GradHandle { step: step + 1 }` so the optimizer delta on the
+    /// resume side matches the uninterrupted-run side byte-for-byte).
+    ///
+    /// # Panics
+    /// Panics if the backend wasn't constructed via `new_train` /
+    /// `new_train_with_weights`, or if the step mutex is poisoned.
+    pub fn set_step(&self, step: u64) {
+        *self
+            .train_state
+            .as_ref()
+            .expect("not in train mode")
+            .step
+            .lock()
+            .unwrap() = step;
+    }
 }
 
 pub(crate) struct TrainState {
@@ -253,8 +271,8 @@ mod train_tests {
 
     #[tokio::test]
     async fn optimizer_step_deterministic_with_same_seed() {
-        let mut a = MockBackend::new_train(42);
-        let mut b = MockBackend::new_train(42);
+        let a = MockBackend::new_train(42);
+        let b = MockBackend::new_train(42);
         let opt = settings(0.01);
         let bt = TrainBatch::with_rows(1, 1, vec!["x".into()]);
         for _ in 0..5 {
