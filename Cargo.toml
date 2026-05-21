@@ -112,3 +112,6 @@ chrono = { version = "0.4", default-features = false, features = ["std", "clock"
 
 # Phase 4 — UUID for Postgres ULID-as-UUID round-trip
 uuid = { version = "1.10", features = ["serde", "v4"] }
+
+# Phase 4 — async-stream for PgListener-backed watch_stream (plan 04-03)
+async-stream = "0.3"

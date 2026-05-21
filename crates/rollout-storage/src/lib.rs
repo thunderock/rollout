@@ -13,5 +13,11 @@ pub mod config;
 pub mod embedded;
 pub mod encoding;
 
+#[cfg(feature = "postgres")]
+pub mod postgres;
+
 pub use config::EmbeddedStorageConfig;
 pub use embedded::EmbeddedStorage;
+
+#[cfg(feature = "postgres")]
+pub use postgres::PostgresStorage;

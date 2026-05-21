@@ -12,7 +12,10 @@ workspace = true
 [features]
 default = []
 # Phase 4: Postgres backend alongside embedded. sqlx 0.8 + PgListener.
-postgres = ["dep:sqlx", "dep:uuid"]
+postgres = ["dep:sqlx", "dep:uuid", "dep:async-stream", "dep:ulid"]
+
+[package.metadata.docs.rs]
+all-features = true
 
 [dependencies]
 rollout-core = { path = "../rollout-core", version = "0.1" }
@@ -33,6 +36,8 @@ futures      = { workspace = true }
 # Phase 4 — optional Postgres backend deps; gated by `postgres` feature.
 sqlx         = { workspace = true, optional = true }
 uuid         = { workspace = true, optional = true }
+async-stream = { workspace = true, optional = true }
+ulid         = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
