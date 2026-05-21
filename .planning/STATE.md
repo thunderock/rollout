@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: Not started
-status: Milestone complete
-stopped_at: Phase 4 context gathered
-last_updated: "2026-05-21T18:55:30.793Z"
+current_plan: 2
+status: Executing Phase 04
+stopped_at: Completed 04-00-b-wave0-crate-registrations-PLAN.md
+last_updated: "2026-05-21T21:30:00.000Z"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 21
-  completed_plans: 21
+  total_plans: 30
+  completed_plans: 23
 ---
 
 # STATE — Project Memory
@@ -35,8 +35,8 @@ Wave 4 plan 02-05 (rollout-plugin-host) shipped 2026-05-20 (SUBSTR-03). `rollout
 
 Wave 3 complete (solo): plan 02-04 (rollout-transport) shipped 2026-05-20. `rollout-transport` ships HTTP/2 tonic 0.14 + rustls 0.23 + mTLS-by-default as the plan-of-record per RESEARCH (tonic-h3 v0.0.5 stays opt-in EXPERIMENTAL behind a `quic` Cargo feature). Three logical channels (Heartbeat unary, Control server-stream, Work bidi-stub) multiplex over one H/2 connection. mTLS auto-bootstraps via rcgen-generated dev CA under `./data/tls/` (chmod 600 on private keys). Plan-time `TransportConfig::validate_cross_fields` enforces split-brain prevention (`self_fence < coord_failure`) + clock-skew bound (`skew < 2×hb`) per D-TIME-02. Deadline-based health helpers (`next_due_at`, `is_failed`) match spec 05 §6. Substrate/transport mdBook chapter ships. Plans 02-05 (rollout-plugin-host), 02-06 (rollout-coordinator), 02-07 (smoke + docs + CI) pending.
 
-**Current Plan:** Not started
-**Last completed plan:** 03-04-cli-infer-batch (2026-05-20) — Wave 3, `rollout infer batch` CLI subcommand + run_id lifecycle + run_pool wiring
+**Current Plan:** 2
+**Last completed plan:** 04-00-b-wave0-crate-registrations (2026-05-21) — Wave 0 Part B, 3 new crates + train/postgres features + 8 workspace deps + SQLX_OFFLINE env + arch-lint 6→9 invariants
 
 **Phase 2 — Local substrate is COMPLETE.** All four exit criteria satisfied: embedded `Storage` (redb 2.x; 02-02), gRPC transport with deadline-based heartbeats (HTTP/2 plan-of-record + QUIC EXPERIMENTAL; 02-04), `rollout-plugin-host` with cdylib + PyO3 + sidecar modes + hot-reload (02-05), `rollout-cloud-local` (02-03), and `make smoke` end-to-end (02-07). `cargo test --workspace --tests` reports 103 passing + 4 ignored (env-gated). Architecture-lint now enforces 4 invariants. CI grew to 12 jobs.
 
@@ -116,6 +116,8 @@ Phase 3 Wave 3 complete: plan 03-04 shipped 2026-05-20 — `rollout infer batch 
 | Phase 03-inference-batch P01 | 18min | 1 tasks | 14 files |
 | Phase 03-inference-batch P02 | 16min | 2 tasks | 17 files |
 | Phase 03-inference-batch P03 | 49min | 1 tasks | 12 files |
+| Phase 04-train-sft-rm-snapshots P00-a | 19min | 2 tasks | 18 files |
+| Phase 04-train-sft-rm-snapshots P00-b | 14min | 2 tasks | 19 files |
 
 ## Decisions
 
@@ -205,11 +207,18 @@ Phase 3 Wave 3 complete: plan 03-04 shipped 2026-05-20 — `rollout infer batch 
 - [Phase 03-inference-batch]: (03-02): SampleRecord carries input_idx: u64 inline per WARN-1 — collect_done_records() sorts the Done set by ordinal at output time without a side B-tree mapping sid → idx. 8 bytes per sample vs a parallel index = clear win
 - [Phase 03-inference-batch]: (03-02): worker_happy_path lives in its own tests/worker_happy_path.rs file (per WARN-3) — cas_state_machine.rs stays focused on storage transitions; worker_happy_path exercises the full pull-loop (EmbeddedStorage + InMemQueue + FsObjectStore + MockBackend + run_loop)
 - [Phase 03-inference-batch]: (03-02): CAS helpers (try_claim/try_complete/try_fail/try_repending) route postcard encoding through a private encode_record() that returns Result<Vec<u8>, CoreError> — eliminates clippy::missing_panics_doc lint AND threads the (impossible-in-practice) encode error correctly. Matches Phase 2's EmbeddedTxn internal() pattern
+- [Phase 04-train-sft-rm-snapshots]: PolicyAlgorithm carries an associated Settings type, intentionally breaking object-safety (D-WAVE0-02); callers thread it as a generic.
+- [Phase 04-train-sft-rm-snapshots]: Snapshotter moved to a new traits::snapshot module (was traits::storage); spec-04 §5.2 four-method shape replaces the Phase-1 2-method placeholder.
+- [Phase 04-train-sft-rm-snapshots]: Storage::watch_stream is on the trait unconditionally; rollout-storage pulls futures + tokio-stream non-feature-gated so EmbeddedStorage's BroadcastStream impl always builds.
+- [Phase 04-train-sft-rm-snapshots]: (04-00-b): SQLX_OFFLINE lives in .cargo/config.toml [env], NOT .env (Pitfall 4); sqlx-cli reads .env at startup and refuses to talk to the DB during `cargo sqlx prepare` if SQLX_OFFLINE=true is set there.
+- [Phase 04-train-sft-rm-snapshots]: (04-00-b): rollout-storage postgres feature is OFF by default; sqlx/uuid/tokio-stream/futures moved to `optional = true` with `dep:<crate>` references in the feature list. Phase-2 embedded-only default build remains unaffected.
+- [Phase 04-train-sft-rm-snapshots]: (04-00-b): rollout-backend-vllm `train = ["vllm"]` (train implies vllm) — shares the same dedicated Python OS thread infrastructure. TrainableBackend wiring lands in plan 04-05.
+- [Phase 04-train-sft-rm-snapshots]: (04-00-b): Fixture-violation crates reuse the real algo/snapshots crate names ("rollout-algo-sft" etc.) because the lint's predicate matches on package name. Fixtures are NOT workspace members; the lint reads their Cargo.toml as text via the toml_pkg_name/toml_dep_names helpers (matches Phase-3 #5/#6 pattern; no parallel cargo_metadata idiom introduced).
 
 ## Last Session
 
-- **Last session:** 2026-05-21T18:55:30.788Z
-- **Stopped at:** Phase 4 context gathered
+- **Last session:** 2026-05-21T21:30:00.000Z
+- **Stopped at:** Completed 04-00-b-wave0-crate-registrations-PLAN.md
 
 ## Things Not To Forget
 

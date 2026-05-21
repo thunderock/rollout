@@ -26,10 +26,10 @@ This document captures the v1 requirements with REQ-IDs, organized by category. 
 
 ### Training (`TRAIN-*`)
 
-- [ ] **TRAIN-01** — `rollout-algo-sft`: supervised fine-tuning with packing, loss-on-assistant masking, and standard data loader.
-- [ ] **TRAIN-02** — `rollout-algo-rm`: Bradley-Terry reward-model training with pairwise loss.
-- [ ] **TRAIN-03** — Training-state snapshots (weights + optimizer + LR cursor + step + RNG + algorithm-internal state); deterministic restore.
-- [ ] **TRAIN-04** — Postgres `Storage` backend alongside embedded; identical trait API; CI tested via containerized Postgres.
+- [x] **TRAIN-01** — `rollout-algo-sft`: supervised fine-tuning with packing, loss-on-assistant masking, and standard data loader.
+- [x] **TRAIN-02** — `rollout-algo-rm`: Bradley-Terry reward-model training with pairwise loss.
+- [x] **TRAIN-03** — Training-state snapshots (weights + optimizer + LR cursor + step + RNG + algorithm-internal state); deterministic restore.
+- [x] **TRAIN-04** — Postgres `Storage` backend alongside embedded; identical trait API; CI tested via containerized Postgres.
 
 ### Cloud (`CLOUD-*`)
 
