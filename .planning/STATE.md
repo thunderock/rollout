@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: 2
 status: Executing Phase 04
-stopped_at: Completed 04-02-algo-sft-skeleton-PLAN.md
-last_updated: "2026-05-21T21:52:50.426Z"
+stopped_at: Completed 04-04-algo-rm-PLAN.md
+last_updated: "2026-05-21T22:04:47.461Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 30
-  completed_plans: 26
+  completed_plans: 27
 ---
 
 # STATE — Project Memory
@@ -122,6 +122,7 @@ Phase 3 Wave 3 complete: plan 03-04 shipped 2026-05-20 — `rollout infer batch 
 | Phase 04 P01 | 9m | 2 tasks | 14 files |
 | Phase 04-train-sft-rm-snapshots P03 | 10min | 2 tasks | 15 files |
 | Phase 04-train-sft-rm-snapshots P02-algo-sft-skeleton | 25min | 2 tasks | 15 files |
+| Phase 04-train-sft-rm-snapshots P04-algo-rm | 12min | 2 tasks | 10 files |
 
 ## Decisions
 
@@ -225,11 +226,12 @@ Phase 3 Wave 3 complete: plan 03-04 shipped 2026-05-20 — `rollout infer batch 
 - [Phase 04-train-sft-rm-snapshots]: (04-03): testcontainers integration tests all carry #[ignore = 'requires Docker / testcontainers']; default cargo test --workspace --tests stays Docker-free. CI postgres-integration job opts in via -- --include-ignored --test-threads=1.
 - [Phase 04-train-sft-rm-snapshots]: TrainableBackend::optimizer_step takes &self (interior mutability) so algorithms holding Arc<dyn TrainableBackend> can step without unique ownership. Tests routinely hold a sibling Arc<MockBackend> for weights_snapshot() inspection.
 - [Phase 04-train-sft-rm-snapshots]: Architecture lint (dep_direction_invariants_hold) skips non-Normal DependencyKind. dev/build deps may freely cross layers — they never ship in production binaries.
+- [Phase 04-train-sft-rm-snapshots]: RmAlgo mirrors SftAlgo verbatim; only id, validate_plan head check, step_once row count, and Settings type differ. Future preference-learning crates (DPO/IPO/KTO) can copy this shape.
 
 ## Last Session
 
-- **Last session:** 2026-05-21T21:52:50.420Z
-- **Stopped at:** Completed 04-02-algo-sft-skeleton-PLAN.md
+- **Last session:** 2026-05-21T22:04:39.434Z
+- **Stopped at:** Completed 04-04-algo-rm-PLAN.md
 
 ## Things Not To Forget
 
