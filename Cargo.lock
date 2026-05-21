@@ -2993,7 +2993,13 @@ name = "rollout-algo-rm"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "chrono",
+ "ndarray",
+ "rollout-cloud-local",
  "rollout-core",
+ "rollout-runtime-batch",
+ "rollout-snapshots",
+ "rollout-storage",
  "schemars 1.2.1",
  "serde",
  "serde_json",
@@ -3002,6 +3008,7 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tracing",
+ "ulid",
 ]
 
 [[package]]
@@ -3037,7 +3044,10 @@ dependencies = [
  "postcard",
  "pyo3",
  "pyo3-async-runtimes",
+ "rollout-cloud-local",
  "rollout-core",
+ "rollout-snapshots",
+ "rollout-storage",
  "serde",
  "serde_json",
  "tempfile",
@@ -3045,6 +3055,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
+ "ulid",
 ]
 
 [[package]]
