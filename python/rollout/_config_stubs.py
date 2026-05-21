@@ -3,17 +3,10 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, conint
-
-
-class AlgorithmConfig1(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    kind: Literal['sft']
-    learning_rate: float | None = Field(None, description='Learning rate override.')
 
 
 class AlgorithmConfig2(BaseModel):
@@ -24,9 +17,122 @@ class AlgorithmConfig2(BaseModel):
     kl_coef_init: float | None = Field(None, description='Initial KL coefficient.')
 
 
-class AlgorithmConfig(RootModel[AlgorithmConfig1 | AlgorithmConfig2]):
-    root: AlgorithmConfig1 | AlgorithmConfig2 = Field(
-        ..., description='Algorithm selection.'
+class ContentId(RootModel[str]):
+    root: str = Field(
+        ..., description='blake3 content hash; equality implies content equality.'
+    )
+
+
+class DatasetRef1(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['jsonl_path']
+    path: str = Field(..., description='Filesystem path.')
+
+
+class DatasetRef2(BaseModel):
+    kind: Literal['other']
+
+
+class DatasetRef(RootModel[DatasetRef1 | DatasetRef2]):
+    root: DatasetRef1 | DatasetRef2 = Field(
+        ...,
+        description='Dataset reference. Phase 4 ships `JsonlPath` only; `Other` is enumerated\nfor forward compatibility (Phase 7 HF datasets Hub variant).',
+    )
+
+
+class Duration(BaseModel):
+    nanos: conint(ge=0)
+    secs: conint(ge=0)
+
+
+class LossScope1(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['assistant_only']
+
+
+class LossScope2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['full']
+
+
+class LossScope3(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['custom']
+
+
+class LossScope(RootModel[LossScope1 | LossScope2 | LossScope3]):
+    root: LossScope1 | LossScope2 | LossScope3 = Field(
+        ...,
+        description='Selector for which tokens contribute to the loss in supervised training.',
+    )
+
+
+class LrSchedule(Enum):
+    constant = 'constant'
+    linear = 'linear'
+    cosine = 'cosine'
+
+
+class ModelRef(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    content_id: ContentId | None = Field(
+        None, description='Optional content-addressed pin for reproducibility.'
+    )
+    tokenizer: str | None = Field(
+        None, description="Tokenizer override; default uses the model's own."
+    )
+    uri: str = Field(
+        ..., description='`HuggingFace` repo id, local path, or object-store URI.'
+    )
+
+
+class OptimizerKind(Enum):
+    adam_w = 'adam_w'
+    adam = 'adam'
+    sgd = 'sgd'
+
+
+class OptimizerSettings(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    betas: list[float] | None = Field(
+        [0.9, 0.999],
+        description='`AdamW` betas; defaults to `(0.9, 0.999)`.',
+        max_length=2,
+        min_length=2,
+    )
+    eps: float | None = Field(1e-08, description='`AdamW` eps; default `1e-8`.')
+    kind: OptimizerKind = Field(..., description='Optimizer kind.')
+    lr: float = Field(..., description='Base learning rate.')
+    schedule: LrSchedule | None = Field('constant', description='LR schedule.')
+    warmup_steps: conint(ge=0) | None = Field(0, description='LR warmup step count.')
+    weight_decay: float | None = Field(0.0, description='Weight decay coefficient.')
+
+
+class PackingKind(Enum):
+    concat = 'concat'
+    bucketed = 'bucketed'
+    off = 'off'
+
+
+class PackingPolicy(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: PackingKind = Field(..., description='Packing kind.')
+    max_seq_len: conint(ge=0) = Field(
+        ..., description='Maximum packed sequence length (tokens).'
     )
 
 
@@ -57,6 +163,48 @@ class StorageConfig2(BaseModel):
 class StorageConfig(RootModel[StorageConfig1 | StorageConfig2]):
     root: StorageConfig1 | StorageConfig2 = Field(
         ..., description='Storage backend selection.'
+    )
+
+
+class TrainingBudget(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    max_steps: conint(ge=0) | None = Field(
+        None, description='Maximum number of optimizer steps.'
+    )
+    max_tokens: conint(ge=0) | None = Field(
+        None, description='Maximum tokens to consume.'
+    )
+    max_walltime: Duration | None = Field(
+        None, description='Maximum wall-clock duration.'
+    )
+
+
+class AlgorithmConfig1(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    base_model: ModelRef = Field(..., description='Base model to fine-tune.')
+    budget: TrainingBudget | None = Field(
+        {'max_steps': None, 'max_tokens': None, 'max_walltime': None},
+        description='Training budget.',
+        validate_default=True,
+    )
+    dataset: DatasetRef = Field(..., description='Training dataset.')
+    gradient_accumulation: conint(ge=0) | None = Field(
+        1, description='Gradient accumulation factor.'
+    )
+    kind: Literal['sft']
+    loss_on: LossScope = Field(..., description='Which tokens contribute to loss.')
+    minibatch_size: conint(ge=0) = Field(..., description='Minibatch size (sequences).')
+    optimizer: OptimizerSettings = Field(..., description='Optimizer.')
+    packing: PackingPolicy = Field(..., description='Packing policy.')
+
+
+class AlgorithmConfig(RootModel[AlgorithmConfig1 | AlgorithmConfig2]):
+    root: AlgorithmConfig1 | AlgorithmConfig2 = Field(
+        ..., description='Algorithm selection.'
     )
 
 

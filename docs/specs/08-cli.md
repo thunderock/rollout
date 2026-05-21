@@ -161,6 +161,29 @@ rollout snapshot show    <snapshot-id>
 rollout snapshot prune   --policy keep_last=5
 ```
 
+## 2.5a. Phase 4 implementation notes
+
+Phase 4 ships:
+
+- `rollout train sft --config <toml> [--resume <snapshot_id>] [--dry-run]`
+- `rollout train rm  --config <toml> [--resume <snapshot_id>] [--dry-run]`
+- `rollout snapshot list --run-id <ulid> [--kind <kind>] [--limit <n>]`
+- `rollout snapshot show <snapshot_id>`
+- `rollout snapshot prune --run-id <ulid> [--keep-last <n>] [--keep-labeled]`
+
+Clap derive surface mirrors Phase 3's `rollout infer batch` (see
+`crates/rollout-cli/src/main.rs` after plan 04-06). Backend selection follows
+the same Cargo-feature pattern as Phase 3:
+
+- `--features vllm,train` → production live HF transformers + accelerate path.
+- `--features test-mock-backend` → deterministic SGD against fake `ndarray`
+  weights (used by CI; no HF transformers required).
+
+Runtime backend selection (config-driven, no Cargo feature) defers to
+Phase 8 (`INFER-01`).
+
+**Lands in:** plan `04-06-cli-train-snapshot`.
+
 ### `rollout runs`
 
 ```bash

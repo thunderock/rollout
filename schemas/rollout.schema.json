@@ -39,30 +39,69 @@
       "description": "Algorithm selection.",
       "oneOf": [
         {
-          "description": "Supervised fine-tuning.",
+          "description": "Supervised fine-tuning. References Phase-4 `training::SftSettings`.",
           "type": "object",
           "properties": {
+            "base_model": {
+              "description": "Base model to fine-tune.",
+              "$ref": "#/$defs/ModelRef"
+            },
+            "budget": {
+              "description": "Training budget.",
+              "$ref": "#/$defs/TrainingBudget",
+              "default": {
+                "max_steps": null,
+                "max_tokens": null,
+                "max_walltime": null
+              }
+            },
+            "dataset": {
+              "description": "Training dataset.",
+              "$ref": "#/$defs/DatasetRef"
+            },
+            "gradient_accumulation": {
+              "description": "Gradient accumulation factor.",
+              "type": "integer",
+              "format": "uint32",
+              "default": 1,
+              "minimum": 0
+            },
             "kind": {
               "type": "string",
               "const": "sft"
             },
-            "learning_rate": {
-              "description": "Learning rate override.",
-              "type": [
-                "number",
-                "null"
-              ],
-              "format": "double",
-              "default": null
+            "loss_on": {
+              "description": "Which tokens contribute to loss.",
+              "$ref": "#/$defs/LossScope"
+            },
+            "minibatch_size": {
+              "description": "Minibatch size (sequences).",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "optimizer": {
+              "description": "Optimizer.",
+              "$ref": "#/$defs/OptimizerSettings"
+            },
+            "packing": {
+              "description": "Packing policy.",
+              "$ref": "#/$defs/PackingPolicy"
             }
           },
           "additionalProperties": false,
           "required": [
-            "kind"
+            "kind",
+            "base_model",
+            "optimizer",
+            "dataset",
+            "packing",
+            "loss_on",
+            "minibatch_size"
           ]
         },
         {
-          "description": "Proximal policy optimization.",
+          "description": "Proximal policy optimization (Phase 9 placeholder).",
           "type": "object",
           "properties": {
             "kind": {
@@ -84,6 +123,286 @@
             "kind"
           ]
         }
+      ]
+    },
+    "ContentId": {
+      "description": "blake3 content hash; equality implies content equality.",
+      "type": "string"
+    },
+    "DatasetRef": {
+      "description": "Dataset reference. Phase 4 ships `JsonlPath` only; `Other` is enumerated\nfor forward compatibility (Phase 7 HF datasets Hub variant).",
+      "oneOf": [
+        {
+          "description": "Path to a JSONL file on local disk.",
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "jsonl_path"
+            },
+            "path": {
+              "description": "Filesystem path.",
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "path"
+          ]
+        },
+        {
+          "description": "Forward-compat variant; reading returns `Fatal(ConfigInvalid)` in Phase 4.",
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "other"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        }
+      ]
+    },
+    "Duration": {
+      "type": "object",
+      "properties": {
+        "nanos": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "secs": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "secs",
+        "nanos"
+      ]
+    },
+    "LossScope": {
+      "description": "Selector for which tokens contribute to the loss in supervised training.",
+      "oneOf": [
+        {
+          "description": "Mask loss to assistant-role spans (chat-template aware).",
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "assistant_only"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "description": "Compute loss across all tokens.",
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "full"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "description": "Custom mask specification (placeholder; Phase 7+).",
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "custom"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ]
+        }
+      ]
+    },
+    "LrSchedule": {
+      "description": "Learning-rate schedule kind.",
+      "oneOf": [
+        {
+          "description": "Constant LR.",
+          "type": "string",
+          "const": "constant"
+        },
+        {
+          "description": "Linear warmup + linear decay.",
+          "type": "string",
+          "const": "linear"
+        },
+        {
+          "description": "Linear warmup + cosine decay.",
+          "type": "string",
+          "const": "cosine"
+        }
+      ]
+    },
+    "ModelRef": {
+      "description": "Reference to a model — `HuggingFace` ID, local path, or content-addressed URI.",
+      "type": "object",
+      "properties": {
+        "content_id": {
+          "description": "Optional content-addressed pin for reproducibility.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "tokenizer": {
+          "description": "Tokenizer override; default uses the model's own.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "uri": {
+          "description": "`HuggingFace` repo id, local path, or object-store URI.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "uri"
+      ]
+    },
+    "OptimizerKind": {
+      "description": "Optimizer kind discriminant.",
+      "oneOf": [
+        {
+          "description": "`AdamW` (recommended).",
+          "type": "string",
+          "const": "adam_w"
+        },
+        {
+          "description": "Adam (historical; rarely beats `AdamW`).",
+          "type": "string",
+          "const": "adam"
+        },
+        {
+          "description": "Plain SGD (used by `MockBackend` tests).",
+          "type": "string",
+          "const": "sgd"
+        }
+      ]
+    },
+    "OptimizerSettings": {
+      "description": "Optimizer settings.",
+      "type": "object",
+      "properties": {
+        "betas": {
+          "description": "`AdamW` betas; defaults to `(0.9, 0.999)`.",
+          "type": "array",
+          "default": [
+            0.9,
+            0.999
+          ],
+          "items": {
+            "type": "number",
+            "format": "double"
+          },
+          "maxItems": 2,
+          "minItems": 2
+        },
+        "eps": {
+          "description": "`AdamW` eps; default `1e-8`.",
+          "type": "number",
+          "format": "double",
+          "default": 1e-8
+        },
+        "kind": {
+          "description": "Optimizer kind.",
+          "$ref": "#/$defs/OptimizerKind"
+        },
+        "lr": {
+          "description": "Base learning rate.",
+          "type": "number",
+          "format": "double"
+        },
+        "schedule": {
+          "description": "LR schedule.",
+          "$ref": "#/$defs/LrSchedule",
+          "default": "constant"
+        },
+        "warmup_steps": {
+          "description": "LR warmup step count.",
+          "type": "integer",
+          "format": "uint32",
+          "default": 0,
+          "minimum": 0
+        },
+        "weight_decay": {
+          "description": "Weight decay coefficient.",
+          "type": "number",
+          "format": "double",
+          "default": 0.0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "lr"
+      ]
+    },
+    "PackingKind": {
+      "description": "Sequence packing kind.",
+      "oneOf": [
+        {
+          "description": "Concatenate sequences up to `max_seq_len` with EOS separators.",
+          "type": "string",
+          "const": "concat"
+        },
+        {
+          "description": "Bucketed packing (length-similar grouping). Phase 4 stub; Phase 9 finalises.",
+          "type": "string",
+          "const": "bucketed"
+        },
+        {
+          "description": "No packing — one sequence per minibatch row.",
+          "type": "string",
+          "const": "off"
+        }
+      ]
+    },
+    "PackingPolicy": {
+      "description": "Packing policy.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "description": "Packing kind.",
+          "$ref": "#/$defs/PackingKind"
+        },
+        "max_seq_len": {
+          "description": "Maximum packed sequence length (tokens).",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "max_seq_len"
       ]
     },
     "RunMetadata": {
@@ -151,6 +470,45 @@
           ]
         }
       ]
+    },
+    "TrainingBudget": {
+      "description": "Training budget bounds.",
+      "type": "object",
+      "properties": {
+        "max_steps": {
+          "description": "Maximum number of optimizer steps.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "default": null,
+          "minimum": 0
+        },
+        "max_tokens": {
+          "description": "Maximum tokens to consume.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "default": null,
+          "minimum": 0
+        },
+        "max_walltime": {
+          "description": "Maximum wall-clock duration.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Duration"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

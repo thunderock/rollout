@@ -216,6 +216,62 @@ Per-agent persistent memory across episodes. Used by long-running agents (e.g., 
 
 **Note:** the *content* of episodic memory is the agent's business — a vector store, a JSON log, an SQLite file. The framework provides the storage primitives, not the format.
 
+## 5a. Phase 4 implementation notes
+
+Phase 4 Wave 0 lands the `Snapshotter` trait surface in
+`rollout-core::traits::snapshot`, replacing the Phase-1 2-method placeholder
+that previously lived in `rollout-core::traits::storage`. The shipped trait
+matches §5.2 verbatim:
+
+```rust
+#[async_trait]
+pub trait Snapshotter: Send + Sync {
+    async fn save(&self, request: SnapshotRequest) -> Result<Snapshot, CoreError>;
+    async fn restore(&self, id: &SnapshotId, target: RestoreTarget) -> Result<(), CoreError>;
+    async fn list(&self, filter: SnapshotFilter) -> Result<Vec<Snapshot>, CoreError>;
+    async fn prune(&self, policy: PrunePolicy) -> Result<u64, CoreError>;
+}
+```
+
+**Kinds shipped.** Only `SnapshotKind::TrainState`. The other variants
+(`Buffer`, `Process`, `EpisodicMemory`) are enumerated in the type but
+`SnapshotterImpl::save` returns `Fatal { kind: PluginContract, msg: "Phase N: <kind>" }`
+for non-`TrainState` requests. Their implementations land in Phases 9 / 11 / 8.
+
+**Determinism stack (TRAIN-03).** `accelerate.Accelerator.save_state(dir)` plus
+`load_state(dir)` captures model + optimizer + LR scheduler + RNG state. Phase 4
+adds the determinism preamble (`torch.use_deterministic_algorithms(True)`,
+`torch.backends.cudnn.deterministic=True`, `torch.backends.cudnn.benchmark=False`,
+`CUBLAS_WORKSPACE_CONFIG=:4096:8` set BEFORE `import torch`,
+`torch.set_float32_matmul_precision("highest")`). CPU runs are bit-identical
+unconditionally; CUDA runs are bit-identical IFF same GPU SM + same cuDNN
+version. Cross-machine resume on CUDA is documented as best-effort (this
+constraint already in §5.3).
+
+**Blob layout.** One tar per snapshot, one `ContentId`. After
+`accelerate.save_state(dir)`, the directory is tar'd (deterministic ordering by
+name; no compression — see Phase-4 RESEARCH §"Pitfall 9"), blake3-hashed, and
+written to the `ObjectStore`. Restore: fetch the tar, blake3-verify, extract to
+a tempdir, `accelerate.load_state(tempdir)`.
+
+**Algorithm-internal state (D-DETERM-05).** `PolicyAlgorithm::snapshot_save`
+returns a `Snapshot` whose `meta: serde_json::Value` carries algorithm-specific
+extras (curriculum cursor, schedule overrides) that `accelerate.save_state`
+doesn't capture. The framework owns step/RNG/optimizer; the algorithm owns
+"extras".
+
+**Postgres storage (TRAIN-04).** The `kv` table mirrors `EmbeddedStorage`'s
+namespace semantics so the `Storage` trait works identically. The new
+`Storage::watch_stream(prefix) -> BoxStream<StorageEvent>` method is required
+for cross-process notification (PgListener); the embedded backend wraps its
+in-process broadcast receiver in `BroadcastStream` for the same surface. See
+`crates/rollout-storage/src/postgres/` and Phase-4 RESEARCH §"Postgres
+LISTEN/NOTIFY" for the channel-naming + payload-truncation contract.
+
+**Lands in:** plan `04-00-a` (this trait surface), plan
+`04-01-rollout-snapshots` (`SnapshotterImpl`), plan `04-03-postgres-backend`
+(Postgres `Storage` + `watch_stream`).
+
 ## 6. Snapshot policy
 
 ```rust
