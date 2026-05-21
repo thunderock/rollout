@@ -135,3 +135,92 @@ impl InferenceBackend for VllmBackend {
         Ok(())
     }
 }
+
+#[cfg(feature = "train")]
+#[async_trait]
+impl rollout_core::TrainableBackend for VllmBackend {
+    async fn set_train_mode(&mut self, enabled: bool) -> Result<(), CoreError> {
+        let (reply_tx, reply_rx) = oneshot::channel();
+        self.engine
+            .tx
+            .send(VllmTask::SetTrainMode {
+                enabled,
+                reply: reply_tx,
+            })
+            .await
+            .map_err(|_| transient("vllm engine thread closed"))?;
+        reply_rx
+            .await
+            .map_err(|_| transient("set_train_mode reply dropped"))?
+    }
+
+    async fn forward_with_loss(
+        &self,
+        batch: &rollout_core::TrainBatch,
+        loss_scope: &rollout_core::LossScope,
+    ) -> Result<rollout_core::LossOutput, CoreError> {
+        let (reply_tx, reply_rx) = oneshot::channel();
+        self.engine
+            .tx
+            .send(VllmTask::ForwardWithLoss {
+                rows: batch.rows.clone(),
+                loss_scope: loss_scope.clone(),
+                reply: reply_tx,
+            })
+            .await
+            .map_err(|_| transient("vllm engine thread closed"))?;
+        reply_rx
+            .await
+            .map_err(|_| transient("forward_with_loss reply dropped"))?
+    }
+
+    async fn optimizer_step(
+        &self,
+        grads: rollout_core::GradHandle,
+        opt: &rollout_core::config::OptimizerSettings,
+    ) -> Result<(), CoreError> {
+        let (reply_tx, reply_rx) = oneshot::channel();
+        self.engine
+            .tx
+            .send(VllmTask::OptimizerStep {
+                grads,
+                opt: opt.clone(),
+                reply: reply_tx,
+            })
+            .await
+            .map_err(|_| transient("vllm engine thread closed"))?;
+        reply_rx
+            .await
+            .map_err(|_| transient("optimizer_step reply dropped"))?
+    }
+
+    async fn save_weights(&self) -> Result<ContentId, CoreError> {
+        let target_dir = std::env::temp_dir().join(format!(
+            "rollout-vllm-train-snapshot-{}",
+            ulid::Ulid::new()
+        ));
+        let (reply_tx, reply_rx) = oneshot::channel();
+        self.engine
+            .tx
+            .send(VllmTask::SaveWeights {
+                target_dir,
+                reply: reply_tx,
+            })
+            .await
+            .map_err(|_| transient("vllm engine thread closed"))?;
+        reply_rx
+            .await
+            .map_err(|_| transient("save_weights reply dropped"))?
+    }
+
+    async fn load_weights(&mut self, weights_id: &ContentId) -> Result<(), CoreError> {
+        // Phase-4 simplification: weights_id is the ContentId returned by the
+        // most recent save_weights call (which equals blake3 of the target
+        // path bytes); callers in the snapshot-restore path own the
+        // accelerate_dir bytes and invoke load_weights directly through the
+        // engine via SnapshotterImpl. This trait method is a no-op pending
+        // the Phase-9 PPO actor's real weights-id-to-dir resolver.
+        let _ = weights_id;
+        Ok(())
+    }
+}

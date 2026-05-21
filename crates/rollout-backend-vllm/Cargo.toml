@@ -17,7 +17,7 @@ vllm = []
 # Phase 4: training-mode forward/backward through HF transformers + accelerate
 # via the SAME dedicated Python OS thread. Implies `vllm` because the thread
 # infrastructure is shared. Trait wiring lands in plan 04-05.
-train = ["vllm"]
+train = ["vllm", "dep:ulid"]
 
 [dependencies]
 rollout-core         = { path = "../rollout-core", version = "0.1" }
@@ -31,11 +31,17 @@ tokio                = { workspace = true }
 tracing              = { workspace = true }
 blake3               = { workspace = true }
 postcard             = { workspace = true }
+# Phase-4: minted target_dir for save_weights (used only under --features train).
+ulid                 = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion            = { workspace = true }
 tempfile             = { workspace = true }
 toml                 = { workspace = true }
+# Phase-4 train dev-deps — used by snapshot_resume_live.rs gated test.
+rollout-snapshots    = { path = "../rollout-snapshots" }
+rollout-storage      = { path = "../rollout-storage" }
+rollout-cloud-local  = { path = "../rollout-cloud-local" }
 
 [[bench]]
 name = "throughput"

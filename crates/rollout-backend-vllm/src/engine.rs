@@ -13,6 +13,25 @@ use crate::errors::internal;
 #[cfg(not(feature = "vllm"))]
 use crate::errors::wave2_stub;
 
+/// Active mode of the dedicated Python worker thread (Phase-4).
+///
+/// Phase-4 simplification (D-TRAIN-PATH-02): a backend instance is single-mode
+/// for its lifetime; bidirectional inference↔training swaps land in Phase 9.
+/// `Inference` is reserved for the Phase-9 path that promotes Init →
+/// `ActiveMode::Inference` so `set_train_mode(true)` after generate has a
+/// typed rejection point; in Phase 4 only `None` and `Training` are reached.
+#[cfg(feature = "train")]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[allow(dead_code)]
+pub(crate) enum ActiveMode {
+    /// No mode chosen yet (worker just spun up).
+    None,
+    /// Inference mode (vLLM `AsyncLLMEngine`). Reserved; see Phase-9 note.
+    Inference,
+    /// Training mode (HF transformers + accelerate via `train.py`).
+    Training,
+}
+
 /// Tasks the dedicated Python worker thread accepts.
 ///
 /// `dead_code` is allowed at variant scope because the `vllm`-feature worker
@@ -41,6 +60,50 @@ pub(crate) enum VllmTask {
     },
     /// Tear down the engine and exit the worker thread.
     Shutdown,
+    /// Switch the worker between inference and training modes (Phase 4).
+    #[cfg(feature = "train")]
+    SetTrainMode {
+        /// `true` flips to training mode; `false` tears training state down.
+        enabled: bool,
+        /// Reply channel.
+        reply: oneshot::Sender<Result<(), CoreError>>,
+    },
+    /// Run one training forward + loss pass (Phase 4).
+    #[cfg(feature = "train")]
+    ForwardWithLoss {
+        /// Raw text rows the backend will tokenize.
+        rows: Vec<String>,
+        /// Mask-scope hint.
+        loss_scope: rollout_core::LossScope,
+        /// Reply channel.
+        reply: oneshot::Sender<Result<rollout_core::LossOutput, CoreError>>,
+    },
+    /// Apply accumulated gradients (Phase 4).
+    #[cfg(feature = "train")]
+    OptimizerStep {
+        /// Opaque grad handle from a prior `ForwardWithLoss`.
+        grads: rollout_core::GradHandle,
+        /// Optimizer settings (lr is consumed; full schedule is Phase 9).
+        opt: rollout_core::config::OptimizerSettings,
+        /// Reply channel.
+        reply: oneshot::Sender<Result<(), CoreError>>,
+    },
+    /// Persist Accelerator state via `accelerate.save_state` (Phase 4).
+    #[cfg(feature = "train")]
+    SaveWeights {
+        /// Target directory (caller-supplied tempdir).
+        target_dir: std::path::PathBuf,
+        /// Reply channel.
+        reply: oneshot::Sender<Result<rollout_core::ContentId, CoreError>>,
+    },
+    /// Restore Accelerator state via `accelerate.load_state` (Phase 4).
+    #[cfg(feature = "train")]
+    LoadWeights {
+        /// Source directory.
+        src_dir: std::path::PathBuf,
+        /// Reply channel.
+        reply: oneshot::Sender<Result<(), CoreError>>,
+    },
 }
 
 /// Worker-side handle: send `VllmTask`s into the Python OS thread.
@@ -107,6 +170,48 @@ fn worker_main_stub(mut rx: mpsc::Receiver<VllmTask>) {
     }
 }
 
+/// `train`-feature worker (Phase 4): no live vLLM engine; the dedicated Python
+/// thread serves training tasks only. Built when `train` is on but `vllm` is
+/// not — currently impossible because `train = ["vllm"]` in Cargo.toml, but
+/// guarded explicitly so a future fork can opt out.
+///
+/// Actual `--features train` builds run `worker_main_vllm` below, which now
+/// dispatches BOTH inference and train arms.
+#[cfg(all(feature = "train", not(feature = "vllm")))]
+#[allow(clippy::needless_pass_by_value, dead_code)]
+fn worker_main_train_only(mut rx: mpsc::Receiver<VllmTask>, secret_token: Option<String>) {
+    let mut active_mode = ActiveMode::None;
+    while let Some(task) = rx.blocking_recv() {
+        match task {
+            VllmTask::Shutdown => break,
+            VllmTask::Init { model, reply } => {
+                let _ = reply.send(Ok(model.uri.clone()));
+            }
+            VllmTask::Generate { reply, .. } => {
+                let _ = reply.send(Err(crate::errors::transient(
+                    "Generate not supported under --features train without vllm",
+                )));
+            }
+            VllmTask::SetTrainMode { enabled, reply } => {
+                let r = crate::train::run_set_train_mode(enabled, &mut active_mode, secret_token.as_ref());
+                let _ = reply.send(r);
+            }
+            VllmTask::ForwardWithLoss { rows, loss_scope, reply } => {
+                let _ = reply.send(crate::train::run_forward_with_loss(&rows, &loss_scope));
+            }
+            VllmTask::OptimizerStep { grads, opt, reply } => {
+                let _ = reply.send(crate::train::run_optimizer_step(&grads, &opt));
+            }
+            VllmTask::SaveWeights { target_dir, reply } => {
+                let _ = reply.send(crate::train::run_save_weights(&target_dir));
+            }
+            VllmTask::LoadWeights { src_dir, reply } => {
+                let _ = reply.send(crate::train::run_load_weights(&src_dir));
+            }
+        }
+    }
+}
+
 /// `vllm`-feature worker (Wave 3): imports `rollout.backends.vllm.engine`,
 /// then dispatches Init/Generate through the live `AsyncLLMEngine`. Generate
 /// uses the `py.detach(|| rt.block_on(into_future(coro)))` bridge per RESEARCH
@@ -118,53 +223,63 @@ fn worker_main_vllm(mut rx: mpsc::Receiver<VllmTask>, secret_token: Option<Strin
     use pyo3::prelude::*;
     use pyo3::types::PyDict;
 
-    // Pitfall 10: env-write BEFORE `py.import("rollout.backends.vllm.engine")`
-    // (which top-level-imports `vllm`, which top-level-imports
-    // `huggingface_hub`, which reads `os.environ["HF_TOKEN"]`).
-    let import_result: PyResult<Py<PyModule>> = Python::attach(|py| {
-        if let Some(token) = &secret_token {
-            let os = py.import("os")?;
-            let environ: Bound<'_, PyDict> = os.getattr("environ")?.cast_into()?;
-            environ.set_item("HF_TOKEN", token)?;
-        }
-        let module = py.import("rollout.backends.vllm.engine")?;
-        Ok(module.unbind())
-    });
+    // Phase-4: track active mode so train-side calls can refuse mid-run swaps.
+    #[cfg(feature = "train")]
+    let mut active_mode = ActiveMode::None;
 
-    let module = match import_result {
-        Ok(m) => m,
-        Err(e) => {
-            let err_str = e.to_string();
-            while let Some(task) = rx.blocking_recv() {
-                match task {
-                    VllmTask::Shutdown => break,
-                    VllmTask::Init { reply, .. } => {
-                        let _ = reply.send(Err(crate::errors::transient(&format!(
-                            "vllm module import failed: {err_str}"
-                        ))));
-                    }
-                    VllmTask::Generate { reply, .. } => {
-                        let _ = reply.send(Err(crate::errors::transient(&format!(
-                            "vllm module import failed: {err_str}"
-                        ))));
-                    }
-                }
+    // Phase-4: under `--features train` we may receive train tasks BEFORE any
+    // inference task — and the inference module import is non-trivial (pulls
+    // vllm, which is heavyweight). Defer the import until the first inference
+    // task arrives.
+    let mut inference_module: Option<Py<PyModule>> = None;
+    let mut inference_import_err: Option<String> = None;
+
+    // Helper: lazily import the inference module on first inference task.
+    let import_inference =
+        |inference_module: &mut Option<Py<PyModule>>, inference_import_err: &mut Option<String>| {
+            if inference_module.is_some() || inference_import_err.is_some() {
+                return;
             }
-            return;
-        }
-    };
+            // Pitfall 10: env-write BEFORE py.import. Phase-3 secret_token contract.
+            let import_result: PyResult<Py<PyModule>> = Python::attach(|py| {
+                if let Some(token) = &secret_token {
+                    let os = py.import("os")?;
+                    let environ: Bound<'_, PyDict> = os.getattr("environ")?.cast_into()?;
+                    environ.set_item("HF_TOKEN", token)?;
+                }
+                let module = py.import("rollout.backends.vllm.engine")?;
+                Ok(module.unbind())
+            });
+            match import_result {
+                Ok(m) => *inference_module = Some(m),
+                Err(e) => *inference_import_err = Some(e.to_string()),
+            }
+        };
 
     while let Some(task) = rx.blocking_recv() {
         match task {
             VllmTask::Shutdown => {
-                let _ = Python::attach(|py| -> PyResult<()> {
-                    let _ = module.bind(py).call_method0("shutdown");
-                    Ok(())
-                });
+                if let Some(m) = inference_module.as_ref() {
+                    let _ = Python::attach(|py| -> PyResult<()> {
+                        let _ = m.bind(py).call_method0("shutdown");
+                        Ok(())
+                    });
+                }
                 break;
             }
             VllmTask::Init { model, reply } => {
-                let _ = reply.send(run_init(&module, &model));
+                import_inference(&mut inference_module, &mut inference_import_err);
+                match (&inference_module, &inference_import_err) {
+                    (Some(m), _) => {
+                        let _ = reply.send(run_init(m, &model));
+                    }
+                    (_, Some(e)) => {
+                        let _ = reply.send(Err(crate::errors::transient(&format!(
+                            "vllm module import failed: {e}"
+                        ))));
+                    }
+                    _ => unreachable!(),
+                }
             }
             VllmTask::Generate {
                 prompt,
@@ -172,7 +287,40 @@ fn worker_main_vllm(mut rx: mpsc::Receiver<VllmTask>, secret_token: Option<Strin
                 request_id,
                 reply,
             } => {
-                let _ = reply.send(run_generate(&module, &prompt, &params, &request_id));
+                import_inference(&mut inference_module, &mut inference_import_err);
+                match (&inference_module, &inference_import_err) {
+                    (Some(m), _) => {
+                        let _ = reply.send(run_generate(m, &prompt, &params, &request_id));
+                    }
+                    (_, Some(e)) => {
+                        let _ = reply.send(Err(crate::errors::transient(&format!(
+                            "vllm module import failed: {e}"
+                        ))));
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            #[cfg(feature = "train")]
+            VllmTask::SetTrainMode { enabled, reply } => {
+                let r =
+                    crate::train::run_set_train_mode(enabled, &mut active_mode, secret_token.as_ref());
+                let _ = reply.send(r);
+            }
+            #[cfg(feature = "train")]
+            VllmTask::ForwardWithLoss { rows, loss_scope, reply } => {
+                let _ = reply.send(crate::train::run_forward_with_loss(&rows, &loss_scope));
+            }
+            #[cfg(feature = "train")]
+            VllmTask::OptimizerStep { grads, opt, reply } => {
+                let _ = reply.send(crate::train::run_optimizer_step(&grads, &opt));
+            }
+            #[cfg(feature = "train")]
+            VllmTask::SaveWeights { target_dir, reply } => {
+                let _ = reply.send(crate::train::run_save_weights(&target_dir));
+            }
+            #[cfg(feature = "train")]
+            VllmTask::LoadWeights { src_dir, reply } => {
+                let _ = reply.send(crate::train::run_load_weights(&src_dir));
             }
         }
     }

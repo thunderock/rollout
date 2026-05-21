@@ -17,5 +17,7 @@ mod engine;
 mod errors;
 #[cfg(feature = "vllm")]
 mod python_glue;
+#[cfg(feature = "train")]
+mod train;
 
 pub use backend::VllmBackend;
