@@ -1,0 +1,255 @@
+---
+phase: 04-train-sft-rm-snapshots
+plan: 00-a
+subsystem: core-traits
+tags: [rollout-core, traits, snapshot, train, sft, rm, policy-algorithm, trainable-backend, snapshotter, watch-stream]
+
+# Dependency graph
+requires:
+  - phase: 03-inference-batch
+    provides: "InferenceBackend trait + SamplingParams + ModelRef + ContentId/RunId/WorkerId surface that TrainableBackend extends and Snapshot.run_id references"
+  - phase: 02-local-substrate
+    provides: "Storage / StorageTxn / ObjectStore / EventEmitter trait surface that AlgoDependencies wraps; EmbeddedStorage broadcast Watch that BroadcastStream wraps"
+provides:
+  - "PolicyAlgorithm trait at the spec 02 §2 surface (id, Settings assoc type, from_settings, required_roles, validate_plan, run, snapshot_save, snapshot_restore)"
+  - "TrainableBackend: InferenceBackend sibling trait (set_train_mode, forward_with_loss, optimizer_step, save_weights, load_weights)"
+  - "Snapshotter trait at the spec 04 §5.2 four-method surface (save/restore/list/prune); legacy 2-method placeholder removed"
+  - "Storage::watch_stream parallel method returning BoxStream<StorageEvent>; EmbeddedStorage wraps broadcast::Receiver in BroadcastStream"
+  - "WorkerRole::LearnerWorker variant for SFT/RM/Phase-9 learners"
+  - "~32 supporting types: AlgorithmId, AlgoDependencies, AlgoContext, Plan, RunOutcome, ConfigViolation, GradHandle, TrainBatch, LossOutput, LossScope, MaskSpec, Snapshot, SnapshotKind, SnapshotPart, SnapshotId, RestoreTarget, SnapshotRequest, SnapshotFilter, PrunePolicy, RetentionPolicy, SnapshotPolicy, PeriodicPolicy, OptimizerSettings, OptimizerKind, LrSchedule, TrainingBudget, DatasetRef, PackingPolicy, PackingKind, SftSettings, RmSettings, RmHeadKind"
+affects: [phase-04 plan 04-01 (Snapshotter impl), plan 04-02 (SftAlgo impl), plan 04-03 (Postgres Storage + watch_stream), plan 04-04 (RmAlgo impl), plan 04-05 (TrainableBackend vllm impl), plan 04-06 (CLI), plan 04-07 (docs/smoke)]
+
+# Tech tracking
+tech-stack:
+  added: [chrono = "0.4" (rollout-core dep, for Snapshot.created_at DateTime<Utc>), futures = "0.3" (rollout-core + rollout-storage, for BoxStream), tokio-util (rollout-core dep, for CancellationToken in AlgoContext), tokio-stream wrappers::BroadcastStream (rollout-storage)]
+  patterns:
+    - "Spec-conformant trait surface lands BEFORE any concrete impls (Wave-0 trait surgery, mirrors 02-00 / 03-00)"
+    - "Object-safety break is explicit: PolicyAlgorithm carries an associated `Settings` type, so callers thread it via generic bound; documented in tests/trait_surface.rs"
+    - "Schemars JsonSchema with #[schemars(with = \"String\")] on opaque wrapper fields (ContentId/RunId/WorkerId + DateTime<Utc> + SmolStr) renders as strings"
+    - "Snapshot.meta: serde_json::Value carries algorithm-internal extras (D-DETERM-05) without leaking algorithm fields into the framework-owned snapshot row"
+    - "#[non_exhaustive] on every new struct that may grow fields (TrainBatch, LossOutput, Plan)"
+    - "serde defaults via private fn helpers (default_keep_last, default_betas, default_grad_accum, etc.)"
+    - "Workspace deps for chrono + futures + tokio-util pre-pinned in Cargo.toml so per-crate adds are workspace=true"
+
+key-files:
+  created:
+    - "crates/rollout-core/src/traits/snapshot.rs"
+    - "crates/rollout-core/src/config/training.rs"
+    - ".planning/phases/04-train-sft-rm-snapshots/04-00-a-wave0-trait-surface-SUMMARY.md"
+  modified:
+    - "crates/rollout-core/src/traits/algorithm.rs (Phase-1 placeholder replaced wholesale)"
+    - "crates/rollout-core/src/traits/backend.rs (TrainableBackend + GradHandle + TrainBatch + LossOutput + LossScope + MaskSpec appended)"
+    - "crates/rollout-core/src/traits/storage.rs (added watch_stream; removed legacy 2-method Snapshotter)"
+    - "crates/rollout-core/src/traits/worker.rs (added WorkerRole::LearnerWorker)"
+    - "crates/rollout-core/src/traits/mod.rs (snapshot module declared; expanded re-exports)"
+    - "crates/rollout-core/src/config/mod.rs (training submodule + AlgorithmConfig::Sft(Box<SftSettings>))"
+    - "crates/rollout-core/src/lib.rs (Phase-4 type re-exports)"
+    - "crates/rollout-core/Cargo.toml (chrono + futures + tokio-util workspace deps)"
+    - "crates/rollout-core/tests/trait_surface.rs (Phase-4 extensions: TrainableBackend / Snapshotter object-safety, SnapshotKind serde round-trip, LearnerWorker round-trip, type-existence check; updated to handle PolicyAlgorithm non-object-safe shape)"
+    - "crates/rollout-storage/Cargo.toml (futures + tokio-stream unconditional deps for watch_stream impl)"
+    - "crates/rollout-storage/src/embedded/mod.rs (added watch_stream impl wrapping broadcast::Receiver in BroadcastStream)"
+    - "docs/specs/02-algorithms.md (§2a Phase 4 implementation notes)"
+    - "docs/specs/04-storage-snapshots.md (§5a Phase 4 implementation notes)"
+    - "docs/specs/08-cli.md (§2.5a Phase 4 implementation notes)"
+    - "schemas/rollout.schema.json + python/rollout/_config_stubs.py (regenerated by cargo xtask schema-gen)"
+
+key-decisions:
+  - "PolicyAlgorithm with associated `Settings` type intentionally breaks object-safety; callers thread it as a generic parameter, not `Arc<dyn ...>`. Tests use `fn algorithm<T: PolicyAlgorithm>()` instead of `let _: Arc<dyn PolicyAlgorithm>`."
+  - "AlgorithmConfig::Sft wraps SftSettings in Box because the Phase-4 struct (232 bytes) is much larger than PpoSettings (16 bytes); clippy::large_enum_variant required boxing."
+  - "Snapshot.created_at uses #[schemars(with = \"String\")] (RFC3339) because schemars 1.x doesn't auto-impl JsonSchema for chrono::DateTime<Utc> — matches the ContentId / SmolStr opaque-wrapper pattern."
+  - "watch_stream on EmbeddedStorage drops broadcast::Lagged errors via filter_map — same lossy-under-backpressure semantics as the underlying broadcast channel; Postgres backend lands lossless variant via PgListener in plan 04-03."
+  - "rollout-storage now pulls futures + tokio-stream unconditionally (not gated on `postgres` feature) so watch_stream works on the embedded backend without needing the Postgres feature."
+  - "AlgoDependencies.backend: Arc<dyn TrainableBackend> (not Arc<dyn InferenceBackend>) — algorithms always get the trainable variant; inference-only algorithms (none in v1) would need a separate dep struct."
+  - "Snapshotter trait moved to a NEW module traits::snapshot rather than staying in traits::storage — keeps storage focused on KV/txn surface, mirrors the spec-04 §5 / §5.2 separation."
+
+patterns-established:
+  - "Pattern: Phase-N implementation-notes annotations live in §Na sub-sections of the relevant spec, mirroring Phase-3's pattern. Spec 02 §2a + Spec 04 §5a + Spec 08 §2.5a all follow the same structure (resolved decisions list → blob/contract details → 'Lands in: plan X' pointer)."
+  - "Pattern: Trait surgery happens in two commits — feat() for code+test+spec-02-annotation in one commit (Task 1), docs() for downstream-spec annotations + schema-gen drift reconciliation in another commit (Task 2). Keeps the rebuild-everything diff focused."
+  - "Pattern: When a Wave-0 plan adds a method to a trait already implemented by other crates (Storage::watch_stream → EmbeddedStorage), the trait-adder fixes the impl in the same plan (Rule 3 deviation: blocking issue inside the workspace build). Don't defer that to the impl crate's plan."
+
+requirements-completed: [TRAIN-01, TRAIN-02, TRAIN-03, TRAIN-04, DOCS-01, DOCS-02, DOCS-03]
+
+# Metrics
+duration: 19min
+completed: 2026-05-21
+---
+
+# Phase 4 Plan 00-a: Wave-0 Trait Surface Summary
+
+**Phase-4 trait surgery in rollout-core: spec-conformant PolicyAlgorithm + TrainableBackend: InferenceBackend sibling trait + four-method Snapshotter + Storage::watch_stream + WorkerRole::LearnerWorker + ~32 supporting types; legacy 2-method Snapshotter placeholder gone.**
+
+## Performance
+
+- **Duration:** ~19 min
+- **Started:** 2026-05-21T20:45:00Z (approx)
+- **Completed:** 2026-05-21T21:04:00Z
+- **Tasks:** 2
+- **Files modified:** 18 (incl. 2 created in rollout-core + 1 SUMMARY)
+
+## Accomplishments
+
+- **PolicyAlgorithm** is now the full spec 02 §2 surface (eight items: `id`, `Settings` associated type, `from_settings`, `required_roles`, `validate_plan`, `run`, `snapshot_save`, `snapshot_restore`). Phase-1 single-method placeholder is gone.
+- **TrainableBackend: InferenceBackend** sibling trait lands with the five training methods (`set_train_mode`, `forward_with_loss`, `optimizer_step`, `save_weights`, `load_weights`) plus the opaque `GradHandle` / `TrainBatch` / `LossOutput` / `LossScope` / `MaskSpec` supporting types.
+- **Snapshotter** moves to a new `traits::snapshot` module at the spec 04 §5.2 four-method surface (`save / restore / list / prune`). The legacy 2-method placeholder in `traits::storage` is removed.
+- **Storage::watch_stream** parallel method (`BoxStream<StorageEvent>`) added; `EmbeddedStorage` impls it via `BroadcastStream`.
+- **WorkerRole::LearnerWorker** variant added so SFT/RM/Phase-9 learners can declare `required_roles()`.
+- **~32 supporting types** land across `traits::{algorithm, backend, snapshot}` and `config::training` (full list in frontmatter `provides`).
+- **Spec annotations** in `docs/specs/{02-algorithms, 04-storage-snapshots, 08-cli}.md` per AGENTS.md §4.
+- **schema-gen drift** reconciled: `schemas/rollout.schema.json` + `python/rollout/_config_stubs.py` regenerated for the new `training::SftSettings` reachable from `AlgorithmConfig::Sft`. Schema-drift test green.
+- **Tests:** `trait_surface.rs` extended with six Phase-4 assertions (TrainableBackend object-safety, Snapshotter object-safety, SnapshotKind serde round-trip, LearnerWorker serde round-trip, SnapshotFilter default, type-existence check). 19 tests pass; `dependency_direction` 7-invariant tests still green.
+
+## Task Commits
+
+1. **Task 1: PolicyAlgorithm + TrainableBackend + Snapshotter trait surgery** — `ee7c908` (feat)
+2. **Task 2: Spec edits 04 §5a + 08 §2.5a + lib.rs final wiring + clippy pass + schema-gen** — `4cacbbe` (docs)
+
+## Files Created/Modified
+
+**Created:**
+- `crates/rollout-core/src/traits/snapshot.rs` — `Snapshotter` trait + 12 supporting types
+- `crates/rollout-core/src/config/training.rs` — 12 training-side config types
+
+**Modified:**
+- `crates/rollout-core/src/traits/algorithm.rs` — Wholesale replace: Phase-4 PolicyAlgorithm + AlgoDependencies + AlgoContext + Plan + AlgorithmId + RunOutcome + ConfigViolation
+- `crates/rollout-core/src/traits/backend.rs` — Appended Phase-4 training surface (TrainableBackend + GradHandle + TrainBatch + LossOutput + LossScope + MaskSpec)
+- `crates/rollout-core/src/traits/storage.rs` — Added watch_stream method; removed legacy 2-method Snapshotter
+- `crates/rollout-core/src/traits/worker.rs` — Added `WorkerRole::LearnerWorker`
+- `crates/rollout-core/src/traits/mod.rs` — Wired `snapshot` module + Phase-4 re-exports
+- `crates/rollout-core/src/config/mod.rs` — `training` submodule + `AlgorithmConfig::Sft(Box<SftSettings>)` references Phase-4 struct (placeholder removed)
+- `crates/rollout-core/src/lib.rs` — Phase-4 type re-exports
+- `crates/rollout-core/Cargo.toml` — chrono + futures + tokio-util workspace deps
+- `crates/rollout-core/tests/trait_surface.rs` — Phase-4 extensions section + adjusted existing PolicyAlgorithm check for non-object-safety
+- `crates/rollout-storage/Cargo.toml` — futures + tokio-stream unconditional (no longer feature-gated to `postgres`)
+- `crates/rollout-storage/src/embedded/mod.rs` — `watch_stream` impl wrapping `broadcast::Receiver` in `BroadcastStream`
+- `docs/specs/02-algorithms.md` — §2a Phase 4 implementation notes
+- `docs/specs/04-storage-snapshots.md` — §5a Phase 4 implementation notes
+- `docs/specs/08-cli.md` — §2.5a Phase 4 implementation notes
+- `schemas/rollout.schema.json`, `python/rollout/_config_stubs.py` — schema-gen drift reconciliation
+
+## Decisions Made
+
+(See `key-decisions` frontmatter for the full list; highlights below.)
+
+- **PolicyAlgorithm is intentionally non-object-safe.** The associated `Settings` type makes `dyn PolicyAlgorithm` impossible. Callers thread it as a generic. The existing `fn algorithm()` test in `trait_surface.rs` had to be rewritten from `Arc<dyn PolicyAlgorithm>` form to `fn algorithm<T: PolicyAlgorithm>()` — this is explicit and documented inline.
+- **AlgorithmConfig::Sft is now `Box<SftSettings>`.** The Phase-4 `SftSettings` is 232 bytes (vs PpoSettings's 16); `clippy::large_enum_variant` requires boxing.
+- **`Snapshot.created_at: DateTime<Utc>` uses `#[schemars(with = "String")]`.** Schemars 1.x has no built-in chrono support; RFC3339 string is the canonical wire form anyway.
+- **Snapshotter moved to a new module** (`traits::snapshot`) rather than staying in `traits::storage` — matches the spec-04 §5 / §5.2 separation and keeps the storage module focused on KV/txn.
+- **rollout-storage adds `futures` + `tokio-stream` unconditionally.** The Phase-4 plan listed these only behind the `postgres` feature in 04-00-b's planned Cargo.toml, but `watch_stream` lives on the trait and EmbeddedStorage must implement it, so the deps must be unconditional. Adjusted in this plan rather than deferring.
+
+## Deviations from Plan
+
+### Auto-fixed Issues
+
+**1. [Rule 3 - Blocking] EmbeddedStorage `watch_stream` impl + unconditional futures/tokio-stream deps in `rollout-storage`**
+- **Found during:** Task 1, after extending `Storage` trait with `watch_stream`. Workspace build failed in `rollout-storage` with `E0046: not all trait items implemented, missing: watch_stream` on `impl Storage for EmbeddedStorage`.
+- **Issue:** The plan's 04-00-b Cargo.toml puts `futures` + `tokio-stream` behind a `postgres` Cargo feature, but `Storage::watch_stream` is on the trait itself — every impl (including the always-on EmbeddedStorage) needs `BoxStream`. Without the deps unconditional, `cargo build --workspace` is broken from the moment 04-00-a lands.
+- **Fix:** Moved `futures` + `tokio-stream` out of the `postgres = [...]` feature into the unconditional `[dependencies]` table in `crates/rollout-storage/Cargo.toml`; implemented `watch_stream` in `embedded/mod.rs` by wrapping `broadcast::Receiver<StorageEvent>` in `tokio_stream::wrappers::BroadcastStream` and `filter_map`-ing away `BroadcastStreamRecvError::Lagged` (same lossy-under-backpressure semantics as the underlying broadcast channel).
+- **Files modified:** `crates/rollout-storage/Cargo.toml`, `crates/rollout-storage/src/embedded/mod.rs`.
+- **Verification:** `cargo build --workspace` succeeds; `cargo test --workspace --tests` shows no rollout-storage regressions; the Phase-4 `watch_stream` is callable from downstream crates.
+- **Committed in:** `ee7c908` (Task 1 commit — bundled because the trait change and its workspace-build fix must land atomically).
+
+**2. [Rule 1 - Bug] `AlgorithmConfig::Sft(SftSettings)` triggered `clippy::large_enum_variant`**
+- **Found during:** Task 1, `cargo clippy -p rollout-core --all-targets -- -D warnings`.
+- **Issue:** The Phase-4 `training::SftSettings` is 232 bytes (vs `PpoSettings`'s 16). Clippy's `large_enum_variant` lint fails at the strictness level the workspace runs at.
+- **Fix:** Boxed the variant: `AlgorithmConfig::Sft(Box<training::SftSettings>)`.
+- **Files modified:** `crates/rollout-core/src/config/mod.rs`.
+- **Verification:** `cargo clippy -p rollout-core --all-targets -- -D warnings` exits 0; the boxed shape round-trips through serde transparently because serde sees through the `Box`.
+- **Committed in:** `ee7c908`.
+
+**3. [Rule 1 - Bug] `Snapshot.created_at: DateTime<Utc>` lacked a `JsonSchema` impl**
+- **Found during:** Task 1, `cargo check -p rollout-core` after creating `snapshot.rs`.
+- **Issue:** Schemars 1.x doesn't provide a default `JsonSchema` impl for `chrono::DateTime<Utc>`; `cargo check` failed with `E0277: the trait bound DateTime<Utc>: JsonSchema is not satisfied`.
+- **Fix:** Added `#[schemars(with = "String")]` on the field — the same opaque-wrapper pattern used for `ContentId` / `RunId` / `WorkerId` / `SmolStr` elsewhere in the surface; the canonical wire form for `DateTime<Utc>` is RFC3339 anyway.
+- **Files modified:** `crates/rollout-core/src/traits/snapshot.rs`.
+- **Verification:** `cargo check -p rollout-core` succeeds; the generated JSON schema renders `created_at` as a string field.
+- **Committed in:** `ee7c908`.
+
+**4. [Rule 1 - Bug] Existing `fn algorithm()` test in `trait_surface.rs` no longer compiled**
+- **Found during:** Task 1, after replacing the `PolicyAlgorithm` trait wholesale.
+- **Issue:** The Phase-1 placeholder was object-safe (single async method); the existing test `let _: Option<Arc<dyn PolicyAlgorithm>> = None` exercised that. The Phase-4 trait has an associated `Settings` type, so `dyn PolicyAlgorithm` is impossible.
+- **Fix:** Rewrote the test as a generic-bound function `fn algorithm<T: PolicyAlgorithm>()` with an inner `check_send_sync<T: Send + Sync>()` assertion. Also removed the matching `assert_send_sync::<dyn PolicyAlgorithm>()` line from `send_sync_bounds`. Documented inline in the test file with a comment cross-referencing D-WAVE0-02.
+- **Files modified:** `crates/rollout-core/tests/trait_surface.rs`.
+- **Verification:** `cargo test -p rollout-core --test trait_surface` exits 0 with 19 tests green (previously 13).
+- **Committed in:** `ee7c908`.
+
+**5. [Rule 1 - Bug] Clippy `doc_markdown` and `used_underscore_items` violations**
+- **Found during:** Task 1, `cargo clippy -p rollout-core --all-targets -- -D warnings`.
+- **Issue:** Six clippy lints fired (5 × `doc_markdown` on `MockBackend`/`AdamW`/`TrainState`/`snake_case`; 1 × `used_underscore_items` on the inner `_send_sync` helper).
+- **Fix:** Backticked the identifiers; renamed `_send_sync` to `check_send_sync`.
+- **Files modified:** `crates/rollout-core/src/traits/{algorithm.rs, backend.rs, snapshot.rs}`, `crates/rollout-core/src/config/training.rs`, `crates/rollout-core/tests/trait_surface.rs`.
+- **Verification:** `cargo clippy -p rollout-core --all-targets -- -D warnings` + `cargo clippy --workspace --all-targets -- -D warnings` both exit 0.
+- **Committed in:** `ee7c908`.
+
+---
+
+**Total deviations:** 5 auto-fixed (1 blocking + 4 mechanical bug fixes). 0 architectural decisions required.
+
+**Impact on plan:** None of the deviations expanded scope. The blocking fix (#1 — EmbeddedStorage `watch_stream` + unconditional deps) is a Wave-0-by-necessity addition: the trait change and its workspace-build fix must land atomically or `cargo build --workspace` is broken for every parallel agent. The mechanical fixes (#2..5) are clippy-cleanup that the plan implicitly required via DOCS-03 + acceptance-criteria `cargo clippy ... -- -D warnings`.
+
+## Issues Encountered
+
+- **Tooling race on first Edit attempts.** Two of the initial Edit calls returned "file has been modified since read" system reminders that *appeared* to show the file reverted to its pre-edit state. In fact the edits had succeeded; the system reminders were stale snapshots. Worked around by `git status` + `grep` between Edit calls to determine actual state, rather than trusting the reminder snapshots. No data loss; all intended changes landed.
+- **Parallel-agent file-conflict scope.** While 04-00-a executed, plan 04-00-b had already landed `crates/rollout-{algo-sft,algo-rm,snapshots}/` and added workspace deps + new workspace members. This plan committed only the 04-00-a files (rollout-core surface + rollout-storage `watch_stream` impl + 3 spec annotations + schema-gen drift); the 04-00-b changes (Cargo.lock, Cargo.toml workspace members, the new crate stubs, dependency_direction lint extensions, .planning/STATE.md edits) are explicitly *not* in either of this plan's commits — they're committed in `39aacc5` (04-00-b's task).
+
+## User Setup Required
+
+None — no external service configuration. This plan is pure trait surface + spec annotations.
+
+## Next Phase Readiness
+
+Wave-0 trait surface for Phase 4 is complete and the workspace builds + tests + clippy clean. Downstream plans can now consume:
+
+- `PolicyAlgorithm` + `AlgoDependencies` + `AlgoContext` + `RunOutcome` (plan 04-02 SFT impl, 04-04 RM impl)
+- `TrainableBackend` (plan 04-05 vllm-train impl)
+- `Snapshotter` + `Snapshot` + `SnapshotKind::TrainState` + `RestoreTarget` + `SnapshotRequest` + `SnapshotFilter` + `PrunePolicy` + `RetentionPolicy` + `SnapshotPolicy` + `PeriodicPolicy` (plan 04-01 SnapshotterImpl)
+- `Storage::watch_stream` (plan 04-03 Postgres backend; PgListener-driven impl + the EmbeddedStorage BroadcastStream impl already shipped here)
+- `WorkerRole::LearnerWorker` (plan 04-02 / 04-04 `required_roles()`)
+- `OptimizerSettings` + `LrSchedule` + `TrainingBudget` + `DatasetRef` + `PackingPolicy` + `LossScope` + `SftSettings` + `RmSettings` (plans 04-02 + 04-04 config types)
+
+No blockers. The legacy 2-method Snapshotter removal is verified to not break any downstream crate (`grep` confirms no external `use traits::storage::Snapshotter`).
+
+## Self-Check: PASSED
+
+**Files present:**
+- FOUND: `crates/rollout-core/src/traits/snapshot.rs`
+- FOUND: `crates/rollout-core/src/config/training.rs`
+- FOUND: `crates/rollout-core/src/traits/algorithm.rs` (Phase-4 surface)
+- FOUND: `docs/specs/02-algorithms.md` (§2a)
+- FOUND: `docs/specs/04-storage-snapshots.md` (§5a)
+- FOUND: `docs/specs/08-cli.md` (§2.5a)
+- FOUND: `crates/rollout-storage/src/embedded/mod.rs` (watch_stream)
+
+**Commits present (verified via `git log --oneline | grep`):**
+- FOUND: `ee7c908` (feat(04-00-a-01): rollout-core trait surface)
+- FOUND: `4cacbbe` (docs(04-00-a-02): spec edits 04 §5a + 08 §2.5a + schema-gen)
+
+**Acceptance grep checks (all PASSED):**
+- `grep -q 'trait TrainableBackend: InferenceBackend' crates/rollout-core/src/traits/backend.rs` ✓
+- `grep -q 'async fn save_weights' crates/rollout-core/src/traits/backend.rs` ✓
+- `grep -q 'trait Snapshotter' crates/rollout-core/src/traits/snapshot.rs` ✓
+- `grep -q 'async fn prune' crates/rollout-core/src/traits/snapshot.rs` ✓
+- `grep -q 'fn watch_stream' crates/rollout-core/src/traits/storage.rs` ✓
+- `! grep -q 'pub trait Snapshotter' crates/rollout-core/src/traits/storage.rs` ✓ (legacy gone)
+- `grep -q 'LearnerWorker' crates/rollout-core/src/traits/worker.rs` ✓
+- `grep -q 'pub struct SftSettings' crates/rollout-core/src/config/training.rs` ✓
+- `grep -q 'pub struct RmSettings' crates/rollout-core/src/config/training.rs` ✓
+- `grep -q 'pub struct OptimizerSettings' crates/rollout-core/src/config/training.rs` ✓
+- `grep -q '## 2a. Phase 4 implementation notes' docs/specs/02-algorithms.md` ✓
+- `grep -q '## 5a. Phase 4 implementation notes' docs/specs/04-storage-snapshots.md` ✓
+- `grep -q 'SnapshotKind::TrainState' docs/specs/04-storage-snapshots.md` ✓
+- `grep -q '## 2.5a. Phase 4 implementation notes' docs/specs/08-cli.md` ✓
+- `grep -q 'rollout train sft' docs/specs/08-cli.md` ✓
+
+**Builds + tests:**
+- `cargo check -p rollout-core` ✓
+- `cargo test -p rollout-core --test trait_surface` ✓ (19 tests pass)
+- `cargo clippy -p rollout-core --all-targets -- -D warnings` ✓
+- `cargo clippy --workspace --all-targets -- -D warnings` ✓
+- `cargo build --workspace` ✓
+- `RUSTDOCFLAGS="-D warnings -D rustdoc::broken_intra_doc_links -D rustdoc::missing_crate_level_docs" cargo doc -p rollout-core --no-deps` ✓
+- `cargo xtask schema-gen` ✓ (drift reconciled)
+- `cargo test -p rollout-core --test schema_drift` ✓ (3 tests pass)
+
+---
+*Phase: 04-train-sft-rm-snapshots*
+*Completed: 2026-05-21*
