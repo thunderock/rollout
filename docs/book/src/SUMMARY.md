@@ -21,5 +21,7 @@
 - [Training](./training/index.md)
   - [Snapshots](./training/snapshots.md)
   - [SFT](./training/sft.md)
+  - [Determinism](./training/determinism.md)
+  - [CPU mode](./training/cpu-mode.md)
   - [Postgres backend](./training/postgres-backend.md)
 - [Examples](./examples/index.md)
