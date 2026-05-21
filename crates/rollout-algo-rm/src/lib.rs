@@ -1,15 +1,13 @@
 //! `rollout-algo-rm` — Bradley-Terry reward-model training (TRAIN-02).
 //!
-//! Phase-4 skeleton. The full `RmAlgo` impl lands in plan `04-04`.
-//! See `docs/book/src/training/rm.md`.
+//! See `docs/book/src/training/rm.md` for the architecture chapter.
 
 #![doc(html_root_url = "https://docs.rs/rollout-algo-rm/0.1.0")]
 
-use rollout_core::PolicyAlgorithm;
+pub mod algo;
+pub mod data;
+pub mod loss;
 
-/// Placeholder — full impl in plan 04-04.
-pub struct RmAlgo;
-
-// Compile-time witness that PolicyAlgorithm is reachable from this crate.
-#[allow(dead_code)]
-fn _algo_trait_reachable<T: PolicyAlgorithm>() {}
+pub use algo::RmAlgo;
+pub use data::{load_pairs, PairRow};
+pub use loss::{bradley_terry_batch_mean, bradley_terry_loss, logsigmoid};
