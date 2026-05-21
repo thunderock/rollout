@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: 2
 status: Executing Phase 04
-stopped_at: Completed 04-04-algo-rm-PLAN.md
-last_updated: "2026-05-21T22:04:47.461Z"
+stopped_at: Completed 04-05-backend-vllm-train-PLAN.md
+last_updated: "2026-05-21T22:09:28.744Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 30
-  completed_plans: 27
+  completed_plans: 28
 ---
 
 # STATE — Project Memory
@@ -123,6 +123,7 @@ Phase 3 Wave 3 complete: plan 03-04 shipped 2026-05-20 — `rollout infer batch 
 | Phase 04-train-sft-rm-snapshots P03 | 10min | 2 tasks | 15 files |
 | Phase 04-train-sft-rm-snapshots P02-algo-sft-skeleton | 25min | 2 tasks | 15 files |
 | Phase 04-train-sft-rm-snapshots P04-algo-rm | 12min | 2 tasks | 10 files |
+| Phase 04-train-sft-rm-snapshots P05 | 10min | 2 tasks | 13 files |
 
 ## Decisions
 
@@ -227,11 +228,15 @@ Phase 3 Wave 3 complete: plan 03-04 shipped 2026-05-20 — `rollout infer batch 
 - [Phase 04-train-sft-rm-snapshots]: TrainableBackend::optimizer_step takes &self (interior mutability) so algorithms holding Arc<dyn TrainableBackend> can step without unique ownership. Tests routinely hold a sibling Arc<MockBackend> for weights_snapshot() inspection.
 - [Phase 04-train-sft-rm-snapshots]: Architecture lint (dep_direction_invariants_hold) skips non-Normal DependencyKind. dev/build deps may freely cross layers — they never ship in production binaries.
 - [Phase 04-train-sft-rm-snapshots]: RmAlgo mirrors SftAlgo verbatim; only id, validate_plan head check, step_once row count, and Settings type differ. Future preference-learning crates (DPO/IPO/KTO) can copy this shape.
+- [Phase 04-train-sft-rm-snapshots]: (04-05): Lazy inference-module import in worker_main_vllm — train-only callers must not pay the vllm import cost.
+- [Phase 04-train-sft-rm-snapshots]: (04-05): Phase-4 GradHandle carries only step counter; loss tensor lives in Python module-global _STATE. Real bidirectional PyObject plumbing is Phase 9.
+- [Phase 04-train-sft-rm-snapshots]: (04-05): VllmBackend::load_weights is no-op in Phase 4; the snapshot-restore path goes through SnapshotterImpl directly. Phase-9 PPO actor adds the weights_id resolver.
+- [Phase 04-train-sft-rm-snapshots]: (04-05): worker_main_vllm refactored to lazy-import the inference module (deferred until first Init/Generate) so --features train smoke tests stay fast and don't require vllm at all.
 
 ## Last Session
 
-- **Last session:** 2026-05-21T22:04:39.434Z
-- **Stopped at:** Completed 04-04-algo-rm-PLAN.md
+- **Last session:** 2026-05-21T22:09:14.635Z
+- **Stopped at:** Completed 04-05-backend-vllm-train-PLAN.md
 
 ## Things Not To Forget
 
