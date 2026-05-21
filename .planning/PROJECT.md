@@ -31,14 +31,14 @@ If any single requirement defines success: **plan-time validation catches all co
 - [x] **SUBSTR-02** gRPC transport with deadline-based heartbeats — **HTTP/2 + rustls** plan-of-record (tonic 0.14), `quic` feature behind EXPERIMENTAL gate. Deadline-based health: 500ms heartbeat / 4s self-fence / 5s coord-failure / 250ms skew budget. *Validated in Phase 2: Local substrate (smoke test).*
 - [x] **SUBSTR-03** Plugin host — three modes (Rust cdylib via libloading + PyO3 in-process via pyo3-async-runtimes 0.28 dedicated-thread pattern + Python sidecar via stdlib JSON-over-UDS); full hot-reload behind `dev-hot-reload` feature. *Validated in Phase 2: Local substrate.*
 - [x] **SUBSTR-04** Local cloud — content-addressed sharded FS object store + RAM queue with Storage spill + env-var SecretStore (read-only allowlist) + ComputeHint (Linux full / macOS stub). *Validated in Phase 2: Local substrate.*
+- [x] **BACKEND-01** vLLM inference backend as default — `rollout-backend-vllm` impls `InferenceBackend` via PyO3 in-process (dedicated `rollout-py-vllm-*` thread, `pyo3_async_runtimes::tokio::run_until_complete` bridge that releases the GIL during awaits per Pitfall 2). vLLM ≥0.10 `AsyncLLMEngine` via explicit `torch.cuda.is_available()` device probe (not `device="auto"` — Pitfall 9). `vllm` Cargo feature default OFF. *Validated in Phase 3: Inference backend + batch inference.*
+- [x] **BACKEND-02** Batch inference end-to-end with content-addressed sample IDs (resumable) — `rollout infer batch` CLI + `rollout-runtime-batch` (BatchCoordinator/BatchWorker; CAS state machine; sample_id with `SAMPLING_PARAMS_SCHEMA_VERSION` byte; resume scan with stale-Running re-claim); MockBackend-driven `restart_no_duplicates` deterministic test (1.39 s; runs on every CI build, no GPU/vLLM). *Validated in Phase 3: Inference backend + batch inference.*
 
 ### Active (v1 hypotheses)
 
 - [ ] **CORE-01** Rust core (`rollout-core`) with the full trait surface and single-source-of-truth config schema.
 - [ ] **CORE-02** Workspace dependency lint enforcing layered architecture (algorithm crates cannot depend on cloud crates).
 - [ ] **CORE-03** Error taxonomy: `Recoverable { Throttled / Transient / Preempted }` vs `Fatal { ConfigInvalid / SchemaViolation / PluginContract / Internal }`.
-- [ ] **BACKEND-01** vLLM inference backend as default.
-- [ ] **BACKEND-02** Batch inference end-to-end with content-addressed sample IDs (resumable).
 - [ ] **TRAIN-01** SFT algorithm.
 - [ ] **TRAIN-02** Reward-model training (Bradley-Terry head).
 - [ ] **TRAIN-03** Training-state snapshots: weights + optimizer + RNG + LR + step. Deterministic restore.
@@ -113,4 +113,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-20 after Phase 2 (Local substrate) completion*
+*Last updated: 2026-05-21 after Phase 3 (Inference backend + batch inference) completion*
