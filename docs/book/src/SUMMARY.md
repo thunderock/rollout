@@ -18,4 +18,7 @@
   - [CPU mode](./inference/cpu-mode.md)
   - [Resume: zero-duplicate batch restart](./inference/resume.md)
   - [Dev loop on macOS (Apple Silicon)](./inference/dev-on-macos.md)
+- [Training](./training/index.md)
+  - [Snapshots](./training/snapshots.md)
+  - [Postgres backend](./training/postgres-backend.md)
 - [Examples](./examples/index.md)

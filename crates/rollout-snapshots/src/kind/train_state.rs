@@ -68,11 +68,14 @@ pub(crate) async fn save_train_state(
         meta: request.meta,
     };
 
-    // 5. Persist metadata row.
+    // 5. Persist metadata row. JSON-encoded because Snapshot.meta is
+    // serde_json::Value (opaque), which postcard cannot encode (self-describing
+    // format unsupported by postcard's wire model). JSON keeps the row
+    // self-describing + human-debuggable.
     let mut txn = storage.begin().await?;
     let key = snapshot_key(snapshot.run_id, snapshot.id);
-    let value = postcard::to_stdvec(&snapshot)
-        .map_err(|e| fatal_internal(&format!("postcard encode Snapshot: {e}")))?;
+    let value = serde_json::to_vec(&snapshot)
+        .map_err(|e| fatal_internal(&format!("json encode Snapshot: {e}")))?;
     txn.put_bytes(key, value).await?;
     txn.commit().await?;
 
