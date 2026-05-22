@@ -33,16 +33,16 @@ If any single requirement defines success: **plan-time validation catches all co
 - [x] **SUBSTR-04** Local cloud — content-addressed sharded FS object store + RAM queue with Storage spill + env-var SecretStore (read-only allowlist) + ComputeHint (Linux full / macOS stub). *Validated in Phase 2: Local substrate.*
 - [x] **BACKEND-01** vLLM inference backend as default — `rollout-backend-vllm` impls `InferenceBackend` via PyO3 in-process (dedicated `rollout-py-vllm-*` thread, `pyo3_async_runtimes::tokio::run_until_complete` bridge that releases the GIL during awaits per Pitfall 2). vLLM ≥0.10 `AsyncLLMEngine` via explicit `torch.cuda.is_available()` device probe (not `device="auto"` — Pitfall 9). `vllm` Cargo feature default OFF. *Validated in Phase 3: Inference backend + batch inference.*
 - [x] **BACKEND-02** Batch inference end-to-end with content-addressed sample IDs (resumable) — `rollout infer batch` CLI + `rollout-runtime-batch` (BatchCoordinator/BatchWorker; CAS state machine; sample_id with `SAMPLING_PARAMS_SCHEMA_VERSION` byte; resume scan with stale-Running re-claim); MockBackend-driven `restart_no_duplicates` deterministic test (1.39 s; runs on every CI build, no GPU/vLLM). *Validated in Phase 3: Inference backend + batch inference.*
+- [x] **TRAIN-01** SFT algorithm — `rollout-algo-sft::SftAlgo` impls `PolicyAlgorithm`; JSONL chat loader + minibatch step loop + content-addressed checkpoint round-trip; `rollout train sft --config examples/sft-tiny.toml` dry-run clean. *Validated in Phase 4: SFT + RM + train-state snapshots.*
+- [x] **TRAIN-02** Reward-model training (Bradley-Terry head) — `rollout-algo-rm::RmAlgo` impls `PolicyAlgorithm`; numerically stable `logsigmoid`-based pairwise loss; JSONL `{prompt, chosen, rejected}` loader; `rollout train rm --config examples/rm-tiny.toml` dry-run clean; `RmHeadKind::PairwiseLogistic` returns `Fatal(ConfigInvalid)` with Phase-9 sentinel. *Validated in Phase 4.*
+- [x] **TRAIN-03** Training-state snapshots: weights + optimizer + RNG + LR + step — Deterministic restore proven by TWO load-bearing byte-compare tests (`rollout-algo-sft/tests/snapshot_resume.rs` + `rollout-algo-rm/tests/snapshot_resume.rs`, both `bit_identical_resume_at_step_5`); `rollout-snapshots::SnapshotterImpl` ships the 4-method Snapshotter (save/restore/list/prune) per spec 04 §5.2 with deterministic tar + blake3 content hashing; `Arc<dyn TrainableBackend>` interior-mutability adjustment (`optimizer_step: &self`) recorded as cross-plan trait surface decision. *Validated in Phase 4.*
+- [x] **TRAIN-04** Postgres backend alongside embedded; same `Storage` trait — `rollout-storage::postgres::PostgresStorage` behind `postgres` Cargo feature; sqlx offline metadata, migration files (`database/migrations/0001_init.sql`, `0002_snapshots.sql`); testcontainers Postgres-16 integration tests `#[ignore]` by default so default `cargo test` stays Docker-free; CI `postgres-integration:` job covers PR loop. *Validated in Phase 4.*
 
 ### Active (v1 hypotheses)
 
 - [ ] **CORE-01** Rust core (`rollout-core`) with the full trait surface and single-source-of-truth config schema.
 - [ ] **CORE-02** Workspace dependency lint enforcing layered architecture (algorithm crates cannot depend on cloud crates).
 - [ ] **CORE-03** Error taxonomy: `Recoverable { Throttled / Transient / Preempted }` vs `Fatal { ConfigInvalid / SchemaViolation / PluginContract / Internal }`.
-- [ ] **TRAIN-01** SFT algorithm.
-- [ ] **TRAIN-02** Reward-model training (Bradley-Terry head).
-- [ ] **TRAIN-03** Training-state snapshots: weights + optimizer + RNG + LR + step. Deterministic restore.
-- [ ] **TRAIN-04** Postgres backend alongside embedded; same `Storage` trait.
 - [ ] **CLOUD-01** AWS cloud crate: S3, SQS, Secrets Manager, EC2 metadata.
 - [ ] **CLOUD-02** GCP cloud crate: GCS, Pub/Sub, Secret Manager, GCE metadata.
 - [ ] **CLOUD-03** Object-store-backed snapshot storage.
@@ -86,7 +86,7 @@ If any single requirement defines success: **plan-time validation catches all co
 | Multi-node from day 1 | User-required; retrofitting distribution is a known anti-pattern | — Pending |
 | vLLM-first inference backend, pluggable | Best ecosystem coverage + LLM perf; pluggable trait lets us swap later | — Pending Phase 3 |
 | Dual plugin mode (PyO3 + sidecar) | PyO3 for hot path, sidecar for isolation/hot-reload — both are real needs | — Pending Phase 2 |
-| Dual storage (embedded + Postgres) | Embedded for local dev / plugin-local-test; Postgres for production | — Pending Phase 4 |
+| Dual storage (embedded + Postgres) | Embedded for local dev / plugin-local-test; Postgres for production | — Validated Phase 4 |
 | MIT license | Permissive; matches Rust ecosystem norms; library-friendly | — Locked |
 | Aggressive crate split (~17 publishable crates) | Library reuse + boundary discipline | — Locked |
 | Perf bar = ≥80% GPU utilization on rollout phase | Measurable, single number, captures the headline | — Pending Phase 9 |
@@ -113,4 +113,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-21 after Phase 3 (Inference backend + batch inference) completion*
+*Last updated: 2026-05-22 after Phase 4 (SFT + RM + train-state snapshots) completion*
