@@ -22,6 +22,7 @@
   - [Snapshots](./training/snapshots.md)
   - [SFT](./training/sft.md)
   - [RM (Bradley-Terry)](./training/rm.md)
+  - [CLI: rollout train + snapshot](./training/cli.md)
   - [Determinism](./training/determinism.md)
   - [CPU mode](./training/cpu-mode.md)
   - [Postgres backend](./training/postgres-backend.md)

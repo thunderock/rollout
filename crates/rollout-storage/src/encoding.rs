@@ -29,12 +29,19 @@ pub fn decode_key_payload(
 }
 
 /// Whether `candidate`'s `(namespace, run_id, path)` is a prefix-extension of
-/// `prefix`. Namespace must match exactly; path must start with `prefix.path`.
+/// `prefix`. Namespace must match exactly; `prefix.run_id = None` acts as a
+/// wildcard (any `candidate.run_id` matches), otherwise `run_ids` must be equal;
+/// path must start with `prefix.path`.
 #[must_use]
 pub fn key_has_prefix(candidate: &StorageKey, prefix: &StorageKey) -> bool {
-    candidate.namespace == prefix.namespace
-        && candidate.run_id == prefix.run_id
-        && candidate.path.starts_with(&prefix.path[..])
+    if candidate.namespace != prefix.namespace {
+        return false;
+    }
+    let run_id_ok = match &prefix.run_id {
+        None => true,
+        Some(_) => candidate.run_id == prefix.run_id,
+    };
+    run_id_ok && candidate.path.starts_with(&prefix.path[..])
 }
 
 fn internal<S: Into<String>>(s: S) -> CoreError {
