@@ -142,6 +142,25 @@ heads.
 - **Phase 9** lands `PairwiseLogistic` and the RL-* algorithms (PPO/GRPO) that
   consume reward models trained here.
 
+## Running the example
+
+The smallest possible RM run lives at `examples/rm-tiny.toml` +
+`examples/rm-tiny.jsonl` (4 preference pairs; Qwen2.5-0.5B-Instruct base;
+BradleyTerry head; `max_steps = 2`).
+
+**Dry-run** (works without Python deps):
+
+```bash
+cargo run -p rollout-cli -- train rm \
+  --config examples/rm-tiny.toml --dry-run
+```
+
+The live `rollout train rm` path through `--features train` is wired
+identically to SFT; the Phase-4 smoke recipe (`make train-smoke`) exercises
+SFT specifically — the RM pipeline is dry-run-validated here and lands
+under the Phase-9 RL recipe alongside PPO / GRPO. See [CLI](./cli.md) for
+the full subcommand surface.
+
 ## See also
 
 - [Snapshots](./snapshots.md) — `SnapshotterImpl` / `SnapshotKind::TrainState`

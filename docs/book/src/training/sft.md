@@ -161,6 +161,32 @@ algo sees only `Arc<dyn TrainableBackend>` and `load_weights` is a no-op
 on the mock. Production backends restore the optimizer step counter via
 their own checkpoint format inside `load_weights`.
 
+## Running the example
+
+The smallest possible SFT run lives at `examples/sft-tiny.toml` +
+`examples/sft-tiny.jsonl` (4 chat rows; Qwen2.5-0.5B-Instruct; `max_steps =
+2`). Two ways to exercise it:
+
+**Dry-run** (works without Python deps; validates config + dataset path +
+algorithm shape):
+
+```bash
+cargo run -p rollout-cli -- train sft \
+  --config examples/sft-tiny.toml --dry-run
+```
+
+**Live run** (requires transformers + accelerate + torch; ~3-5 min M-series
+CPU):
+
+```bash
+pip install 'transformers>=4.45,<5.0' 'accelerate>=1.0,<2.0' 'torch>=2.1,<3.0'
+ROLLOUT_TRANSFORMERS_AVAILABLE=1 make train-smoke
+```
+
+`make train-smoke` invokes `scripts/train-smoke.sh`, which dry-runs first then
+runs the full SFT path against `Qwen/Qwen2.5-0.5B-Instruct` on CPU. See
+[CLI](./cli.md) for the full subcommand surface.
+
 ## Next steps
 
 - Plan 04-05 (`backend-vllm-train`) swaps the synthetic batch +
