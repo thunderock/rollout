@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 2
+current_plan: 7 (04-07)
 status: Executing Phase 04
-stopped_at: Completed 04-06-cli-train-snapshot-PLAN.md
-last_updated: "2026-05-22T13:50:13.665Z"
+stopped_at: Completed 04-07-examples-docs-smoke-PLAN.md
+last_updated: "2026-05-22T14:00:56.500Z"
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 30
-  completed_plans: 29
+  completed_plans: 30
 ---
 
 # STATE — Project Memory
@@ -126,6 +126,7 @@ Phase 4 Wave 4 plan 04-06 complete: `rollout train sft|rm` + `rollout snapshot {
 | Phase 04-train-sft-rm-snapshots P04-algo-rm | 12min | 2 tasks | 10 files |
 | Phase 04-train-sft-rm-snapshots P05 | 10min | 2 tasks | 13 files |
 | Phase 04-train-sft-rm-snapshots P06 | 38m | 2 tasks | 6 files |
+| Phase 04 P07 | 4m | 2 tasks | 12 files |
 
 ## Decisions
 
@@ -234,11 +235,13 @@ Phase 4 Wave 4 plan 04-06 complete: `rollout train sft|rm` + `rollout snapshot {
 - [Phase 04-train-sft-rm-snapshots]: (04-05): Phase-4 GradHandle carries only step counter; loss tensor lives in Python module-global _STATE. Real bidirectional PyObject plumbing is Phase 9.
 - [Phase 04-train-sft-rm-snapshots]: (04-05): VllmBackend::load_weights is no-op in Phase 4; the snapshot-restore path goes through SnapshotterImpl directly. Phase-9 PPO actor adds the weights_id resolver.
 - [Phase 04-train-sft-rm-snapshots]: (04-05): worker_main_vllm refactored to lazy-import the inference module (deferred until first Init/Generate) so --features train smoke tests stay fast and don't require vllm at all.
+- [Phase 04]: Phase 4 v1 working-model recipe lands as scripts/train-smoke.sh + examples/sft-tiny.{toml,jsonl}; ROLLOUT_TRANSFORMERS_AVAILABLE=1 gate mirrors Phase-3 ROLLOUT_VLLM_AVAILABLE pattern. CI grows to 16 jobs.
+- [Phase 04]: Example TOMLs rewritten against actual rollout-core schema (flat [storage] backend=... + [algorithm] kind=... + sub-tables). Plan sketch's nested [storage.embedded] + [algorithm.sft.*] form did not match the serde-tagged-enum derives; documented in plan-07 SUMMARY for future plan templates.
 
 ## Last Session
 
-- **Last session:** 2026-05-22T13:50:13.660Z
-- **Stopped at:** Completed 04-06-cli-train-snapshot-PLAN.md
+- **Last session:** 2026-05-22T14:00:49.354Z
+- **Stopped at:** Completed 04-07-examples-docs-smoke-PLAN.md
 
 ## Things Not To Forget
 
