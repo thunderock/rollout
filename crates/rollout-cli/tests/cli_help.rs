@@ -76,3 +76,104 @@ fn infer_top_level_help_lists_subcommand() {
         .success()
         .stdout(contains("batch"));
 }
+
+#[test]
+fn cli_help_lists_train_subcommand() {
+    Command::cargo_bin("rollout")
+        .unwrap()
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(contains("train"));
+}
+
+#[test]
+fn cli_help_lists_snapshot_subcommand() {
+    Command::cargo_bin("rollout")
+        .unwrap()
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(contains("snapshot"));
+}
+
+#[test]
+fn train_top_level_help_lists_subcommands() {
+    Command::cargo_bin("rollout")
+        .unwrap()
+        .args(["train", "--help"])
+        .assert()
+        .success()
+        .stdout(contains("sft"))
+        .stdout(contains("rm"));
+}
+
+#[test]
+fn train_sft_help_lists_required_flags() {
+    Command::cargo_bin("rollout")
+        .unwrap()
+        .args(["train", "sft", "--help"])
+        .assert()
+        .success()
+        .stdout(contains("--config"))
+        .stdout(contains("--resume"))
+        .stdout(contains("--dry-run"));
+}
+
+#[test]
+fn train_rm_help_lists_required_flags() {
+    Command::cargo_bin("rollout")
+        .unwrap()
+        .args(["train", "rm", "--help"])
+        .assert()
+        .success()
+        .stdout(contains("--config"))
+        .stdout(contains("--resume"))
+        .stdout(contains("--dry-run"));
+}
+
+#[test]
+fn snapshot_list_help_parses() {
+    Command::cargo_bin("rollout")
+        .unwrap()
+        .args(["snapshot", "list", "--help"])
+        .assert()
+        .success()
+        .stdout(contains("--run-id"))
+        .stdout(contains("--kind"))
+        .stdout(contains("--limit"));
+}
+
+#[test]
+fn snapshot_show_help_parses() {
+    Command::cargo_bin("rollout")
+        .unwrap()
+        .args(["snapshot", "show", "--help"])
+        .assert()
+        .success()
+        .stdout(contains("--storage-path"));
+}
+
+#[test]
+fn snapshot_prune_help_parses() {
+    Command::cargo_bin("rollout")
+        .unwrap()
+        .args(["snapshot", "prune", "--help"])
+        .assert()
+        .success()
+        .stdout(contains("--run-id"))
+        .stdout(contains("--keep-last"))
+        .stdout(contains("--keep-labeled"));
+}
+
+#[test]
+fn snapshot_top_level_help_lists_subcommands() {
+    Command::cargo_bin("rollout")
+        .unwrap()
+        .args(["snapshot", "--help"])
+        .assert()
+        .success()
+        .stdout(contains("list"))
+        .stdout(contains("show"))
+        .stdout(contains("prune"));
+}

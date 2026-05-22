@@ -9,7 +9,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, RootModel, conint
 
 
-class AlgorithmConfig2(BaseModel):
+class AlgorithmConfig3(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -136,6 +136,11 @@ class PackingPolicy(BaseModel):
     )
 
 
+class RmHeadKind(Enum):
+    bradley_terry = 'bradley_terry'
+    pairwise_logistic = 'pairwise_logistic'
+
+
 class RunMetadata(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -202,8 +207,27 @@ class AlgorithmConfig1(BaseModel):
     packing: PackingPolicy = Field(..., description='Packing policy.')
 
 
-class AlgorithmConfig(RootModel[AlgorithmConfig1 | AlgorithmConfig2]):
-    root: AlgorithmConfig1 | AlgorithmConfig2 = Field(
+class AlgorithmConfig2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    base_model: ModelRef = Field(..., description='Base model to head-tune.')
+    budget: TrainingBudget | None = Field(
+        {'max_steps': None, 'max_tokens': None, 'max_walltime': None},
+        description='Training budget.',
+        validate_default=True,
+    )
+    dataset: DatasetRef = Field(..., description='Pairwise dataset.')
+    head: RmHeadKind = Field(..., description='Head kind.')
+    kind: Literal['rm']
+    minibatch_size: conint(ge=0) = Field(..., description='Minibatch size (pairs).')
+    optimizer: OptimizerSettings = Field(..., description='Optimizer.')
+
+
+class AlgorithmConfig(
+    RootModel[AlgorithmConfig1 | AlgorithmConfig2 | AlgorithmConfig3]
+):
+    root: AlgorithmConfig1 | AlgorithmConfig2 | AlgorithmConfig3 = Field(
         ..., description='Algorithm selection.'
     )
 

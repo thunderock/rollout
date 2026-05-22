@@ -101,6 +101,56 @@
           ]
         },
         {
+          "description": "Reward-model (Bradley-Terry) training. References Phase-4 `training::RmSettings`.",
+          "type": "object",
+          "properties": {
+            "base_model": {
+              "description": "Base model to head-tune.",
+              "$ref": "#/$defs/ModelRef"
+            },
+            "budget": {
+              "description": "Training budget.",
+              "$ref": "#/$defs/TrainingBudget",
+              "default": {
+                "max_steps": null,
+                "max_tokens": null,
+                "max_walltime": null
+              }
+            },
+            "dataset": {
+              "description": "Pairwise dataset.",
+              "$ref": "#/$defs/DatasetRef"
+            },
+            "head": {
+              "description": "Head kind.",
+              "$ref": "#/$defs/RmHeadKind"
+            },
+            "kind": {
+              "type": "string",
+              "const": "rm"
+            },
+            "minibatch_size": {
+              "description": "Minibatch size (pairs).",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "optimizer": {
+              "description": "Optimizer.",
+              "$ref": "#/$defs/OptimizerSettings"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "base_model",
+            "optimizer",
+            "dataset",
+            "head",
+            "minibatch_size"
+          ]
+        },
+        {
           "description": "Proximal policy optimization (Phase 9 placeholder).",
           "type": "object",
           "properties": {
@@ -403,6 +453,21 @@
       "required": [
         "kind",
         "max_seq_len"
+      ]
+    },
+    "RmHeadKind": {
+      "description": "Reward-model head kind.",
+      "oneOf": [
+        {
+          "description": "Bradley-Terry pairwise comparison head.",
+          "type": "string",
+          "const": "bradley_terry"
+        },
+        {
+          "description": "Pairwise logistic loss (alternative form).",
+          "type": "string",
+          "const": "pairwise_logistic"
+        }
       ]
     },
     "RunMetadata": {

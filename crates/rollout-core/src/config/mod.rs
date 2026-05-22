@@ -74,6 +74,8 @@ pub enum StorageConfig {
 pub enum AlgorithmConfig {
     /// Supervised fine-tuning. References Phase-4 `training::SftSettings`.
     Sft(Box<crate::config::training::SftSettings>),
+    /// Reward-model (Bradley-Terry) training. References Phase-4 `training::RmSettings`.
+    Rm(Box<crate::config::training::RmSettings>),
     /// Proximal policy optimization (Phase 9 placeholder).
     Ppo(PpoSettings),
 }

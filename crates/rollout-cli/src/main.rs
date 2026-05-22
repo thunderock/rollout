@@ -13,6 +13,8 @@ use std::process::ExitCode;
 
 mod infer;
 mod infer_config;
+mod snapshot;
+mod train;
 mod worker;
 
 #[derive(Parser)]
@@ -42,6 +44,10 @@ enum Cmd {
     },
     /// Inference subcommand group (Phase-3 batch surface).
     Infer(infer::InferCmd),
+    /// Training subcommand group (Phase-4: sft, rm).
+    Train(train::TrainCmd),
+    /// Snapshot subcommand group (Phase-4: list, show, prune).
+    Snapshot(snapshot::SnapshotCmd),
 }
 
 #[derive(Subcommand)]
@@ -95,7 +101,45 @@ fn main() -> ExitCode {
         Cmd::Coordinator { sub: CoordSub::Run(a) } => coord_run(a),
         Cmd::Worker { sub: WorkerSub::Run(a) } => worker_run(a),
         Cmd::Infer(c) => infer_dispatch(c),
+        Cmd::Train(c) => train_dispatch(c),
+        Cmd::Snapshot(c) => snapshot_dispatch(c),
     }
+}
+
+fn train_dispatch(cmd: train::TrainCmd) -> ExitCode {
+    init_tracing();
+    let Ok(rt) = tokio::runtime::Runtime::new() else {
+        eprintln!("failed to start tokio runtime");
+        return ExitCode::from(2);
+    };
+    rt.block_on(async move {
+        let result = train::dispatch(cmd.action).await;
+        match result {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("train exit: {e}");
+                ExitCode::from(2)
+            }
+        }
+    })
+}
+
+fn snapshot_dispatch(cmd: snapshot::SnapshotCmd) -> ExitCode {
+    init_tracing();
+    let Ok(rt) = tokio::runtime::Runtime::new() else {
+        eprintln!("failed to start tokio runtime");
+        return ExitCode::from(2);
+    };
+    rt.block_on(async move {
+        let result = snapshot::dispatch(cmd.action).await;
+        match result {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("snapshot exit: {e}");
+                ExitCode::from(2)
+            }
+        }
+    })
 }
 
 fn infer_dispatch(cmd: infer::InferCmd) -> ExitCode {
