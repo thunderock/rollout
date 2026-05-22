@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 7 (04-07)
-status: Executing Phase 04
+current_plan: Not started
+status: Milestone complete
 stopped_at: Completed 04-07-examples-docs-smoke-PLAN.md
-last_updated: "2026-05-22T14:00:56.500Z"
+last_updated: "2026-05-22T14:10:07.803Z"
 progress:
   total_phases: 4
   completed_phases: 4
@@ -35,7 +35,7 @@ Wave 4 plan 02-05 (rollout-plugin-host) shipped 2026-05-20 (SUBSTR-03). `rollout
 
 Wave 3 complete (solo): plan 02-04 (rollout-transport) shipped 2026-05-20. `rollout-transport` ships HTTP/2 tonic 0.14 + rustls 0.23 + mTLS-by-default as the plan-of-record per RESEARCH (tonic-h3 v0.0.5 stays opt-in EXPERIMENTAL behind a `quic` Cargo feature). Three logical channels (Heartbeat unary, Control server-stream, Work bidi-stub) multiplex over one H/2 connection. mTLS auto-bootstraps via rcgen-generated dev CA under `./data/tls/` (chmod 600 on private keys). Plan-time `TransportConfig::validate_cross_fields` enforces split-brain prevention (`self_fence < coord_failure`) + clock-skew bound (`skew < 2×hb`) per D-TIME-02. Deadline-based health helpers (`next_due_at`, `is_failed`) match spec 05 §6. Substrate/transport mdBook chapter ships. Plans 02-05 (rollout-plugin-host), 02-06 (rollout-coordinator), 02-07 (smoke + docs + CI) pending.
 
-**Current Plan:** 7 (04-07)
+**Current Plan:** Not started
 **Last completed plan:** 04-06-cli-train-snapshot (2026-05-22) — Wave 4, Phase-4 user-facing CLI surface: rollout train sft/rm + rollout snapshot list/show/prune. 11 cli_help tests + 5 train_dry_run + 5 snapshot_subcommands integration tests green; mdBook CLI chapter shipped under Training; AlgorithmConfig::Rm variant landed; Rule-1 fix on rollout-storage::key_has_prefix wildcard semantics.
 
 **Phase 2 — Local substrate is COMPLETE.** All four exit criteria satisfied: embedded `Storage` (redb 2.x; 02-02), gRPC transport with deadline-based heartbeats (HTTP/2 plan-of-record + QUIC EXPERIMENTAL; 02-04), `rollout-plugin-host` with cdylib + PyO3 + sidecar modes + hot-reload (02-05), `rollout-cloud-local` (02-03), and `make smoke` end-to-end (02-07). `cargo test --workspace --tests` reports 103 passing + 4 ignored (env-gated). Architecture-lint now enforces 4 invariants. CI grew to 12 jobs.
