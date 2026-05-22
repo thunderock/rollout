@@ -1,0 +1,4 @@
+{"messages": [{"role": "user", "content": "What is 2+2?"}, {"role": "assistant", "content": "2+2 equals 4."}]}
+{"messages": [{"role": "user", "content": "Capital of France?"}, {"role": "assistant", "content": "Paris."}]}
+{"messages": [{"role": "user", "content": "Largest planet?"}, {"role": "assistant", "content": "Jupiter."}]}
+{"messages": [{"role": "user", "content": "Boiling point of water at sea level in Celsius?"}, {"role": "assistant", "content": "100 degrees Celsius."}]}

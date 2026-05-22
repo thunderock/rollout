@@ -1,0 +1,34 @@
+# Phase-4 RM smoke config. Smallest possible Bradley-Terry run:
+# 1 minibatch, 2 max_steps, Qwen2.5-0.5B-Instruct base, BradleyTerry head.
+schema_version = 1
+
+[run]
+name = "rm-tiny-smoke"
+
+[storage]
+backend = "embedded"
+path = "./data/rm-tiny.db"
+
+[algorithm]
+kind = "rm"
+minibatch_size = 1
+head = "bradley_terry"
+
+[algorithm.base_model]
+uri = "Qwen/Qwen2.5-0.5B-Instruct"
+
+[algorithm.optimizer]
+kind = "adam_w"
+lr = 1e-5
+weight_decay = 0.0
+betas = [0.9, 0.999]
+eps = 1e-8
+warmup_steps = 0
+schedule = "constant"
+
+[algorithm.budget]
+max_steps = 2
+
+[algorithm.dataset]
+kind = "jsonl_path"
+path = "examples/rm-tiny.jsonl"

@@ -1,0 +1,43 @@
+# Phase-4 SFT smoke config. Smallest possible run:
+# 1 minibatch, 2 max_steps, Qwen2.5-0.5B-Instruct, assistant_only loss mask.
+# Dry-runs cleanly without Python deps; the live `rollout train sft` path
+# requires `--features train` + transformers + accelerate (see scripts/train-smoke.sh).
+schema_version = 1
+
+[run]
+name = "sft-tiny-smoke"
+
+[storage]
+backend = "embedded"
+path = "./data/sft-tiny.db"
+
+[algorithm]
+kind = "sft"
+minibatch_size = 1
+gradient_accumulation = 1
+
+[algorithm.base_model]
+uri = "Qwen/Qwen2.5-0.5B-Instruct"
+
+[algorithm.optimizer]
+kind = "adam_w"
+lr = 1e-5
+weight_decay = 0.0
+betas = [0.9, 0.999]
+eps = 1e-8
+warmup_steps = 0
+schedule = "constant"
+
+[algorithm.budget]
+max_steps = 2
+
+[algorithm.dataset]
+kind = "jsonl_path"
+path = "examples/sft-tiny.jsonl"
+
+[algorithm.packing]
+kind = "concat"
+max_seq_len = 512
+
+[algorithm.loss_on]
+kind = "assistant_only"

@@ -1,0 +1,4 @@
+{"prompt": "What is 2+2?", "chosen": "2+2 equals 4.", "rejected": "I don't know."}
+{"prompt": "Capital of France?", "chosen": "Paris.", "rejected": "London."}
+{"prompt": "Largest planet?", "chosen": "Jupiter.", "rejected": "Earth."}
+{"prompt": "Boiling point of water?", "chosen": "100 degrees Celsius at sea level.", "rejected": "50 degrees."}

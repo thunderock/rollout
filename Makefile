@@ -42,8 +42,7 @@ postgres-test:
 	SQLX_OFFLINE=true cargo test -p rollout-storage --features postgres --test postgres_integration -- --include-ignored --test-threads=1
 
 train-smoke:
-	@echo "train-smoke lands in plan 04-07-examples-docs-smoke"
-	@exit 1
+	bash scripts/train-smoke.sh
 
 help:
 	@echo "lint             cargo fmt --check + clippy -D warnings"
@@ -58,4 +57,4 @@ help:
 	@echo "smoke            end-to-end Phase-2 substrate test (1 coord + 2 workers + plugins; kills w1; asserts deadline detection)"
 	@echo "infer-smoke      Phase-3 end-to-end batch-inference smoke (requires ROLLOUT_VLLM_AVAILABLE=1)"
 	@echo "postgres-test    Phase-4 testcontainers Postgres integration tests (requires Docker)"
-	@echo "train-smoke      Phase-4 end-to-end train smoke (placeholder; lands in plan 04-07)"
+	@echo "train-smoke      Phase-4 end-to-end SFT train smoke (requires ROLLOUT_TRANSFORMERS_AVAILABLE=1)"
