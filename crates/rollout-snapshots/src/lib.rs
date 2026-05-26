@@ -41,11 +41,7 @@ pub struct SnapshotterImpl {
 impl SnapshotterImpl {
     /// Construct with the injected substrates.
     #[must_use]
-    pub fn new(
-        storage: Arc<dyn Storage>,
-        object: Arc<dyn ObjectStore>,
-        work_dir: PathBuf,
-    ) -> Self {
+    pub fn new(storage: Arc<dyn Storage>, object: Arc<dyn ObjectStore>, work_dir: PathBuf) -> Self {
         Self {
             storage,
             object,

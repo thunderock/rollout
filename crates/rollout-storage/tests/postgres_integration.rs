@@ -15,10 +15,7 @@ use testcontainers::runners::AsyncRunner;
 use testcontainers_modules::postgres::Postgres;
 use ulid::Ulid;
 
-async fn start_postgres() -> (
-    testcontainers::ContainerAsync<Postgres>,
-    String,
-) {
+async fn start_postgres() -> (testcontainers::ContainerAsync<Postgres>, String) {
     let container = Postgres::default()
         .start()
         .await

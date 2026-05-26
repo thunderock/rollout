@@ -9,9 +9,7 @@ use std::path::Path;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 use rollout_core::config::OptimizerSettings;
-use rollout_core::{
-    ContentId, CoreError, FatalError, GradHandle, LossOutput, LossScope,
-};
+use rollout_core::{ContentId, CoreError, FatalError, GradHandle, LossOutput, LossScope};
 
 use crate::engine::ActiveMode;
 
@@ -69,9 +67,7 @@ pub(crate) fn run_set_train_mode(
                 let module = py
                     .import("rollout.backends.vllm.train")
                     .map_err(py_to_core)?;
-                module
-                    .call_method0("teardown_train")
-                    .map_err(py_to_core)?;
+                module.call_method0("teardown_train").map_err(py_to_core)?;
                 Ok(())
             })?;
             *active_mode = ActiveMode::None;

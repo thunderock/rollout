@@ -29,8 +29,7 @@ async fn generate_one_prompt_eight_tokens() {
     params.seed = Some(42);
     let prompts = [Prompt("Hello, world!".to_owned())];
 
-    let mut backend =
-        VllmBackend::new("vllm-generate-test").expect("construct VllmBackend");
+    let mut backend = VllmBackend::new("vllm-generate-test").expect("construct VllmBackend");
     tokio::time::timeout(Duration::from_secs(180), backend.init(&model))
         .await
         .expect("init within 180s")

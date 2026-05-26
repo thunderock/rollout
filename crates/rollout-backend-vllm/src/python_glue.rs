@@ -20,7 +20,8 @@ pub(crate) fn samplingparams_to_pydict<'py>(
     p: &SamplingParams,
 ) -> Result<Bound<'py, PyDict>, rollout_core::CoreError> {
     let d = PyDict::new(py);
-    d.set_item("temperature", p.temperature).map_err(py_to_core)?;
+    d.set_item("temperature", p.temperature)
+        .map_err(py_to_core)?;
     d.set_item("top_p", p.top_p).map_err(py_to_core)?;
     d.set_item("top_k", p.top_k).map_err(py_to_core)?;
     d.set_item("max_tokens", p.max_tokens).map_err(py_to_core)?;

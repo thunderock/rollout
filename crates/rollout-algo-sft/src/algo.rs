@@ -68,10 +68,7 @@ impl PolicyAlgorithm for SftAlgo {
         AlgorithmId(SmolStr::new_inline("sft"))
     }
 
-    fn from_settings(
-        settings: Self::Settings,
-        deps: AlgoDependencies,
-    ) -> Result<Self, CoreError> {
+    fn from_settings(settings: Self::Settings, deps: AlgoDependencies) -> Result<Self, CoreError> {
         let backend = Arc::clone(&deps.backend);
         Ok(Self {
             settings,
@@ -170,10 +167,7 @@ impl PolicyAlgorithm for SftAlgo {
             .ok_or_else(|| {
                 CoreError::Fatal(FatalError::PluginContract {
                     plugin: "rollout-algo-sft".into(),
-                    msg: format!(
-                        "snapshot.meta.step missing or not a u64: {}",
-                        snapshot.meta
-                    ),
+                    msg: format!("snapshot.meta.step missing or not a u64: {}", snapshot.meta),
                 })
             })?;
         self.step = step;

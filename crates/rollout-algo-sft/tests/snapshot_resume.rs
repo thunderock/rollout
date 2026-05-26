@@ -81,11 +81,8 @@ async fn build_algo(
             .await
             .unwrap(),
     );
-    let object: Arc<dyn ObjectStore> = Arc::new(
-        FsObjectStore::open(&scratch_dir.join("obj"))
-            .await
-            .unwrap(),
-    );
+    let object: Arc<dyn ObjectStore> =
+        Arc::new(FsObjectStore::open(&scratch_dir.join("obj")).await.unwrap());
     let snapper: Arc<dyn Snapshotter> = Arc::new(SnapshotterImpl::new(
         Arc::clone(&storage),
         Arc::clone(&object),

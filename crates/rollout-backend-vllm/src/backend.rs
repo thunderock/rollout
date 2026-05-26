@@ -195,10 +195,8 @@ impl rollout_core::TrainableBackend for VllmBackend {
     }
 
     async fn save_weights(&self) -> Result<ContentId, CoreError> {
-        let target_dir = std::env::temp_dir().join(format!(
-            "rollout-vllm-train-snapshot-{}",
-            ulid::Ulid::new()
-        ));
+        let target_dir =
+            std::env::temp_dir().join(format!("rollout-vllm-train-snapshot-{}", ulid::Ulid::new()));
         let (reply_tx, reply_rx) = oneshot::channel();
         self.engine
             .tx

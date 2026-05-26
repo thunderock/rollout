@@ -30,10 +30,7 @@ pub fn bradley_terry_batch_mean(pairs: &[(f32, f32)]) -> f32 {
     if pairs.is_empty() {
         return 0.0;
     }
-    let sum: f32 = pairs
-        .iter()
-        .map(|(c, r)| bradley_terry_loss(*c, *r))
-        .sum();
+    let sum: f32 = pairs.iter().map(|(c, r)| bradley_terry_loss(*c, *r)).sum();
     // Batch sizes in this code path are small (minibatch_size: u32); f32 is fine.
     #[allow(clippy::cast_precision_loss)]
     let n = pairs.len() as f32;

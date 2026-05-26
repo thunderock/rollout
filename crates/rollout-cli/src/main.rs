@@ -98,8 +98,12 @@ fn main() -> ExitCode {
     let cli = Cli::parse();
     match cli.cmd {
         Cmd::Schema { format } => schema(format),
-        Cmd::Coordinator { sub: CoordSub::Run(a) } => coord_run(a),
-        Cmd::Worker { sub: WorkerSub::Run(a) } => worker_run(a),
+        Cmd::Coordinator {
+            sub: CoordSub::Run(a),
+        } => coord_run(a),
+        Cmd::Worker {
+            sub: WorkerSub::Run(a),
+        } => worker_run(a),
         Cmd::Infer(c) => infer_dispatch(c),
         Cmd::Train(c) => train_dispatch(c),
         Cmd::Snapshot(c) => snapshot_dispatch(c),

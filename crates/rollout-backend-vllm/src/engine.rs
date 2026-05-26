@@ -193,10 +193,18 @@ fn worker_main_train_only(mut rx: mpsc::Receiver<VllmTask>, secret_token: Option
                 )));
             }
             VllmTask::SetTrainMode { enabled, reply } => {
-                let r = crate::train::run_set_train_mode(enabled, &mut active_mode, secret_token.as_ref());
+                let r = crate::train::run_set_train_mode(
+                    enabled,
+                    &mut active_mode,
+                    secret_token.as_ref(),
+                );
                 let _ = reply.send(r);
             }
-            VllmTask::ForwardWithLoss { rows, loss_scope, reply } => {
+            VllmTask::ForwardWithLoss {
+                rows,
+                loss_scope,
+                reply,
+            } => {
                 let _ = reply.send(crate::train::run_forward_with_loss(&rows, &loss_scope));
             }
             VllmTask::OptimizerStep { grads, opt, reply } => {
@@ -235,26 +243,26 @@ fn worker_main_vllm(mut rx: mpsc::Receiver<VllmTask>, secret_token: Option<Strin
     let mut inference_import_err: Option<String> = None;
 
     // Helper: lazily import the inference module on first inference task.
-    let import_inference =
-        |inference_module: &mut Option<Py<PyModule>>, inference_import_err: &mut Option<String>| {
-            if inference_module.is_some() || inference_import_err.is_some() {
-                return;
+    let import_inference = |inference_module: &mut Option<Py<PyModule>>,
+                            inference_import_err: &mut Option<String>| {
+        if inference_module.is_some() || inference_import_err.is_some() {
+            return;
+        }
+        // Pitfall 10: env-write BEFORE py.import. Phase-3 secret_token contract.
+        let import_result: PyResult<Py<PyModule>> = Python::attach(|py| {
+            if let Some(token) = &secret_token {
+                let os = py.import("os")?;
+                let environ: Bound<'_, PyDict> = os.getattr("environ")?.cast_into()?;
+                environ.set_item("HF_TOKEN", token)?;
             }
-            // Pitfall 10: env-write BEFORE py.import. Phase-3 secret_token contract.
-            let import_result: PyResult<Py<PyModule>> = Python::attach(|py| {
-                if let Some(token) = &secret_token {
-                    let os = py.import("os")?;
-                    let environ: Bound<'_, PyDict> = os.getattr("environ")?.cast_into()?;
-                    environ.set_item("HF_TOKEN", token)?;
-                }
-                let module = py.import("rollout.backends.vllm.engine")?;
-                Ok(module.unbind())
-            });
-            match import_result {
-                Ok(m) => *inference_module = Some(m),
-                Err(e) => *inference_import_err = Some(e.to_string()),
-            }
-        };
+            let module = py.import("rollout.backends.vllm.engine")?;
+            Ok(module.unbind())
+        });
+        match import_result {
+            Ok(m) => *inference_module = Some(m),
+            Err(e) => *inference_import_err = Some(e.to_string()),
+        }
+    };
 
     while let Some(task) = rx.blocking_recv() {
         match task {
@@ -302,12 +310,19 @@ fn worker_main_vllm(mut rx: mpsc::Receiver<VllmTask>, secret_token: Option<Strin
             }
             #[cfg(feature = "train")]
             VllmTask::SetTrainMode { enabled, reply } => {
-                let r =
-                    crate::train::run_set_train_mode(enabled, &mut active_mode, secret_token.as_ref());
+                let r = crate::train::run_set_train_mode(
+                    enabled,
+                    &mut active_mode,
+                    secret_token.as_ref(),
+                );
                 let _ = reply.send(r);
             }
             #[cfg(feature = "train")]
-            VllmTask::ForwardWithLoss { rows, loss_scope, reply } => {
+            VllmTask::ForwardWithLoss {
+                rows,
+                loss_scope,
+                reply,
+            } => {
                 let _ = reply.send(crate::train::run_forward_with_loss(&rows, &loss_scope));
             }
             #[cfg(feature = "train")]
@@ -328,10 +343,13 @@ fn worker_main_vllm(mut rx: mpsc::Receiver<VllmTask>, secret_token: Option<Strin
 
 /// Call the Python-side `init(model_uri, **engine_args)` and return the SHA.
 #[cfg(feature = "vllm")]
-fn run_init(module: &pyo3::Py<pyo3::types::PyModule>, model: &ModelRef) -> Result<String, CoreError> {
+fn run_init(
+    module: &pyo3::Py<pyo3::types::PyModule>,
+    model: &ModelRef,
+) -> Result<String, CoreError> {
+    use crate::errors::py_to_core;
     use pyo3::prelude::*;
     use pyo3::types::PyDict;
-    use crate::errors::py_to_core;
 
     Python::attach(|py| {
         let m = module.bind(py);
@@ -406,8 +424,7 @@ fn run_generate(
             fut.await
         };
         let event_loop_for_close = event_loop.clone();
-        let res =
-            run_until_complete::<_, Py<PyAny>>(event_loop, driver).map_err(py_to_core)?;
+        let res = run_until_complete::<_, Py<PyAny>>(event_loop, driver).map_err(py_to_core)?;
         // Close the loop to release its resources; ignore close errors.
         let _ = event_loop_for_close.call_method0("close");
         Ok(res)

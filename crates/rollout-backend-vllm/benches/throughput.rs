@@ -49,10 +49,7 @@ fn bench_throughput(c: &mut Criterion) {
 
     c.bench_function("vllm_throughput_n64_t64", |bencher| {
         bencher.to_async(&rt).iter(|| async {
-            let _ = backend
-                .generate(&prompts, &params)
-                .await
-                .expect("generate");
+            let _ = backend.generate(&prompts, &params).await.expect("generate");
         });
     });
 }

@@ -77,11 +77,8 @@ async fn build_algo(
             .await
             .unwrap(),
     );
-    let object: Arc<dyn ObjectStore> = Arc::new(
-        FsObjectStore::open(&scratch_dir.join("obj"))
-            .await
-            .unwrap(),
-    );
+    let object: Arc<dyn ObjectStore> =
+        Arc::new(FsObjectStore::open(&scratch_dir.join("obj")).await.unwrap());
     let snapper: Arc<dyn Snapshotter> = Arc::new(SnapshotterImpl::new(
         Arc::clone(&storage),
         Arc::clone(&object),
@@ -112,11 +109,8 @@ async fn build_deps(
             .await
             .unwrap(),
     );
-    let object: Arc<dyn ObjectStore> = Arc::new(
-        FsObjectStore::open(&scratch_dir.join("obj"))
-            .await
-            .unwrap(),
-    );
+    let object: Arc<dyn ObjectStore> =
+        Arc::new(FsObjectStore::open(&scratch_dir.join("obj")).await.unwrap());
     let snapper: Arc<dyn Snapshotter> = Arc::new(SnapshotterImpl::new(
         Arc::clone(&storage),
         Arc::clone(&object),
@@ -144,11 +138,7 @@ async fn rm_id_is_stable() {
 async fn validate_plan_rejects_pairwise_logistic() {
     let tmp = tempdir().unwrap();
     let dataset = tmp.path().join("d.jsonl");
-    std::fs::write(
-        &dataset,
-        r#"{"prompt":"P","chosen":"C","rejected":"R"}"#,
-    )
-    .unwrap();
+    std::fs::write(&dataset, r#"{"prompt":"P","chosen":"C","rejected":"R"}"#).unwrap();
 
     let mut s = settings(dataset);
     s.head = RmHeadKind::PairwiseLogistic;
@@ -156,10 +146,13 @@ async fn validate_plan_rejects_pairwise_logistic() {
     let backend = Arc::new(MockBackend::new_train(1));
     let (deps, _keep) = build_deps(backend, tmp.path()).await;
     let algo = RmAlgo::from_settings(s, deps).unwrap();
-    let violations = algo.validate_plan(&rollout_core::Plan::default()).unwrap_err();
+    let violations = algo
+        .validate_plan(&rollout_core::Plan::default())
+        .unwrap_err();
     assert!(
         violations.iter().any(|v| {
-            v.locator.contains("head") && v.message.contains("PairwiseLogistic")
+            v.locator.contains("head")
+                && v.message.contains("PairwiseLogistic")
                 && v.message.contains("Phase 9")
         }),
         "expected PairwiseLogistic Phase 9 violation, got {violations:?}"
@@ -170,11 +163,7 @@ async fn validate_plan_rejects_pairwise_logistic() {
 async fn validate_plan_rejects_zero_minibatch() {
     let tmp = tempdir().unwrap();
     let dataset = tmp.path().join("d.jsonl");
-    std::fs::write(
-        &dataset,
-        r#"{"prompt":"P","chosen":"C","rejected":"R"}"#,
-    )
-    .unwrap();
+    std::fs::write(&dataset, r#"{"prompt":"P","chosen":"C","rejected":"R"}"#).unwrap();
 
     let mut s = settings(dataset);
     s.minibatch_size = 0;
@@ -182,7 +171,9 @@ async fn validate_plan_rejects_zero_minibatch() {
     let backend = Arc::new(MockBackend::new_train(1));
     let (deps, _keep) = build_deps(backend, tmp.path()).await;
     let algo = RmAlgo::from_settings(s, deps).unwrap();
-    let violations = algo.validate_plan(&rollout_core::Plan::default()).unwrap_err();
+    let violations = algo
+        .validate_plan(&rollout_core::Plan::default())
+        .unwrap_err();
     assert!(violations
         .iter()
         .any(|v| v.locator.contains("minibatch_size")));
@@ -192,11 +183,7 @@ async fn validate_plan_rejects_zero_minibatch() {
 async fn required_roles_is_learner() {
     let tmp = tempdir().unwrap();
     let dataset = tmp.path().join("d.jsonl");
-    std::fs::write(
-        &dataset,
-        r#"{"prompt":"P","chosen":"C","rejected":"R"}"#,
-    )
-    .unwrap();
+    std::fs::write(&dataset, r#"{"prompt":"P","chosen":"C","rejected":"R"}"#).unwrap();
     let backend = Arc::new(MockBackend::new_train(1));
     let (deps, _keep) = build_deps(backend, tmp.path()).await;
     let algo = RmAlgo::from_settings(settings(dataset), deps).unwrap();
@@ -207,11 +194,7 @@ async fn required_roles_is_learner() {
 async fn happy_path_two_steps_no_crash() {
     let tmp = tempdir().unwrap();
     let dataset = tmp.path().join("d.jsonl");
-    std::fs::write(
-        &dataset,
-        r#"{"prompt":"P","chosen":"C","rejected":"R"}"#,
-    )
-    .unwrap();
+    std::fs::write(&dataset, r#"{"prompt":"P","chosen":"C","rejected":"R"}"#).unwrap();
 
     let backend = Arc::new(MockBackend::new_train(1));
     let backend_view: Arc<MockBackend> = Arc::clone(&backend);
@@ -230,11 +213,7 @@ async fn happy_path_two_steps_no_crash() {
 async fn bit_identical_resume_at_step_5() {
     let tmp = tempdir().unwrap();
     let dataset = tmp.path().join("data.jsonl");
-    std::fs::write(
-        &dataset,
-        r#"{"prompt":"P","chosen":"C","rejected":"R"}"#,
-    )
-    .unwrap();
+    std::fs::write(&dataset, r#"{"prompt":"P","chosen":"C","rejected":"R"}"#).unwrap();
 
     // RUN A: 10 steps uninterrupted with seed=42.
     let scratch_a = tmp.path().join("run-a");
@@ -277,5 +256,8 @@ async fn bit_identical_resume_at_step_5() {
     let weights_b: Array1<f32> = backend_b2_view.weights_snapshot();
 
     // BYTE-COMPARE — TRAIN-03 second-witness exit criterion.
-    assert_eq!(weights_a, weights_b, "TRAIN-03 (RM): bit-identical resume at step 5 FAILED");
+    assert_eq!(
+        weights_a, weights_b,
+        "TRAIN-03 (RM): bit-identical resume at step 5 FAILED"
+    );
 }

@@ -57,7 +57,9 @@ fn run_until_complete_releases_gil_across_await() {
         let module = PyModule::from_code(
             py,
             std::ffi::CString::new(SMOKE_SOURCE).unwrap().as_c_str(),
-            std::ffi::CString::new("bridge_smoke.py").unwrap().as_c_str(),
+            std::ffi::CString::new("bridge_smoke.py")
+                .unwrap()
+                .as_c_str(),
             std::ffi::CString::new("bridge_smoke").unwrap().as_c_str(),
         )
         .expect("compile smoke module");
@@ -110,10 +112,7 @@ async def noop():
             std::ffi::CString::new("noop_mod").unwrap().as_c_str(),
         )
         .expect("compile noop module");
-        let coro_unbound = module
-            .call_method0("noop")
-            .expect("call noop()")
-            .unbind();
+        let coro_unbound = module.call_method0("noop").expect("call noop()").unbind();
         let asyncio = py.import("asyncio").expect("import asyncio");
         let event_loop = asyncio
             .call_method0("new_event_loop")

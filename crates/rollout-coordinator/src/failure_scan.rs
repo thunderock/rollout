@@ -75,11 +75,7 @@ async fn scan_once(
                 due_at_ms = rec.due_at_ms,
                 "worker_failed",
             );
-            let worker_id_for_event = rec
-                .worker_id
-                .parse::<ulid::Ulid>()
-                .map(WorkerId)
-                .ok();
+            let worker_id_for_event = rec.worker_id.parse::<ulid::Ulid>().map(WorkerId).ok();
             let run_id_for_event = rec
                 .run_id
                 .parse::<ulid::Ulid>()

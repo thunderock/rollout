@@ -117,7 +117,5 @@ impl Coordinator for CoordinatorImpl {
 }
 
 fn internal<E: std::fmt::Display>(e: E) -> CoreError {
-    CoreError::Fatal(FatalError::Internal {
-        msg: e.to_string(),
-    })
+    CoreError::Fatal(FatalError::Internal { msg: e.to_string() })
 }

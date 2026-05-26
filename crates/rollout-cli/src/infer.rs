@@ -196,9 +196,8 @@ async fn run_pool(
         .await
         .map_err(|e| cfg_err(&format!("create output.dir: {e}")))?;
 
-    let storage = Arc::new(
-        rollout_storage::EmbeddedStorage::open(cfg.output.dir.join("rollout.db")).await?,
-    );
+    let storage =
+        Arc::new(rollout_storage::EmbeddedStorage::open(cfg.output.dir.join("rollout.db")).await?);
     let object_store = Arc::new(
         rollout_cloud_local::FsObjectStore::open(cfg.output.dir.join("object-store")).await?,
     );
@@ -206,12 +205,8 @@ async fn run_pool(
 
     let run_id = resolve_run_id(args, &cfg.output.dir).await?;
 
-    let mut coord = BatchCoordinator::new(
-        storage.clone(),
-        queue.clone(),
-        object_store.clone(),
-        run_id,
-    );
+    let mut coord =
+        BatchCoordinator::new(storage.clone(), queue.clone(), object_store.clone(), run_id);
     // Test hook: shorten the stale-claim window so plan 03-05's
     // restart_no_duplicates integration test can re-enqueue mid-flight samples
     // immediately on restart instead of waiting the default 5 minutes (RESEARCH
@@ -266,7 +261,8 @@ async fn run_pool(
     // Collect Done rows, sorted by input_idx, and emit JSONL.
     let done = coord.collect_done_records().await?;
     let mut rows: Vec<JsonlOutput> = Vec::with_capacity(done.len());
-    let sampling_json = serde_json::to_value(&cfg.sampling).map_err(|e| internal(&e.to_string()))?;
+    let sampling_json =
+        serde_json::to_value(&cfg.sampling).map_err(|e| internal(&e.to_string()))?;
     for rec in done {
         // Re-derive the input ordinal -> input row.
         let idx = usize::try_from(rec.input_idx).unwrap_or(usize::MAX);
@@ -348,9 +344,7 @@ fn format_unix_ms(unix_ms: u64) -> String {
     let minute = (rem % 3_600) / 60;
     let second = rem % 60;
     let (year, month, day) = civil_from_days(days);
-    format!(
-        "{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}.{millis:03}Z"
-    )
+    format!("{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}.{millis:03}Z")
 }
 
 /// Howard Hinnant's `civil_from_days` algorithm (proleptic Gregorian).
@@ -369,7 +363,11 @@ fn civil_from_days(days: i64) -> (i32, u32, u32) {
     let mp = (5 * doy + 2) / 153;
     let day = doy - (153 * mp + 2) / 5 + 1;
     let month = if mp < 10 { mp + 3 } else { mp - 9 };
-    let year_final = if month <= 2 { year_civil + 1 } else { year_civil };
+    let year_final = if month <= 2 {
+        year_civil + 1
+    } else {
+        year_civil
+    };
     (year_final as i32, month as u32, day as u32)
 }
 

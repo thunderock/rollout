@@ -74,7 +74,10 @@ async fn pending_to_running_to_done_round_trip() {
         txn.abort().await.unwrap();
         ok
     };
-    assert!(!claimed_second, "second claim must lose (CAS expected drift)");
+    assert!(
+        !claimed_second,
+        "second claim must lose (CAS expected drift)"
+    );
 
     // Build the Running record that should now be persisted.
     let running = SampleRecord {
@@ -187,9 +190,12 @@ async fn stale_running_can_be_re_claimed() {
     };
     {
         let mut txn = storage.begin().await.unwrap();
-        txn.put_bytes(sample_key(&run_id, &sid), postcard::to_stdvec(&stale).unwrap())
-            .await
-            .unwrap();
+        txn.put_bytes(
+            sample_key(&run_id, &sid),
+            postcard::to_stdvec(&stale).unwrap(),
+        )
+        .await
+        .unwrap();
         txn.commit().await.unwrap();
     }
 

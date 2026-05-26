@@ -27,8 +27,7 @@ async fn setup() -> (
     let storage_path = tmp.path().join("storage.db");
     let object_path = tmp.path().join("object-store");
 
-    let storage: Arc<dyn Storage> =
-        Arc::new(EmbeddedStorage::open(&storage_path).await.unwrap());
+    let storage: Arc<dyn Storage> = Arc::new(EmbeddedStorage::open(&storage_path).await.unwrap());
     let object: Arc<dyn ObjectStore> = Arc::new(FsObjectStore::open(&object_path).await.unwrap());
 
     let snapper = SnapshotterImpl::new(
@@ -136,7 +135,10 @@ async fn buffer_kind_returns_fatal_phase_9() {
     };
     let err = snapper.save(req).await.unwrap_err();
     let msg = format!("{err:?}");
-    assert!(msg.contains("Phase 9"), "expected Phase 9 sentinel, got: {msg}");
+    assert!(
+        msg.contains("Phase 9"),
+        "expected Phase 9 sentinel, got: {msg}"
+    );
 }
 
 #[tokio::test]

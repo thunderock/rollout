@@ -13,8 +13,8 @@ use rollout_core::config::training::{RmHeadKind, RmSettings};
 use rollout_core::config::DatasetRef;
 use rollout_core::{
     AlgoContext, AlgoDependencies, AlgorithmId, ConfigViolation, ContentId, CoreError, FatalError,
-    LossScope, Plan, PolicyAlgorithm, RunOutcome, Snapshot, SnapshotKind, SnapshotPart,
-    TrainBatch, TrainableBackend, WorkerRole,
+    LossScope, Plan, PolicyAlgorithm, RunOutcome, Snapshot, SnapshotKind, SnapshotPart, TrainBatch,
+    TrainableBackend, WorkerRole,
 };
 use smol_str::SmolStr;
 
@@ -42,7 +42,10 @@ impl RmAlgo {
         // of the loss value. Plan 04-05 swaps in the real BT path via
         // `F.logsigmoid(r_chosen - r_rejected).neg().mean()` on the HF side.
         let batch = TrainBatch::with_rows(2, 32, vec!["[chosen]".into(), "[rejected]".into()]);
-        let loss = self.backend.forward_with_loss(&batch, &LossScope::Full).await?;
+        let loss = self
+            .backend
+            .forward_with_loss(&batch, &LossScope::Full)
+            .await?;
 
         self.backend
             .optimizer_step(loss.grad_handle, &self.settings.optimizer)
@@ -66,10 +69,7 @@ impl PolicyAlgorithm for RmAlgo {
         AlgorithmId(SmolStr::new_inline("rm"))
     }
 
-    fn from_settings(
-        settings: Self::Settings,
-        deps: AlgoDependencies,
-    ) -> Result<Self, CoreError> {
+    fn from_settings(settings: Self::Settings, deps: AlgoDependencies) -> Result<Self, CoreError> {
         let backend = Arc::clone(&deps.backend);
         Ok(Self {
             settings,
@@ -170,10 +170,7 @@ impl PolicyAlgorithm for RmAlgo {
             .ok_or_else(|| {
                 CoreError::Fatal(FatalError::PluginContract {
                     plugin: "rollout-algo-rm".into(),
-                    msg: format!(
-                        "snapshot.meta.step missing or not a u64: {}",
-                        snapshot.meta
-                    ),
+                    msg: format!("snapshot.meta.step missing or not a u64: {}", snapshot.meta),
                 })
             })?;
         self.step = step;

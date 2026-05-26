@@ -88,7 +88,7 @@ pub async fn run(cfg: CoordinatorConfig) -> Result<(), CoreError> {
         emitter.clone(),
     ));
     let hb_svc = rollout_transport::channels::HeartbeatServiceImpl::new(
-        coord_impl.clone() as Arc<dyn rollout_core::Coordinator>,
+        coord_impl.clone() as Arc<dyn rollout_core::Coordinator>
     );
     let ctrl_svc = rollout_transport::channels::ControlServiceImpl::new(
         rollout_transport::channels::control::ControlRouter::new(),
@@ -121,8 +121,16 @@ pub async fn run(cfg: CoordinatorConfig) -> Result<(), CoreError> {
 
     // 6. Serve over TLS
     tracing::info!(addr = %cfg.transport.listen_addr, "coordinator_serving");
-    let serve_result =
-        rollout_transport::server::serve(cfg.transport.listen_addr, srv_cert, srv_key, ca_cert, hb_svc, ctrl_svc, work_svc).await;
+    let serve_result = rollout_transport::server::serve(
+        cfg.transport.listen_addr,
+        srv_cert,
+        srv_key,
+        ca_cert,
+        hb_svc,
+        ctrl_svc,
+        work_svc,
+    )
+    .await;
 
     // Stop the failure-scan loop on serve exit.
     let _ = shutdown_tx.send(true);

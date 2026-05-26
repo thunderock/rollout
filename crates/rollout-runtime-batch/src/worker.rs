@@ -198,8 +198,7 @@ impl BatchWorker {
             Err(e) => {
                 let reason = format!("{e}");
                 let mut txn = self.storage.begin().await?;
-                let _applied =
-                    try_fail(&mut txn, &running, &self.run_id, reason, now_ms()).await?;
+                let _applied = try_fail(&mut txn, &running, &self.run_id, reason, now_ms()).await?;
                 txn.commit().await?;
                 RunOutcome::Failed
             }

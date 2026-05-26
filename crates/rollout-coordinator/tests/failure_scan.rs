@@ -19,10 +19,7 @@ impl EventEmitter for CaptureEmitter {
     async fn emit(&self, event: Event) -> Result<(), CoreError> {
         if let EventKind::Domain { topic } = &event.kind {
             if topic.as_str() == "worker_failed" {
-                let wid = event
-                    .worker_id
-                    .map(|w| w.0.to_string())
-                    .unwrap_or_default();
+                let wid = event.worker_id.map(|w| w.0.to_string()).unwrap_or_default();
                 self.failed.lock().unwrap().push(wid);
             }
         }
@@ -30,11 +27,7 @@ impl EventEmitter for CaptureEmitter {
     }
 }
 
-async fn write_heartbeat(
-    storage: &Arc<dyn Storage>,
-    worker_id: WorkerId,
-    due_at: SystemTime,
-) {
+async fn write_heartbeat(storage: &Arc<dyn Storage>, worker_id: WorkerId, due_at: SystemTime) {
     let due_ms = due_at
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
@@ -47,9 +40,12 @@ async fn write_heartbeat(
         received_at_ms: 0,
     };
     let mut txn = storage.begin().await.unwrap();
-    txn.put_bytes(heartbeat_key(&worker_id), postcard::to_allocvec(&rec).unwrap())
-        .await
-        .unwrap();
+    txn.put_bytes(
+        heartbeat_key(&worker_id),
+        postcard::to_allocvec(&rec).unwrap(),
+    )
+    .await
+    .unwrap();
     txn.commit().await.unwrap();
 }
 
@@ -110,7 +106,10 @@ async fn failure_scan_does_not_mark_healthy_workers() {
     let _ = handle.await;
 
     let captured = emitter.failed.lock().unwrap().clone();
-    assert!(captured.is_empty(), "expected no failures, got {captured:?}");
+    assert!(
+        captured.is_empty(),
+        "expected no failures, got {captured:?}"
+    );
 }
 
 #[tokio::test]

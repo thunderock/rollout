@@ -134,8 +134,12 @@ async fn scan_is_idempotent_on_second_call() {
         })
         .collect();
 
-    let coord =
-        BatchCoordinator::new(storage, Arc::clone(&queue) as Arc<dyn Queue>, object_store, run_id);
+    let coord = BatchCoordinator::new(
+        storage,
+        Arc::clone(&queue) as Arc<dyn Queue>,
+        object_store,
+        run_id,
+    );
 
     // First call: persists rows + enqueues all 3.
     let first = coord

@@ -137,4 +137,3 @@ proptest! {
         prop_assert_ne!(sample_id(&m, "hello", &pa, 0), sample_id(&m, "hello", &pb, 0));
     }
 }
-

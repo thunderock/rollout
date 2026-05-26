@@ -111,9 +111,8 @@ pub async fn run_train_sft(args: TrainSftArgs) -> Result<(), CoreError> {
     let mut algo = rollout_algo_sft::SftAlgo::from_settings(settings, deps)?;
 
     let plan = Plan::default();
-    algo.validate_plan(&plan).map_err(|violations| {
-        cfg_err(&format!("validate_plan failed: {violations:?}"))
-    })?;
+    algo.validate_plan(&plan)
+        .map_err(|violations| cfg_err(&format!("validate_plan failed: {violations:?}")))?;
 
     // Phase-4 caveat: the live train path runs the algo's budget loop once the
     // backend is wired through `--features train`. `--resume` lands the
@@ -171,9 +170,8 @@ pub async fn run_train_rm(args: TrainRmArgs) -> Result<(), CoreError> {
     let mut algo = rollout_algo_rm::RmAlgo::from_settings(settings, deps)?;
 
     let plan = Plan::default();
-    algo.validate_plan(&plan).map_err(|violations| {
-        cfg_err(&format!("validate_plan failed: {violations:?}"))
-    })?;
+    algo.validate_plan(&plan)
+        .map_err(|violations| cfg_err(&format!("validate_plan failed: {violations:?}")))?;
 
     if let Some(snap_id) = &args.resume {
         let snap = load_snapshot(snap_id, &args.config).await?;

@@ -62,9 +62,7 @@ async fn run_steps<B: TrainableBackend + ?Sized>(
 #[ignore = "requires ROLLOUT_TRANSFORMERS_AVAILABLE=1 + transformers >= 4.45"]
 async fn snapshot_resume_qwen25_cpu_bit_identical() {
     if !transformers_available() {
-        eprintln!(
-            "skipping snapshot_resume_live; set ROLLOUT_TRANSFORMERS_AVAILABLE=1 to run"
-        );
+        eprintln!("skipping snapshot_resume_live; set ROLLOUT_TRANSFORMERS_AVAILABLE=1 to run");
         return;
     }
 
@@ -87,11 +85,11 @@ async fn snapshot_resume_qwen25_cpu_bit_identical() {
         .set_train_mode(true)
         .await
         .expect("set_train_mode B1");
-    run_steps(&backend_b1, 2).await.expect("run_steps B1 phase1");
-    let mid_dir = std::env::temp_dir().join(format!(
-        "rollout-snapshot-resume-mid-{}",
-        ulid::Ulid::new()
-    ));
+    run_steps(&backend_b1, 2)
+        .await
+        .expect("run_steps B1 phase1");
+    let mid_dir =
+        std::env::temp_dir().join(format!("rollout-snapshot-resume-mid-{}", ulid::Ulid::new()));
     // Phase-4 simplification: save_weights mints a fresh tempdir internally.
     // We capture its ContentId (= blake3 of the tempdir path); the body of
     // the dir is what holds the resume contract. Plan 04-06 wires

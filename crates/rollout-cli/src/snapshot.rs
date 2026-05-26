@@ -155,7 +155,10 @@ pub async fn run_snapshot_show(args: SnapshotShowArgs) -> Result<(), CoreError> 
             return Ok(());
         }
     }
-    Err(cfg_err(&format!("snapshot not found: {}", args.snapshot_id)))
+    Err(cfg_err(&format!(
+        "snapshot not found: {}",
+        args.snapshot_id
+    )))
 }
 
 /// `rollout snapshot prune` handler.

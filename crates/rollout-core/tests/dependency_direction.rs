@@ -37,8 +37,12 @@ const ALGO_CRATES: &[&str] = &["rollout-algo-sft", "rollout-algo-rm"];
 const SNAPSHOTS_CRATE: &str = "rollout-snapshots";
 // Crates the coordinator must NOT depend on: the plugin host (plugins are a
 // worker concern) and any cloud-layer crate (the coordinator is cloud-agnostic).
-const COORDINATOR_FORBIDDEN: &[&str] =
-    &["rollout-plugin-host", "rollout-cloud-local", "rollout-cloud-aws", "rollout-cloud-gcp"];
+const COORDINATOR_FORBIDDEN: &[&str] = &[
+    "rollout-plugin-host",
+    "rollout-cloud-local",
+    "rollout-cloud-aws",
+    "rollout-cloud-gcp",
+];
 
 fn violation_algo_uses_cloud(pkg: &str, dep: &str) -> bool {
     ALGO_AND_ABOVE.contains(&pkg) && CLOUD_CRATES.contains(&dep)
@@ -275,7 +279,9 @@ fn invariant_9_snapshots_does_not_depend_on_algo() {
     let pkg = toml_pkg_name(&body);
     let deps = toml_dep_names(&body);
 
-    let caught = deps.iter().any(|d| invariant_9_snapshots_uses_algo(&pkg, d));
+    let caught = deps
+        .iter()
+        .any(|d| invariant_9_snapshots_uses_algo(&pkg, d));
     assert!(
         caught,
         "fixture failed: expected snapshots->algo violation (#9), pkg={pkg} deps={deps:?}",

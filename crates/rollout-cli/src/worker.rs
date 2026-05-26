@@ -50,9 +50,7 @@ fn default_worker_storage() -> EmbeddedStorageConfig {
 }
 
 fn internal<E: std::fmt::Display>(e: E) -> CoreError {
-    CoreError::Fatal(FatalError::Internal {
-        msg: e.to_string(),
-    })
+    CoreError::Fatal(FatalError::Internal { msg: e.to_string() })
 }
 
 /// Worker entry point invoked by `rollout worker run`.
@@ -69,11 +67,11 @@ pub async fn run(
     // 1. Load + validate config.
     let raw = std::fs::read_to_string(&config_path).map_err(internal)?;
     let cfg: WorkerConfig = toml::from_str(&raw).map_err(internal)?;
-    cfg.transport
-        .validate_cross_fields()
-        .map_err(|errs| CoreError::Fatal(FatalError::ConfigInvalid {
+    cfg.transport.validate_cross_fields().map_err(|errs| {
+        CoreError::Fatal(FatalError::ConfigInvalid {
             msg: format!("worker config invalid: {errs:?}"),
-        }))?;
+        })
+    })?;
 
     let run_id_ulid: ulid::Ulid = cfg.run_id.parse().map_err(|e| {
         CoreError::Fatal(FatalError::ConfigInvalid {
@@ -134,8 +132,7 @@ pub async fn run(
 
     let shutdown_tx_for_signal = shutdown_tx.clone();
     tokio::spawn(async move {
-        let Ok(mut sig) =
-            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+        let Ok(mut sig) = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
         else {
             return;
         };

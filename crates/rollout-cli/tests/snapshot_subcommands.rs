@@ -40,16 +40,10 @@ async fn seed_one(
 }
 
 async fn open_snapper(dir: &std::path::Path) -> SnapshotterImpl {
-    let storage: Arc<dyn Storage> = Arc::new(
-        EmbeddedStorage::open(dir.join("rollout.db"))
-            .await
-            .unwrap(),
-    );
-    let object: Arc<dyn ObjectStore> = Arc::new(
-        FsObjectStore::open(dir.join("object-store"))
-            .await
-            .unwrap(),
-    );
+    let storage: Arc<dyn Storage> =
+        Arc::new(EmbeddedStorage::open(dir.join("rollout.db")).await.unwrap());
+    let object: Arc<dyn ObjectStore> =
+        Arc::new(FsObjectStore::open(dir.join("object-store")).await.unwrap());
     SnapshotterImpl::new(storage, object, dir.to_path_buf())
 }
 
@@ -210,5 +204,7 @@ async fn snapshot_prune_keeps_last_n_and_labeled() {
         3,
         "expected 3 survivors (2 newest + 1 labeled), got {remaining:?}"
     );
-    assert!(remaining.iter().any(|s| s.label.as_deref() == Some("keep-a")));
+    assert!(remaining
+        .iter()
+        .any(|s| s.label.as_deref() == Some("keep-a")));
 }

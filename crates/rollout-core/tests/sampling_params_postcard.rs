@@ -10,7 +10,10 @@ use rollout_core::SamplingParams;
 fn sampling_params_default_postcard_is_deterministic() {
     let a = postcard::to_stdvec(&SamplingParams::default()).expect("postcard a");
     let b = postcard::to_stdvec(&SamplingParams::default()).expect("postcard b");
-    assert_eq!(a, b, "postcard SamplingParams::default() must be byte-stable");
+    assert_eq!(
+        a, b,
+        "postcard SamplingParams::default() must be byte-stable"
+    );
 }
 
 #[test]
@@ -38,5 +41,8 @@ stream = false
 
     let a = postcard::to_stdvec(&from_omitted).expect("postcard omitted");
     let b = postcard::to_stdvec(&from_explicit).expect("postcard explicit");
-    assert_eq!(a, b, "stop = [] and omitted stop must produce identical postcard bytes");
+    assert_eq!(
+        a, b,
+        "stop = [] and omitted stop must produce identical postcard bytes"
+    );
 }

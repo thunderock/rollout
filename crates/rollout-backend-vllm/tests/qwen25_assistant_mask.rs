@@ -24,16 +24,16 @@ fn qwen25_chat_template_assistant_mask_only_on_assistant_tokens() {
         // Pitfall 2: env vars BEFORE `import torch` (which train.py top-imports).
         let os = py.import("os").unwrap();
         let environ = os.getattr("environ").unwrap();
-        environ.set_item("CUBLAS_WORKSPACE_CONFIG", ":4096:8").unwrap();
+        environ
+            .set_item("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+            .unwrap();
         environ.set_item("PYTHONHASHSEED", "0").unwrap();
 
         // Import the train module — runs the determinism preamble on first import.
         let train_mod = py.import("rollout.backends.vllm.train").unwrap();
         let _state = train_mod
             .call_method1("init_train", ("Qwen/Qwen2.5-0.5B-Instruct", 42_i64))
-            .expect(
-                "init_train failed; have you `pip install transformers accelerate torch`?",
-            );
+            .expect("init_train failed; have you `pip install transformers accelerate torch`?");
 
         // Pull tokenizer off module-global _STATE.
         let state = train_mod.getattr("_STATE").unwrap();
@@ -49,7 +49,9 @@ fn qwen25_chat_template_assistant_mask_only_on_assistant_tokens() {
         let messages = vec![user, assistant];
 
         let kwargs = PyDict::new(py);
-        kwargs.set_item("return_assistant_tokens_mask", true).unwrap();
+        kwargs
+            .set_item("return_assistant_tokens_mask", true)
+            .unwrap();
         kwargs.set_item("return_dict", true).unwrap();
         kwargs.set_item("tokenize", true).unwrap();
         let result = tokenizer

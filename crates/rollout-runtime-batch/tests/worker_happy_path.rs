@@ -10,9 +10,7 @@ use rollout_core::{
     ContentId, InferenceBackend, ObjectStore, Prompt, Queue, RunId, SamplingParams, Storage,
     WorkerId,
 };
-use rollout_runtime_batch::{
-    BatchCoordinator, BatchWorker, InputItem, MockBackend, SampleState,
-};
+use rollout_runtime_batch::{BatchCoordinator, BatchWorker, InputItem, MockBackend, SampleState};
 use rollout_storage::EmbeddedStorage;
 use std::sync::Arc;
 use ulid::Ulid;
@@ -123,10 +121,7 @@ async fn worker_drains_already_done_queue_entries() {
     .await
     .unwrap();
     txn.commit().await.unwrap();
-    queue
-        .enqueue(sid.to_string().into_bytes())
-        .await
-        .unwrap();
+    queue.enqueue(sid.to_string().into_bytes()).await.unwrap();
 
     let backend: Arc<dyn InferenceBackend> = Arc::new(MockBackend::new(0));
     let worker = BatchWorker::new(

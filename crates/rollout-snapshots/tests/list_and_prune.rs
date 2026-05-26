@@ -203,7 +203,9 @@ async fn prune_honors_keep_last_and_keep_labeled() {
         .unwrap();
     assert_eq!(remaining.len(), 3);
     // Labeled snapshot from the middle should have survived.
-    assert!(remaining.iter().any(|s| s.label.as_deref() == Some("keep-me")));
+    assert!(remaining
+        .iter()
+        .any(|s| s.label.as_deref() == Some("keep-me")));
 }
 
 #[tokio::test]

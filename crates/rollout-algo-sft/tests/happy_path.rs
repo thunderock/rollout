@@ -83,8 +83,12 @@ async fn validate_plan_rejects_zero_minibatch() {
     let backend = Arc::new(MockBackend::new_train(1));
     let (deps, _keep) = build_deps(backend, tmp.path()).await;
     let algo = SftAlgo::from_settings(s, deps).unwrap();
-    let violations = algo.validate_plan(&rollout_core::Plan::default()).unwrap_err();
-    assert!(violations.iter().any(|v| v.locator.contains("minibatch_size")));
+    let violations = algo
+        .validate_plan(&rollout_core::Plan::default())
+        .unwrap_err();
+    assert!(violations
+        .iter()
+        .any(|v| v.locator.contains("minibatch_size")));
 }
 
 #[tokio::test]
@@ -132,11 +136,8 @@ async fn build_deps(
             .await
             .unwrap(),
     );
-    let object: Arc<dyn ObjectStore> = Arc::new(
-        FsObjectStore::open(&scratch_dir.join("obj"))
-            .await
-            .unwrap(),
-    );
+    let object: Arc<dyn ObjectStore> =
+        Arc::new(FsObjectStore::open(&scratch_dir.join("obj")).await.unwrap());
     let snapper: Arc<dyn Snapshotter> = Arc::new(SnapshotterImpl::new(
         Arc::clone(&storage),
         Arc::clone(&object),
