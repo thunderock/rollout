@@ -24,12 +24,7 @@ rollout-core         = { path = "../rollout-core", version = "0.1" }
 pyo3                 = { workspace = true }
 pyo3-async-runtimes  = { workspace = true }
 async-trait          = { workspace = true }
-serde                = { workspace = true }
-serde_json           = { workspace = true }
-thiserror            = { workspace = true }
 tokio                = { workspace = true }
-tracing              = { workspace = true }
-blake3               = { workspace = true }
 postcard             = { workspace = true }
 # Phase-4: minted target_dir for save_weights (used only under --features train).
 ulid                 = { workspace = true, optional = true }

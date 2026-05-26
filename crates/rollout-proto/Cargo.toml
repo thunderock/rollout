@@ -20,3 +20,9 @@ tokio-stream = { workspace = true }
 tonic-build         = { workspace = true }
 tonic-prost-build   = { workspace = true }
 protoc-bin-vendored = { workspace = true }
+
+[package.metadata.cargo-machete]
+# Runtime deps are used only by tonic-prost-build-generated code in OUT_DIR
+# (`::prost::Message`, `::prost_types::Timestamp`, tonic server/client codegen).
+# Machete cannot see through the build.rs codegen path.
+ignored = ["prost", "prost-types", "tokio-stream", "tonic-prost"]

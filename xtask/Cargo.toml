@@ -7,7 +7,6 @@ publish = false
 [dependencies]
 serde_json = { workspace = true }
 schemars = { workspace = true }
-cargo_metadata = { workspace = true }
 
 [dependencies.rollout-core]
 path = "../crates/rollout-core"

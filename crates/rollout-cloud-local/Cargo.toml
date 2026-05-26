@@ -20,12 +20,7 @@ async-trait     = { workspace = true }
 serde           = { workspace = true }
 serde_json      = { workspace = true }
 schemars        = { workspace = true }
-thiserror       = { workspace = true }
-tracing         = { workspace = true }
 tokio           = { workspace = true }
-blake3          = { workspace = true }
-postcard        = { workspace = true }
-hex             = { workspace = true }
 ulid            = { workspace = true }
 sysinfo         = { workspace = true }
 smol_str        = { workspace = true }

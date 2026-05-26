@@ -16,7 +16,6 @@ serde_json = { workspace = true }
 schemars = { workspace = true }
 thiserror = { workspace = true }
 async-trait = { workspace = true }
-tracing = { workspace = true }
 ulid = { workspace = true }
 blake3 = { workspace = true }
 smol_str = { workspace = true }

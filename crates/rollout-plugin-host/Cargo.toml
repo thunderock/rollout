@@ -24,7 +24,7 @@ module_name_repetitions = "allow"
 [features]
 default = ["cdylib", "pyo3", "sidecar"]
 cdylib = ["dep:libloading"]
-pyo3 = ["dep:pyo3", "dep:pyo3-async-runtimes"]
+pyo3 = ["dep:pyo3"]
 sidecar = ["dep:nix"]
 dev-hot-reload = []
 
@@ -32,16 +32,13 @@ dev-hot-reload = []
 rollout-core    = { path = "../rollout-core", version = "0.1" }
 rollout-storage = { path = "../rollout-storage", version = "0.1" }
 async-trait     = { workspace = true }
-serde           = { workspace = true }
 serde_json      = { workspace = true }
-thiserror       = { workspace = true }
 tracing         = { workspace = true }
 tokio           = { workspace = true }
 smol_str        = { workspace = true }
 toml            = { workspace = true }
 libloading           = { workspace = true, optional = true }
 pyo3                 = { workspace = true, optional = true }
-pyo3-async-runtimes  = { workspace = true, optional = true }
 nix                  = { version = "0.30", default-features = false, features = ["signal"], optional = true }
 
 [dev-dependencies]

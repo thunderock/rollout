@@ -22,7 +22,6 @@ rollout-core = { path = "../rollout-core", version = "0.1" }
 async-trait  = { workspace = true }
 serde        = { workspace = true }
 schemars     = { workspace = true }
-thiserror    = { workspace = true }
 tracing      = { workspace = true }
 tokio        = { workspace = true }
 smol_str     = { workspace = true }

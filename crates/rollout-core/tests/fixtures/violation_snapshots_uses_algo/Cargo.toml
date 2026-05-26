@@ -8,3 +8,7 @@ edition = "2021"
 
 [dependencies]
 rollout-algo-sft = "0.1"
+
+[package.metadata.cargo-machete]
+# Fixture intentionally declares the forbidden edge under test. Do not "fix".
+ignored = ["rollout-algo-sft"]
