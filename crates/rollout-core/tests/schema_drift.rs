@@ -22,7 +22,14 @@ fn run_schema_gen(out_dir: &Path) {
     assert!(status.success(), "cargo xtask schema-gen exited {status}");
 }
 
+// Both drift tests require `datamodel-code-generator` on PATH (transitively, via
+// `cargo xtask schema-gen`). The dedicated `schema-drift` CI job installs it and
+// runs `git diff --exit-code schemas/ python/` after regeneration, which is the
+// authoritative gate. The default `cargo test --workspace --tests` job does NOT
+// install Python tooling, so these tests are `#[ignore]`d there. Local devs and
+// the schema-drift job opt in via `-- --include-ignored`.
 #[test]
+#[ignore = "requires datamodel-code-generator; covered by ci/schema-drift job"]
 fn schema_json_matches_committed() {
     let tmp = tempdir_path("rollout-schema-drift-json");
     run_schema_gen(&tmp);
@@ -39,6 +46,7 @@ fn schema_json_matches_committed() {
 }
 
 #[test]
+#[ignore = "requires datamodel-code-generator; covered by ci/schema-drift job"]
 fn python_stubs_match_committed() {
     let tmp = tempdir_path("rollout-schema-drift-py");
     run_schema_gen(&tmp);
