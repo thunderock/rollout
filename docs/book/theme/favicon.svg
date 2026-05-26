@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Isometric 3-card stack — alternative logo tied directly to thumbnail 08's metaphor. -->
+  <defs>
+    <linearGradient id="cTop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FB923C"/>
+      <stop offset="1" stop-color="#F97316"/>
+    </linearGradient>
+    <linearGradient id="cMid" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F472B6"/>
+      <stop offset="1" stop-color="#DB2777"/>
+    </linearGradient>
+    <linearGradient id="cBot" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#5B21B6"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(256 264)">
+    <!-- bottom card (purple) - shifted right + down -->
+    <g transform="translate(40 95) skewY(-25)">
+      <rect x="-150" y="-90" width="300" height="180" rx="22" fill="url(#cBot)"/>
+      <g stroke="#FFFFFF" stroke-width="3" fill="none" opacity="0.6">
+        <rect x="-150" y="-90" width="300" height="180" rx="22"/>
+      </g>
+      <g fill="#FFFFFF">
+        <circle cx="-110" cy="-50" r="8"/>
+        <circle cx="-50" cy="-50" r="8"/>
+        <circle cx="-110" cy="50" r="8"/>
+      </g>
+    </g>
+
+    <!-- middle card (magenta) - centered -->
+    <g transform="translate(0 0) skewY(-25)">
+      <rect x="-150" y="-90" width="300" height="180" rx="22" fill="url(#cMid)"/>
+      <g stroke="#FFFFFF" stroke-width="3" fill="none" opacity="0.7">
+        <rect x="-150" y="-90" width="300" height="180" rx="22"/>
+      </g>
+      <g fill="#FFFFFF">
+        <circle cx="-110" cy="-50" r="8"/>
+        <circle cx="-50" cy="-50" r="8"/>
+        <circle cx="-110" cy="50" r="8"/>
+        <circle cx="10" cy="-50" r="8"/>
+      </g>
+    </g>
+
+    <!-- top card (orange) - shifted left + up -->
+    <g transform="translate(-40 -95) skewY(-25)">
+      <rect x="-150" y="-90" width="300" height="180" rx="22" fill="url(#cTop)"/>
+      <g stroke="#FFFFFF" stroke-width="3" fill="none" opacity="0.85">
+        <rect x="-150" y="-90" width="300" height="180" rx="22"/>
+      </g>
+      <g fill="#FFFFFF">
+        <circle cx="-110" cy="-50" r="8"/>
+        <circle cx="-50" cy="-50" r="8"/>
+        <circle cx="-110" cy="50" r="8"/>
+        <circle cx="10" cy="-50" r="8"/>
+        <circle cx="70" cy="-50" r="8"/>
+      </g>
+    </g>
+  </g>
+</svg>

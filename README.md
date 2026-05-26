@@ -1,6 +1,17 @@
-# rollout
+<p align="center">
+  <img src="docs/assets/wordmark.svg" alt="rollout" height="120"/>
+</p>
 
-> A high-performance, multi-node reinforcement-learning framework for large language models. Written in Rust. Pluggable in Python.
+<p align="center">
+  <em>A high-performance, multi-node reinforcement-learning framework for large language models. Written in Rust. Pluggable in Python.</em>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT"/>
+  <img src="https://img.shields.io/badge/rust-1.88.0-orange.svg" alt="rust 1.88.0"/>
+  <img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="python 3.11+"/>
+  <img src="https://img.shields.io/badge/status-v1.0-purple.svg" alt="v1.0"/>
+</p>
 
 **Status:** spec / pre-implementation. v1 in design.
 

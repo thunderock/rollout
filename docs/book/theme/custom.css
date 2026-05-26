@@ -1,0 +1,66 @@
+/* rollout brand v1 — tri-color geometric.
+ * Applies on top of the default mdbook light theme.
+ * Palette is exported as CSS variables so future pages can reuse it.
+ */
+
+:root {
+  --rollout-orange-500: #f97316;
+  --rollout-orange-400: #fb923c;
+  --rollout-magenta-500: #db2777;
+  --rollout-magenta-400: #f472b6;
+  --rollout-purple-600: #7c3aed;
+  --rollout-purple-800: #5b21b6;
+  --rollout-purple-300: #a78bfa;
+  --rollout-gradient: linear-gradient(
+    90deg,
+    var(--rollout-orange-500) 0%,
+    var(--rollout-magenta-500) 50%,
+    var(--rollout-purple-800) 100%
+  );
+}
+
+/* Page h1 picks up the brand gradient. */
+.content h1:first-of-type {
+  background: var(--rollout-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* Sidebar product name (mdbook puts the book title in .sidebar-resizer-collapsed
+ * and .menu-title; tint the menu title with the gradient). */
+.menu-title {
+  background: var(--rollout-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 800;
+}
+
+/* Inline-link accent — magenta on hover for the tri-color signature. */
+a:hover,
+.content a:hover {
+  color: var(--rollout-magenta-500);
+}
+
+/* Code-inline pop using the orange brand. */
+code:not(pre > code) {
+  color: var(--rollout-orange-500);
+  background: rgba(249, 115, 22, 0.06);
+  border-radius: 3px;
+  padding: 0.05em 0.32em;
+}
+
+/* Blockquote accent rail — left border in the tri-color gradient. */
+blockquote {
+  border-left: 4px solid transparent;
+  border-image: var(--rollout-gradient) 1;
+  background: rgba(124, 58, 237, 0.03);
+}
+
+/* Table header tint. */
+table thead {
+  background: rgba(219, 39, 119, 0.05);
+}
