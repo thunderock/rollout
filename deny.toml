@@ -6,6 +6,15 @@ no-default-features = false
 version = 2
 yanked = "deny"
 unmaintained = "workspace"
+# RUSTSEC-2025-0111 / CVE-2025-62518 / GHSA-j5gw-2vrg-8fgx — `tokio-tar 0.3.1` is
+# unmaintained + unsound (PAX header smuggling). Reaches this workspace only via
+# `testcontainers 0.23` (dev-dependency of `rollout-storage`, gated behind
+# `--features postgres` and the `#[ignore]`d testcontainers suite). No safe
+# upgrade is available (announcement: https://edera.dev/stories/tarmageddon).
+# Tracked in `.planning/v1.0-MILESTONE-AUDIT.md` tech_debt; revisit when
+# `testcontainers` adopts `astral-tokio-tar` or when we switch to a dockerless
+# integration harness.
+ignore = ["RUSTSEC-2025-0111"]
 
 [licenses]
 version = 2
