@@ -1,6 +1,11 @@
 /* rollout brand v1 — tri-color geometric.
- * Applies on top of the default mdbook light theme.
- * Palette is exported as CSS variables so future pages can reuse it.
+ *
+ * Theme-aware: mdbook switches the <html> class between
+ * `light` / `rust` (light bg) and `navy` / `coal` / `ayu` (dark bg)
+ * based on user preference. Brand accents that rely on low-alpha
+ * tints would vanish on dark themes if applied unconditionally,
+ * so dark-theme selectors below bump alpha and shift the link-hover
+ * to a lighter magenta for legibility.
  */
 
 :root {
@@ -19,8 +24,9 @@
   );
 }
 
-/* Page h1 picks up the brand gradient. */
-.content h1:first-of-type {
+/* Gradient text — works on any background, applies to every theme. */
+.content h1:first-of-type,
+.menu-title {
   background: var(--rollout-gradient);
   -webkit-background-clip: text;
   background-clip: text;
@@ -29,38 +35,71 @@
   letter-spacing: -0.5px;
 }
 
-/* Sidebar product name (mdbook puts the book title in .sidebar-resizer-collapsed
- * and .menu-title; tint the menu title with the gradient). */
-.menu-title {
-  background: var(--rollout-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-weight: 800;
+/* Blockquote rail — gradient border applies to every theme. */
+blockquote {
+  border-left: 4px solid transparent;
+  border-image: var(--rollout-gradient) 1;
 }
 
-/* Inline-link accent — magenta on hover for the tri-color signature. */
-a:hover,
-.content a:hover {
+/* ---------------------------------------------------------------------------
+ * LIGHT THEMES (light, rust) — low-alpha tints read on white/cream.
+ * --------------------------------------------------------------------------- */
+
+html.light a:hover,
+html.rust a:hover,
+html.light .content a:hover,
+html.rust .content a:hover {
   color: var(--rollout-magenta-500);
 }
 
-/* Code-inline pop using the orange brand. */
-code:not(pre > code) {
+html.light code:not(pre > code),
+html.rust code:not(pre > code) {
   color: var(--rollout-orange-500);
-  background: rgba(249, 115, 22, 0.06);
+  background: rgba(249, 115, 22, 0.08);
   border-radius: 3px;
   padding: 0.05em 0.32em;
 }
 
-/* Blockquote accent rail — left border in the tri-color gradient. */
-blockquote {
-  border-left: 4px solid transparent;
-  border-image: var(--rollout-gradient) 1;
-  background: rgba(124, 58, 237, 0.03);
+html.light blockquote,
+html.rust blockquote {
+  background: rgba(124, 58, 237, 0.04);
 }
 
-/* Table header tint. */
-table thead {
-  background: rgba(219, 39, 119, 0.05);
+html.light table thead,
+html.rust table thead {
+  background: rgba(219, 39, 119, 0.06);
+}
+
+/* ---------------------------------------------------------------------------
+ * DARK THEMES (navy, coal, ayu) — higher alpha + lighter accents.
+ * --------------------------------------------------------------------------- */
+
+html.navy a:hover,
+html.coal a:hover,
+html.ayu a:hover,
+html.navy .content a:hover,
+html.coal .content a:hover,
+html.ayu .content a:hover {
+  color: var(--rollout-magenta-400);
+}
+
+html.navy code:not(pre > code),
+html.coal code:not(pre > code),
+html.ayu code:not(pre > code) {
+  color: var(--rollout-orange-400);
+  background: rgba(251, 146, 60, 0.16);
+  border-radius: 3px;
+  padding: 0.05em 0.32em;
+}
+
+html.navy blockquote,
+html.coal blockquote,
+html.ayu blockquote {
+  background: rgba(167, 139, 250, 0.10);
+}
+
+html.navy table thead,
+html.coal table thead,
+html.ayu table thead {
+  background: rgba(244, 114, 182, 0.12);
 }
