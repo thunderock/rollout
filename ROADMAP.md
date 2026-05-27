@@ -6,9 +6,20 @@ The phases are sequenced so that the **first end-to-end usable thing** appears a
 
 The v1 north-star: **a 7B PPO run on a tool-using LLM, multi-node, ≥80% rollout-phase GPU utilization, fully resumable from snapshot, plugins authored in either Rust or Python, no UI.**
 
+## Milestone status
+
+| Milestone | Phases | Status |
+|---|---|---|
+| **v1.0 — substrate + train** | 1, 2, 3, 4 | ✓ Shipped 2026-05-27 |
+| v1.1 — cloud + multi-node + harnesses | 5, 6, 7 | planned |
+| v1.2 — online inference + RL + offline + spot | 8, 9, 10, 11 | planned |
+| v1.0 ship | 12 | planned |
+
+Phases 1–4 are complete; their detail below is preserved for reference. See [`.planning/MILESTONES.md`](.planning/MILESTONES.md) for the v1.0 ship summary and [`.planning/milestones/`](.planning/milestones/) for archived snapshots.
+
 ---
 
-## Phase 1 — Core foundations
+## Phase 1 — Core foundations  *(✓ shipped in v1.0)*
 
 **Goal:** the trait surface, config schema, error taxonomy, and ID types that everything else builds on.
 
@@ -31,7 +42,7 @@ The v1 north-star: **a 7B PPO run on a tool-using LLM, multi-node, ≥80% rollou
 
 ---
 
-## Phase 2 — Local substrate (storage + transport + plugin host)
+## Phase 2 — Local substrate (storage + transport + plugin host)  *(✓ shipped in v1.0)*
 
 **Goal:** a worker can start, store state, talk to peers, load a plugin, and shut down cleanly — all without touching any cloud.
 
@@ -53,7 +64,7 @@ The v1 north-star: **a 7B PPO run on a tool-using LLM, multi-node, ≥80% rollou
 
 ---
 
-## Phase 3 — Inference backend (vLLM) + batch inference
+## Phase 3 — Inference backend (vLLM) + batch inference  *(✓ shipped in v1.0)*
 
 **Goal:** end-to-end batch inference on a real model. First "useful" thing.
 
@@ -75,7 +86,7 @@ The v1 north-star: **a 7B PPO run on a tool-using LLM, multi-node, ≥80% rollou
 
 ---
 
-## Phase 4 — SFT + reward-model training + training-state snapshots
+## Phase 4 — SFT + reward-model training + training-state snapshots  *(✓ shipped in v1.0)*
 
 **Goal:** the first training story end-to-end. Pre-cursor to RL — proves the training loop, snapshot system, and metadata store.
 
