@@ -40,6 +40,8 @@ aws-sdk-s3 = { version = "=1.112.0", default-features = false, features = [
 
 If we want to track upstream long-term, the cleanest fix is bumping our workspace MSRV to 1.91 in a future milestone. Until then: **exact-version pinning + a CI job that periodically tries `cargo update -p aws-sdk-s3 --precise <newer>` and reports MSRV breaks** is the standing pattern.
 
+> **RESOLVED (2026-05-28, Phase 5 precursor C):** Workspace MSRV bumped 1.88 → 1.91. The spike (`.planning/research/PRECURSOR-C-MSRV-DECISION.md`) found the MSRV-relevant surface clean on 1.91 (full workspace build + PyO3 0.28 + sqlx 0.8 + tonic 0.14, 224 tests, `cargo deny check` all green; only one cosmetic `clippy::doc_markdown` lint, fixed inline). `rust-toolchain.toml`, `Cargo.toml` `[workspace.package].rust-version`, and all 11 `dtolnay/rust-toolchain@` CI pins are now `1.91.0`. **AWS SDK crates may use caret version selectors as of this commit; the `=`-exact-pin discipline (D-MSRV-02 fallback) is no longer required.** After pulling the bump commit, run `cargo clean` then rebuild — 1.88-built `.rlib` metadata is incompatible with 1.91.
+
 ### TLS / cargo-deny Compatibility
 
 - The new (post-2024) `default-https-client` stack uses **hyper 1.x + rustls + aws-lc**. **No openssl.** Compatible with our openssl ban.
@@ -352,7 +354,7 @@ arrow-array             = "55"
 
 ## Risk Flags for Roadmapper
 
-1. **HIGH — aws-sdk-rust MSRV creep**: We are pinning to an old version cohort (s3 1.112) because current `main` requires Rust 1.91. **Either bump workspace MSRV to 1.91 in a precursor task or accept that we cannot pull AWS security/feature updates without an MSRV bump.** Recommend a small precursor plan in CLOUD-01 phase to evaluate the workspace impact of moving to 1.91 (does it break PyO3 0.28, tonic 0.14, anything else?).
+1. ~~**HIGH — aws-sdk-rust MSRV creep**~~ **RESOLVED (2026-05-28, Phase 5 precursor C):** Workspace MSRV bumped 1.88 → 1.91. The spike confirmed 1.91 does NOT break PyO3 0.28, tonic 0.14, sqlx 0.8, or anything else on the CI-exercised surface. Plan 05 (AWS SDK PR) may now track current S3/SQS releases with caret selectors instead of `=`-exact pins; AWS security/feature updates no longer require a forced MSRV revisit. See `.planning/research/PRECURSOR-C-MSRV-DECISION.md`.
 2. **MEDIUM — gcloud-* monorepo versioning**: Google's official SDK uses date-cohort releases (e.g., `v20260319`). Exact crate versions need verification at integration time; the `"1"` placeholder above is a stub. Pin precisely once first integration PR lands.
 3. **MEDIUM — cap-std license (`Apache-2.0 WITH LLVM-exception`)**: Verify against current `deny.toml` `[licenses].allow`. If absent, either add it or restrict to a different sandbox crate (cap-std is convenient but not load-bearing — `rustix` alone covers `openat`-style operations).
 4. **MEDIUM — Tonic compatibility across cloud SDKs**: aws-sdk-rust uses hyper 1.x; gcloud-* uses tonic 0.12+. Verify no hyper-version conflicts in the dep graph at first integration. v1.0 workspace uses tonic 0.14 (hyper 1.x) — should align cleanly.

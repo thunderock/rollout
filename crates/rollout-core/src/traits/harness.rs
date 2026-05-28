@@ -18,7 +18,7 @@ pub trait ToolHarness: Send + Sync {
     async fn invoke(&self, payload: &[u8]) -> Result<Vec<u8>, CoreError>;
 }
 
-/// Wraps an evaluation suite (MMLU, IFEval, GSM8K, ...).
+/// Wraps an evaluation suite (MMLU, `IFEval`, GSM8K, ...).
 #[async_trait]
 pub trait EvalHarness: Send + Sync {
     /// Run the evaluation and return a scalar score.
