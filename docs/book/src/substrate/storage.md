@@ -52,6 +52,10 @@ abort()  → drop(txn); buffer is dropped
 
 The scan iterates the namespace table and decodes each key on the way out; namespace already partitions the data, so tables stay small. `limit` short-circuits the iteration.
 
+### Postgres path constraint (ASCII-printable)
+
+The Postgres backend stores `StorageKey.path` as `TEXT[]`. Path components must be **ASCII-printable** (bytes `0x20`–`0x7E`); non-printable / NUL / high-bit bytes cannot round-trip through `TEXT[]` and would silently diverge from redb's byte-lex prefix scan (PITFALLS.md §17). Every Postgres CRUD and scan entry-point calls `StorageKey::validate_for_postgres()` and rejects offending keys with `Fatal(ConfigInvalid)` before any SQL runs. For binary identifiers in path components, use `hex::encode` at the `StorageKey` construction site. A 256-case proptest (`tests/postgres_scan_bytes_parity.rs`) witnesses byte-parity between redb and Postgres over the printable-ASCII range.
+
 ## Cross-process watch
 
 NOT supported. The broadcast channel lives in process memory; another `EmbeddedStorage` instance pointing at the same file will not receive events. Cross-process watch arrives with the Postgres backend in Phase 4 (`LISTEN`/`NOTIFY`).

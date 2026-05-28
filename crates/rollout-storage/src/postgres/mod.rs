@@ -77,6 +77,7 @@ impl Storage for PostgresStorage {
     }
 
     async fn get_bytes(&self, key: &StorageKey) -> Result<Option<Vec<u8>>, CoreError> {
+        key.validate_for_postgres()?;
         let path: Vec<String> = key.path.iter().map(SmolStr::to_string).collect();
         let run_uuid = key.run_id.map(ulid_to_uuid);
         let row = sqlx::query("SELECT value FROM kv WHERE namespace = $1 AND run_id IS NOT DISTINCT FROM $2 AND path = $3")
@@ -90,6 +91,9 @@ impl Storage for PostgresStorage {
     }
 
     async fn get_many_bytes(&self, keys: &[StorageKey]) -> Result<Vec<Option<Vec<u8>>>, CoreError> {
+        for k in keys {
+            k.validate_for_postgres()?;
+        }
         let mut out = Vec::with_capacity(keys.len());
         // Sequential point reads; Postgres parses the prepared statement once
         // per session so batching here is a minor optimization left for later.
@@ -101,6 +105,7 @@ impl Storage for PostgresStorage {
 
     async fn scan_bytes(&self, range: KeyRange) -> Result<Vec<(StorageKey, Vec<u8>)>, CoreError> {
         let KeyRange { prefix, limit } = range;
+        prefix.validate_for_postgres()?;
         let prefix_path: Vec<String> = prefix.path.iter().map(SmolStr::to_string).collect();
         let run_uuid = prefix.run_id.map(ulid_to_uuid);
         let lim = i64::try_from(limit.unwrap_or(usize::MAX / 2)).unwrap_or(i64::MAX);
@@ -195,6 +200,7 @@ impl PostgresTxn {
 #[async_trait]
 impl StorageTxn for PostgresTxn {
     async fn put_bytes(&mut self, key: StorageKey, value: Vec<u8>) -> Result<(), CoreError> {
+        key.validate_for_postgres()?;
         let path: Vec<String> = key.path.iter().map(SmolStr::to_string).collect();
         let run_uuid = key.run_id.map(ulid_to_uuid);
         let tx = self.tx_mut()?;
@@ -217,6 +223,7 @@ impl StorageTxn for PostgresTxn {
     }
 
     async fn delete(&mut self, key: StorageKey) -> Result<(), CoreError> {
+        key.validate_for_postgres()?;
         let path: Vec<String> = key.path.iter().map(SmolStr::to_string).collect();
         let run_uuid = key.run_id.map(ulid_to_uuid);
         let tx = self.tx_mut()?;
@@ -238,6 +245,7 @@ impl StorageTxn for PostgresTxn {
         expected: Option<Vec<u8>>,
         new: Option<Vec<u8>>,
     ) -> Result<bool, CoreError> {
+        key.validate_for_postgres()?;
         let path: Vec<String> = key.path.iter().map(SmolStr::to_string).collect();
         let run_uuid = key.run_id.map(ulid_to_uuid);
         let tx = self.tx_mut()?;

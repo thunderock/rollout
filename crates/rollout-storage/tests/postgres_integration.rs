@@ -203,3 +203,76 @@ async fn scan_returns_matching_prefix() {
         .unwrap();
     assert_eq!(rows.len(), 3);
 }
+
+// --- Phase 5 Precursor A (PITFALLS.md §17): validity-guard parity ---
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore = "requires Docker / testcontainers"]
+async fn pg_scan_bytes_rejects_nonprintable_prefix() {
+    let (_c, url) = start_postgres().await;
+    let storage = new_storage_with_retry(&url).await;
+    let prefix = key("work", None, &["\u{0}bad"]);
+    let err = storage
+        .scan_bytes(KeyRange {
+            prefix,
+            limit: None,
+        })
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(
+            err,
+            rollout_core::CoreError::Fatal(rollout_core::FatalError::ConfigInvalid { .. })
+        ),
+        "expected ConfigInvalid, got {err:?}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore = "requires Docker / testcontainers"]
+async fn pg_put_bytes_rejects_nonprintable_path() {
+    let (_c, url) = start_postgres().await;
+    let storage = new_storage_with_retry(&url).await;
+    let k = key("work", None, &["\u{0}bad"]);
+
+    let mut txn = storage.begin().await.unwrap();
+    let err = txn.put_bytes(k.clone(), b"x".to_vec()).await.unwrap_err();
+    assert!(matches!(
+        err,
+        rollout_core::CoreError::Fatal(rollout_core::FatalError::ConfigInvalid { .. })
+    ));
+    txn.abort().await.unwrap();
+
+    // No row was inserted: a clean-key scan over the namespace stays empty.
+    let rows = storage
+        .scan_bytes(KeyRange {
+            prefix: key("work", None, &[]),
+            limit: None,
+        })
+        .await
+        .unwrap();
+    assert_eq!(rows.len(), 0, "rejected put must not insert a row");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore = "requires Docker / testcontainers"]
+async fn pg_scan_bytes_ascii_only_round_trip() {
+    let (_c, url) = start_postgres().await;
+    let storage = new_storage_with_retry(&url).await;
+    let hexed = hex::encode([1_u8, 2, 3]);
+    for i in 0..5_u8 {
+        let leaf = format!("{hexed}-{i}");
+        let k = key("work", None, &["a", leaf.as_str()]);
+        let mut txn = storage.begin().await.unwrap();
+        txn.put_bytes(k, vec![i]).await.unwrap();
+        txn.commit().await.unwrap();
+    }
+    let rows = storage
+        .scan_bytes(KeyRange {
+            prefix: key("work", None, &["a"]),
+            limit: None,
+        })
+        .await
+        .unwrap();
+    assert_eq!(rows.len(), 5);
+}
