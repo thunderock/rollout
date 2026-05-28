@@ -19,7 +19,7 @@ This spec defines the v1 crate map, the corresponding PyPI packages, the depende
 | 9 | `rollout-snapshots` | 3 | core, storage | Four-flavor snapshot system |
 | 10 | `rollout-harness-text` | 3 | core, plugin-host | In-tree text env harness |
 | 11 | `rollout-harness-tool` | 3 | core, plugin-host | In-tree tool harness with sandboxed tools |
-| 12 | `rollout-evals` | 3 | core, plugin-host | Eval harness runner + bundled evals |
+| 12 | `rollout-harness-eval` | 3 | core, plugin-host | Eval harness runner + bundled evals |
 
 Plus 5 algorithm crates:
 
@@ -67,7 +67,7 @@ Total: **23 crates**, of which **17 are publishable** to crates.io.
                         ▲                                            │
               ┌─────────┼─────────┬────────────┐                     │
               │         │         │            │                     │
-       rollout-harness-* rollout-evals  rollout-algo-*  ─────────────┘
+       rollout-harness-* rollout-harness-eval  rollout-algo-*  ──────┘
                                             │
                                             └──▶ rollout-runtime ──▶ rollout-cli
                                                                      rollout-py
@@ -197,7 +197,7 @@ members = [
     "crates/rollout-snapshots",
     "crates/rollout-harness-text",
     "crates/rollout-harness-tool",
-    "crates/rollout-evals",
+    "crates/rollout-harness-eval",
     "crates/rollout-algo-ppo",
     "crates/rollout-algo-grpo",
     "crates/rollout-algo-dpo",

@@ -56,14 +56,14 @@ Generic implementations of substrate concerns built on top of Layer 1:
 - `rollout-backend-vllm` — vLLM inference backend (default).
 - `rollout-backend-sglang`, `rollout-backend-tgi`, `rollout-backend-candle` — alternate backends behind the same trait. May land post-v1.
 
-### Layer 3 — Capabilities (`rollout-harness-*`, `rollout-snapshots`, `rollout-plugin-host`, `rollout-evals`)
+### Layer 3 — Capabilities (`rollout-harness-*`, `rollout-snapshots`, `rollout-plugin-host`, `rollout-harness-eval`)
 
 Cross-cutting capabilities used by algorithms:
 
 - `rollout-harness-text`, `rollout-harness-tool` — env/tool harnesses.
 - `rollout-snapshots` — four-flavor snapshot system (training-state, buffer, process, episodic).
 - `rollout-plugin-host` — dual-mode plugin host (PyO3 in-process + sidecar RPC).
-- `rollout-evals` — eval harness runner + bundled standard evals.
+- `rollout-harness-eval` — eval harness runner + bundled standard evals.
 
 ### Layer 4 — Algorithms (`rollout-algo-*`)
 

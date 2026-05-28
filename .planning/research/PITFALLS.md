@@ -385,7 +385,7 @@ Additional v1.1-specific footguns:
 **How to avoid:**
 - **Eval runs as a separate `WorkQueue` job** (FEATURES.md §7 already states this — reinforce). `EvalHarness::evaluate` should not be called synchronously in a training inner loop. The architecture: training loop enqueues "eval me at step N"; eval harness pulls from queue; eval results returned via Storage, polled by training loop. **Plan-time validator:** if `[rl].mid_training_eval.enabled = true`, require `[rl].mid_training_eval.async = true` (default).
 - **Dataset caching is sticky:** `EvalHarness::load_dataset` is called once per process; cached in `Arc<EvalDataset>`. Test fixture `eval_loader_caches_dataset_across_calls` asserts `load_dataset` is called exactly once across 100 `evaluate()` calls.
-- **MMLU scoring convention is documented as `acc` (Eleuther convention)** in `crates/rollout-evals/README.md`. Spec the exact regex / argmax rule. CI test `mmlu_score_matches_eleuther_acc_on_fixture` runs the v1.0 fixture (10 examples), asserts score is exactly the published reference score for those examples (or ±1% if floating-point).
+- **MMLU scoring convention is documented as `acc` (Eleuther convention)** in `crates/rollout-harness-eval/README.md`. Spec the exact regex / argmax rule. CI test `mmlu_score_matches_eleuther_acc_on_fixture` runs the v1.0 fixture (10 examples), asserts score is exactly the published reference score for those examples (or ±1% if floating-point).
 - **IFEval language-detection constraints are skipped, documented as such.** Plan-time validator emits a warning at load-time: "IFEval: skipping N language-detection constraints (not yet supported in v1.1)."
 - **Eval suite versioning:** `Eval.suite_version = "mmlu_v1"` is included in the `ContentId` of the result. If we change scoring rules in v1.2, the old results are not silently invalidated.
 
@@ -407,26 +407,26 @@ The eval harness loads MMLU/IFEval/GSM8K from HuggingFace via `hf-hub` (STACK.md
 - Some HF datasets (not these three by default, but if anyone adds future ones) are *gated*: require accepting a license at https://huggingface.co/datasets/... before access. Anonymous access fails with 403 even with the right URL.
 - HF mirror URLs change occasionally; hardcoded URLs break.
 
-Specific v1.1 footgun: the test fixture set must work *air-gapped* per FEATURES.md §7 ("Offline mode is the default"). If a developer runs `cargo test -p rollout-evals` on a flight, the test must pass.
+Specific v1.1 footgun: the test fixture set must work *air-gapped* per FEATURES.md §7 ("Offline mode is the default"). If a developer runs `cargo test -p rollout-harness-eval` on a flight, the test must pass.
 
 **Why it happens:**
 - "Just download from HF" is the path of least resistance.
 - HF_TOKEN is not surfaced as a hard requirement in the eval crate's README; new contributors don't set it.
 
 **How to avoid:**
-- **Ship 10-row fixtures per suite** in `crates/rollout-evals/tests/fixtures/{mmlu_10.parquet, ifeval_10.parquet, gsm8k_10.parquet}`. These are content-hash-pinned, committed to the repo, and are the source for the always-on CI eval tests.
+- **Ship 10-row fixtures per suite** in `crates/rollout-harness-eval/tests/fixtures/{mmlu_10.parquet, ifeval_10.parquet, gsm8k_10.parquet}`. These are content-hash-pinned, committed to the repo, and are the source for the always-on CI eval tests.
 - **`HF_OFFLINE=1` env var is the default for `cargo test`.** When set, the `hf-hub` loader is bypassed; loaders read the local fixture. Documented in the crate README.
 - **`cloud-emulator-*` jobs do NOT pull from HF.** Only the nightly `hf-dataset-refresh` job validates that the real HF URLs still resolve and content hashes still match the pinned values. Failure → flag for vendoring or version bump.
 - **Test fixture `eval_loader_works_with_no_network`:** unset `HTTP_PROXY` / `HTTPS_PROXY`, set `HF_HUB_OFFLINE=1`, run all suite loaders; assert all pass using fixtures.
 - **Plan-time validator:** if `harness.eval.suite = "mmlu"` AND no fixture present AND no `HF_TOKEN` AND not interactive → emit `Fatal::ConfigInvalid("eval suite mmlu requires HF_TOKEN or vendored fixture")` at load.
-- **Vendor the test split SHAs:** in `crates/rollout-evals/src/datasets/mmlu.rs`, hardcode `const MMLU_TEST_BLAKE3: &str = "..."`. On first download, blake3 the downloaded file; if mismatch, fail loudly. Detects HF-side drift.
+- **Vendor the test split SHAs:** in `crates/rollout-harness-eval/src/datasets/mmlu.rs`, hardcode `const MMLU_TEST_BLAKE3: &str = "..."`. On first download, blake3 the downloaded file; if mismatch, fail loudly. Detects HF-side drift.
 
 **Warning signs:**
-- CI `rollout-evals` test job intermittently fails with `429 Too Many Requests` or `403 Forbidden`.
+- CI `rollout-harness-eval` test job intermittently fails with `429 Too Many Requests` or `403 Forbidden`.
 - A run reports `loaded MMLU: 14042 examples` on one CI run and `14040` on another — drift on HF side.
 - Dev says "cargo test fails on the train, network is bad" — likely missing offline-mode default.
 
-**Phase to address:** Phase 7 (HARNESS-03), PR 5 (rollout-evals crate). The fixture + offline-default discipline must be in the first PR.
+**Phase to address:** Phase 7 (HARNESS-03), PR 5 (rollout-harness-eval crate). The fixture + offline-default discipline must be in the first PR.
 
 ---
 
@@ -707,7 +707,7 @@ Things that appear complete but are missing critical pieces.
 - [ ] **Tool harness shell tool:** Looks done — `echo hello` works. Often missing: `shell=True` ban (Pitfall 10a); allowlist of binary *paths* (not names); seccomp `clone3` allow (Pitfall 10e); cgroups v2 limits actually enforced (test by spawning `:(){ :|:& };:` fork bomb — should be killed by `pids.max`). Verify by trying command injection: `; cat /etc/passwd`.
 - [ ] **Tool harness file tool:** Looks done — read/write to `/tmp/sandbox` works. Often missing: `..` rejection post-canonicalize (Pitfall 10b); symlink rejection (`O_NOFOLLOW`); cap-std actually wraps every fs call. Verify by creating `/tmp/sandbox/escape -> /etc/passwd` and trying to read `escape`.
 - [ ] **Tool harness HTTP tool:** Looks done — `GET https://example.com/` works. Often missing: IP-allowlist post-DNS (Pitfall 10c); RFC1918 rejection; DNS rebinding defense; redirect re-validation. Verify by allowlisting `example.com` and trying `https://example.com/redir?to=http://169.254.169.254/...` — must reject.
-- [ ] **Eval harness MMLU:** Looks done — scores 0.42 on a tiny model. Often missing: scoring convention documented as `acc` (Pitfall 11); dataset cached across calls; offline-mode default (Pitfall 12); 10-row fixture committed. Verify by running `HF_HUB_OFFLINE=1 cargo test -p rollout-evals` — should pass.
+- [ ] **Eval harness MMLU:** Looks done — scores 0.42 on a tiny model. Often missing: scoring convention documented as `acc` (Pitfall 11); dataset cached across calls; offline-mode default (Pitfall 12); 10-row fixture committed. Verify by running `HF_HUB_OFFLINE=1 cargo test -p rollout-harness-eval` — should pass.
 - [ ] **Byte-identical resume via cloud (`bit_identical_resume_at_step_5_via_s3`):** Looks done — passes once. Often missing: fault-injection on SDK retry path (Pitfall 16); cross-provider test (Pitfall 9); LIST-after-PUT race protection (Pitfall 4). Verify by running 100x with `localstack` fault-injection at 10% — should still pass.
 - [ ] **cargo-deny with cloud features:** Looks done — `cargo deny check` is green. Often missing: feature-combination coverage (`--features aws,gcp,vllm,sandbox`); aws-lc-rs license actually allowlisted with documented justification (Pitfall 14); `OpenSSL` license explicitly denied in `[licenses].deny`. Verify by `cargo deny check --features aws,gcp,vllm,sandbox`.
 - [ ] **Multi-node smoke test on real cloud:** Looks done — `make smoke-multi-node-aws` exits 0. Often missing: assertion that `coord.fence_epoch` actually advanced; assertion that no orphan multipart uploads exist post-test; assertion that all worker logs show same `coord_epoch` value. Verify by inspecting Postgres state post-test.
@@ -762,7 +762,7 @@ How v1.1 roadmap phases address each pitfall.
 | 10c | SSRF / DNS rebinding | Phase 7 PR 4 | Custom `hyper::Connect` with IP-allowlist post-DNS + RFC1918 deny + redirect re-validation | `http_tool_blocks_{dns_rebinding,redirect_to_imds,rfc1918}` |
 | 10d | landlock kernel version | Phase 7 PR 3 | Runtime kernel-version detection at sandbox init; plan-time validator with `require_landlock` flag | Test on Ubuntu 22.04 + documented RHEL 8 limitations |
 | 10e | seccomp clone3/openat2 | Phase 7 PR 3 | Curated allowlist with strace-derived justification; explicit clone3/openat2/faccessat2 | `seccomp_python_runs` + `seccomp_blocks_unexpected_syscall` |
-| 11 | Sync eval blocks loop | Phase 7 PR 5 (rollout-evals) | Async-job-via-WorkQueue pattern documented; `evaluate()` cache datasets via Arc | `eval_loader_caches_dataset_across_calls` + design rule in trait rustdoc |
+| 11 | Sync eval blocks loop | Phase 7 PR 5 (rollout-harness-eval) | Async-job-via-WorkQueue pattern documented; `evaluate()` cache datasets via Arc | `eval_loader_caches_dataset_across_calls` + design rule in trait rustdoc |
 | 12 | HF rate limits | Phase 7 PR 5 | 10-row fixtures committed; `HF_HUB_OFFLINE=1` default for `cargo test`; SHA-pinned download verification | `eval_loader_works_with_no_network` |
 | 13 | Fork after PyO3 init | Phase 6 PR 4 (worker spawn pattern) | CI grep ban on `libc::fork`; spawn via `Command::new` only; no sub-interpreters | `worker_spawn_after_pyo3_init_works` |
 | 14 | cargo-deny license | Phase 5 PR 1 (first SDK dep) | New `deny-cloud-features` CI job; `OpenSSL` explicit deny in `deny.toml`; aws-lc-rs license audited | `cargo deny check --features aws,gcp,vllm,sandbox` green |

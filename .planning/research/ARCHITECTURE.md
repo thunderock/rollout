@@ -38,7 +38,7 @@ This matches the v1.0 `rollout-cloud-local` shape — a sibling crate that impls
 |---|---|---|
 | **`rollout-harness-text` (new crate)** | `EnvHarness` (core/traits/harness.rs:9) | Env harness for text completion. Algo-layer, no cloud deps. The dep-direction test (line 22) already enumerates `rollout-harness-text` as algo-layer. |
 | **`rollout-harness-tool` (new crate)** | `ToolHarness` (core/traits/harness.rs:16) | Sandboxed tool surface. Process isolation + path/HTTP allowlist + resource limits. Best-effort in v1.1; gVisor/Firecracker explicitly deferred per PROJECT.md. |
-| **`rollout-evals` (new crate)** | `EvalHarness` (core/traits/harness.rs:23) | Bundled MMLU + IFEval + GSM8K. The dep-direction test (line 24) calls it `rollout-evals`, *not* `rollout-harness-eval`. Use that name — the invariant array is already wired. |
+| **`rollout-harness-eval` (new crate)** | `EvalHarness` (core/traits/harness.rs:23) | Bundled MMLU + IFEval + GSM8K. The dep-direction test (line 24) calls it `rollout-harness-eval` (renamed from `rollout-evals` in the Phase 5 precursor for symmetry with the other harness crates). Use that name — the invariant array is already wired. |
 
 These should **not** be plugins. The v1.0 `PluginHost` is for user-supplied out-of-tree code; in-tree harnesses are first-class crates that PPO/GRPO will `use` directly via the `EnvHarness` / `ToolHarness` / `EvalHarness` trait objects in v1.2. Treating bundled harnesses as plugins would force a manifest + sidecar dance for shipping code.
 
@@ -46,7 +46,7 @@ Important corollary: the existing `EnvHarness::reset` / `ToolHarness::invoke` / 
 
 ### crates.io publishability count
 
-v1.0 ships 13 crates. v1.1 adds: `rollout-cloud-aws`, `rollout-cloud-gcp`, `rollout-harness-text`, `rollout-harness-tool`, `rollout-evals` = **+5 crates → 18 total**. The original "17 by ship" line in PROJECT.md is one off; flagging as a minor PROJECT.md update.
+v1.0 ships 13 crates. v1.1 adds: `rollout-cloud-aws`, `rollout-cloud-gcp`, `rollout-harness-text`, `rollout-harness-tool`, `rollout-harness-eval` = **+5 crates → 18 total**. The original "17 by ship" line in PROJECT.md is one off; flagging as a minor PROJECT.md update.
 
 ---
 
@@ -295,7 +295,7 @@ Honoring the existing dep-direction lint and the v1.1 milestone phasing (Phase 5
 1. **`rollout-core::traits::harness` expansion** (PR 1) — see §2.5. New return types (`EnvObservation`, `EnvStep`, `EvalResult`). Schema-gen impact: these types must be schema-eligible if any subfield surfaces in `RunConfig` (likely just `EvalResult::score` — keep them out of `RunConfig` if possible).
 2. **`rollout-harness-text` (new crate)** (PR 2) — `TextEnvHarness` impl. Pure-Rust, no cloud deps. Unit tests on CI.
 3. **`rollout-harness-tool` (new crate)** (PR 3-4) — process-isolation sandbox (PR 3) + path/HTTP allowlist (PR 4). v1.1 stays best-effort (no gVisor/Firecracker). Integration test in CI for the allowlist; sandbox tests Linux-only.
-4. **`rollout-evals` (new crate)** (PR 5) — MMLU + IFEval + GSM8K dataset loaders + scorers. **Datasets must not be embedded in the crate** — pull from HF on first use, cache via `Storage::put_bytes`-equivalent. Add a `HF_OFFLINE=1` test mode that uses tiny fixture data shipped with the crate.
+4. **`rollout-harness-eval` (new crate)** (PR 5) — MMLU + IFEval + GSM8K dataset loaders + scorers. **Datasets must not be embedded in the crate** — pull from HF on first use, cache via `Storage::put_bytes`-equivalent. Add a `HF_OFFLINE=1` test mode that uses tiny fixture data shipped with the crate.
 
 **Total v1.1 crate additions: 5. Total trait additions: ~12 new methods + 4 expanded methods, all on `rollout-core`.**
 
@@ -381,7 +381,7 @@ Algo crates ↛ cloud; transport ↛ cloud; plugin-host ↛ transport; coordinat
 | # | Invariant | Why | Fixture path |
 |---|---|---|---|
 | 10 | `rollout-cloud-aws` ↛ `rollout-cloud-gcp` and vice versa | Cloud crates must be independent — one cloud per run (per PROJECT.md Out of Scope: "Cross-cloud single run"). | `tests/fixtures/violation_aws_uses_gcp/` |
-| 11 | `rollout-harness-*` and `rollout-evals` ↛ any `rollout-cloud-*` | Harnesses are algo-layer; testable without cloud creds (PROJECT.md Core Value). Already covered partially by invariant #1 since these are in `ALGO_AND_ABOVE` — just verify it's tested with a fixture. | `tests/fixtures/violation_harness_uses_cloud/` |
+| 11 | `rollout-harness-*` and `rollout-harness-eval` ↛ any `rollout-cloud-*` | Harnesses are algo-layer; testable without cloud creds (PROJECT.md Core Value). Already covered partially by invariant #1 since these are in `ALGO_AND_ABOVE` — just verify it's tested with a fixture. | `tests/fixtures/violation_harness_uses_cloud/` |
 | 12 | `rollout-coordinator` ↛ `rollout-cloud-aws` / `rollout-cloud-gcp` | Existing invariant #4 already names the local crate; the array `COORDINATOR_FORBIDDEN` (dep-direction.rs:40-45) already enumerates aws + gcp. **Already pre-wired** — just needs a fixture under `tests/fixtures/violation_coord_uses_aws/`. | already on file (line 43-44) |
 | 13 | `rollout-harness-tool` ↛ `rollout-backend-vllm` | Tool harness must not pull a 5 GiB GPU dep closure. Keeps `cargo test -p rollout-harness-tool` Docker-free / GPU-free. | `tests/fixtures/violation_harness_uses_backend/` |
 
@@ -410,7 +410,7 @@ The v1.0 CI matrix (14 jobs) gates `cargo test --workspace --tests` Docker-free 
 | Spot-preemption signal flow | Mock `ComputeHint` returning `Some(Duration::from_secs(120))`. Drains a mock 3-worker setup. Pure Rust, runs on every commit. |
 | Harness `rollout-harness-text` | Unit tests with mock backend. |
 | Harness `rollout-harness-tool` allowlist | Unit tests. Process-isolation actual sandbox is Linux-only (gated by `#[cfg(target_os = "linux")]`). |
-| Harness `rollout-evals` | Ship a 10-row fixture per suite under `tests/fixtures/`; default test uses fixtures. Avoids HF cold-fetch on every CI run. |
+| Harness `rollout-harness-eval` | Ship a 10-row fixture per suite under `tests/fixtures/`; default test uses fixtures. Avoids HF cold-fetch on every CI run. |
 | Schema-drift on new RunConfig fields | Existing `schema-drift` job. Regenerates and diffs. |
 | 13-invariant dep-direction lint | Existing `architecture-lint` job. |
 
@@ -423,7 +423,7 @@ The v1.0 CI matrix (14 jobs) gates `cargo test --workspace --tests` Docker-free 
 | `make smoke-multi-node-aws` (3-node coord + 2-worker) | Manual + nightly | ~$0.05/run, 10 minutes wall-clock. |
 | `make smoke-multi-node-gcp` | Symmetric | Symmetric. |
 | Spot-preemption end-to-end on AWS | Manual + nightly. Uses spot fleet API to *intentionally* request a high-bid instance, then kills it. | Most expensive — ~$0.10/run. |
-| HF dataset cold-fetch test for `rollout-evals` | Weekly. Without `HF_OFFLINE=1`. | Free (datasets are public). |
+| HF dataset cold-fetch test for `rollout-harness-eval` | Weekly. Without `HF_OFFLINE=1`. | Free (datasets are public). |
 
 ### CI job additions (suggested)
 
@@ -452,10 +452,10 @@ These prove that the blake3 content-addressing invariant survives the streaming 
 ## 8. Open Questions / Flags for Roadmap
 
 1. **`rollout-coordinator` Cargo features.** Today the coordinator is single-feature. Phase 6 needs Postgres-backed state — should that be a `postgres` feature on `rollout-coordinator` (consistent with `rollout-storage`)? Recommendation: yes, but keep redb-backed mode the default for local dev.
-2. **Harness names: `rollout-evals` vs `rollout-harness-eval`.** The dep-direction lint already uses `rollout-evals` (line 24). Decide: keep that name (asymmetric with the two harness crates) or rename to `rollout-harness-eval` (symmetric, but requires updating the lint test). Recommendation: rename to `rollout-harness-eval` and update the lint. Symmetry > one-line change.
+2. **Harness names: `rollout-harness-eval` (resolved).** Originally the dep-direction lint used `rollout-evals` (asymmetric with the two harness crates). Resolved in the Phase 5 precursor: renamed to `rollout-harness-eval` and updated the lint (line 24). Symmetry > one-line change.
 3. **`PluginKind` enumeration drift.** v1.0 ships `PluginKind::EnvHarness/ToolHarness/EvalHarness` (plugin.rs:32-50). When the harness traits expand in v1.1 (§2.5), the *plugin* surface for third-party harnesses should expand too. This is a small but real cascade through `rollout-plugin-host`.
 4. **Cross-cloud testing.** Per PROJECT.md, cross-cloud single run is out of scope. But the codebase should *not* prevent it — invariant #10 (aws ↛ gcp) is about crate boundaries, not runtime composition. Worth confirming with the roadmapper whether a single binary linking both cloud crates (selected via `[cloud].provider` at runtime) is the v1.1 shape, or whether `rollout` ships as `rollout-aws` and `rollout-gcp` separate binaries. Recommendation: single binary, both crates compiled in (Cargo features `aws` *and* `gcp` on `rollout-cli`), runtime selection from RunConfig. Adds ~30 MB to release binary size; acceptable.
-5. **17 → 18 publishable crates.** PROJECT.md says "~17 publishable crates". With v1.1's 5 additions on top of v1.0's 13, we hit 18. Either update PROJECT.md or fold two crates (e.g., merge `rollout-harness-text` + `rollout-evals` under a generic `rollout-harness` umbrella). Recommendation: update PROJECT.md to 18 — splitting harnesses cleanly is worth the extra crate.
+5. **17 → 18 publishable crates.** PROJECT.md says "~17 publishable crates". With v1.1's 5 additions on top of v1.0's 13, we hit 18. Either update PROJECT.md or fold two crates (e.g., merge `rollout-harness-text` + `rollout-harness-eval` under a generic `rollout-harness` umbrella). Recommendation: update PROJECT.md to 18 — splitting harnesses cleanly is worth the extra crate.
 
 ---
 
@@ -468,7 +468,7 @@ These prove that the blake3 content-addressing invariant survives the streaming 
 - `/Users/ashutosh/personal/rollout/crates/rollout-core/src/traits/harness.rs` — EnvHarness/ToolHarness/EvalHarness placeholders
 - `/Users/ashutosh/personal/rollout/crates/rollout-core/src/traits/snapshot.rs` — Snapshotter; SnapshotPart content-addressing invariant
 - `/Users/ashutosh/personal/rollout/crates/rollout-core/src/config/mod.rs` — RunConfig (current shape, no cloud/coord/harness blocks yet)
-- `/Users/ashutosh/personal/rollout/crates/rollout-core/tests/dependency_direction.rs` — 9 invariants enumerated; `rollout-cloud-aws/gcp` already in the cloud array; `rollout-harness-*` / `rollout-evals` already in the algo-and-above array; COORDINATOR_FORBIDDEN already names aws + gcp
+- `/Users/ashutosh/personal/rollout/crates/rollout-core/tests/dependency_direction.rs` — 9 invariants enumerated; `rollout-cloud-aws/gcp` already in the cloud array; `rollout-harness-*` / `rollout-harness-eval` already in the algo-and-above array; COORDINATOR_FORBIDDEN already names aws + gcp
 - `/Users/ashutosh/personal/rollout/crates/rollout-cloud-local/src/lib.rs` — integration template for cloud crates
 - `/Users/ashutosh/personal/rollout/crates/rollout-coordinator/src/lib.rs` — v1.0 minimal control plane (register/deregister/heartbeat + failure-scan)
 - `/Users/ashutosh/personal/rollout/crates/rollout-snapshots/src/lib.rs` — `SnapshotterImpl` takes `Arc<dyn ObjectStore>` — cloud snapshot is "for free" once streaming puts land

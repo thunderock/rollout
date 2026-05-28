@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-rollout v1.1 adds three pillars on top of the v1.0 substrate (13 crates, 19 traits, content-addressed determinism, dep-direction lint, schema-as-code): Cloud (AWS S3/SQS/SM + GCP GCS/Pub-Sub/SM via official SDKs), Distribution (multi-node coordinator + work-stealing pull queue + coordinator restart + spot-preemption drain), and Harnesses (text-completion env + best-effort tool sandbox + MMLU/IFEval/GSM8K eval). All 10 requirements are additive: nothing in v1.0's public API breaks. The 5 new crates (`rollout-cloud-aws`, `rollout-cloud-gcp`, `rollout-harness-text`, `rollout-harness-tool`, `rollout-evals`) join the existing 13, extend already-shipped traits with default-impl-backward-compatible methods, and satisfy the existing dep-direction lint whose invariant array already enumerates these crate names.
+rollout v1.1 adds three pillars on top of the v1.0 substrate (13 crates, 19 traits, content-addressed determinism, dep-direction lint, schema-as-code): Cloud (AWS S3/SQS/SM + GCP GCS/Pub-Sub/SM via official SDKs), Distribution (multi-node coordinator + work-stealing pull queue + coordinator restart + spot-preemption drain), and Harnesses (text-completion env + best-effort tool sandbox + MMLU/IFEval/GSM8K eval). All 10 requirements are additive: nothing in v1.0's public API breaks. The 5 new crates (`rollout-cloud-aws`, `rollout-cloud-gcp`, `rollout-harness-text`, `rollout-harness-tool`, `rollout-harness-eval`) join the existing 13, extend already-shipped traits with default-impl-backward-compatible methods, and satisfy the existing dep-direction lint whose invariant array already enumerates these crate names.
 
 The recommended build order is Cloud → Distribution → Harnesses, because the cloud layer (especially `ObjectStore::put_stream/get_stream` and `Queue::dequeue_with_lease`) is consumed by the distribution layer (coordinator state persistence, work-stealing, spot drain), and harnesses are laterally independent of both but depend on `ObjectStore` and `WorkQueue` for trajectory/eval caching. The hardest single item is **DIST-03 (coordinator restart)**: unlike Ray (Raft+GCS), Slurm (backup-controller), or Temporal (event-history replay), rollout's "coordinator is a stateless replayer against Storage" pattern has no direct peer-framework template; it requires careful split-brain fencing via a Postgres lease row and per-RPC epoch validation on every worker.
 
@@ -47,12 +47,12 @@ All 10 requirements land in v1.1. The invariant: every requirement has a load-be
 
 ### Architecture Approach
 
-v1.1 is a **5-crate addition onto a fixed 13-crate substrate** with **~16 new/expanded trait methods**, all on `rollout-core`. The dep-direction lint (10 invariants in v1.0) grows to 13 invariants with 4 new violation fixtures — and the invariant array already enumerates the new crate names, so the architecture is pre-wired. Coordinator state that was in-memory in v1.0 (work assignments, fence epoch, queue-item bindings) moves to Storage under new namespaces (`"work"`, `"epoch"`, `"queue_items"`), enabling coordinator restart with no new infrastructure dependency (redb for dev, Postgres for production multi-node). Harness traits expand from single-method placeholders to full contracts that v1.2 PPO/GRPO will consume. The `rollout-evals` crate name (per the lint array) conflicts with naming symmetry for the other harness crates — recommend renaming to `rollout-harness-eval` and updating the lint in the same PR.
+v1.1 is a **5-crate addition onto a fixed 13-crate substrate** with **~16 new/expanded trait methods**, all on `rollout-core`. The dep-direction lint (10 invariants in v1.0) grows to 13 invariants with 4 new violation fixtures — and the invariant array already enumerates the new crate names, so the architecture is pre-wired. Coordinator state that was in-memory in v1.0 (work assignments, fence epoch, queue-item bindings) moves to Storage under new namespaces (`"work"`, `"epoch"`, `"queue_items"`), enabling coordinator restart with no new infrastructure dependency (redb for dev, Postgres for production multi-node). Harness traits expand from single-method placeholders to full contracts that v1.2 PPO/GRPO will consume. The eval harness crate is named `rollout-harness-eval` for naming symmetry with the other harness crates (renamed from `rollout-evals` in the Phase 5 precursor; the dep-direction lint array uses the symmetric name).
 
 **Major components added:**
 1. `rollout-cloud-aws` / `rollout-cloud-gcp` — implement four cloud traits each; gated behind `aws`/`gcp` Cargo features on `rollout-cli`; independent of each other (invariant #10)
 2. `rollout-coordinator` (modified) — lifts assignment state into Storage; adds `pull_work`/`complete_work`/`drain_request`; Postgres lease row for coordinator fencing; fence-epoch CAS
-3. `rollout-harness-text` / `rollout-harness-tool` / `rollout-evals` — algo-layer crates (no cloud deps); satisfy expanded harness traits
+3. `rollout-harness-text` / `rollout-harness-tool` / `rollout-harness-eval` — algo-layer crates (no cloud deps); satisfy expanded harness traits
 4. `RunConfig` schema additions: `CloudConfig`, `CoordinatorConfig`, `QueueConfig`, `HarnessConfig` — each touching PR must `cargo xtask schema-gen` and commit drift
 
 **Cross-document tension (ARCHITECTURE.md vs PITFALLS.md):** ARCHITECTURE.md §2.3 marks the Vec<u8>-buffering `put_stream` default as "slow path" but permits it; PITFALLS.md §16 argues the default should carry `#[deprecated]` to force cloud impl overrides. Resolution: **add `#[deprecated(note = "Override for cloud-backed stores; default buffers")]` on the default impl.**
@@ -113,7 +113,7 @@ v1.1 is a **5-crate addition onto a fixed 13-crate substrate** with **~16 new/ex
 
 **Pitfalls addressed this phase:** #10a–e (sandbox escapes), #11 (sync eval blocks loop), #12 (HF rate limits)
 
-**Build order within phase:** (1) `rollout-core::traits::harness` expansion (new return types) → (2) `rollout-harness-text` (pure Rust) → (3) `rollout-harness-tool` process isolation sandbox → (4) `rollout-harness-tool` path/HTTP allowlist → (5) `rollout-evals` loaders + scorers + CLI + fixtures
+**Build order within phase:** (1) `rollout-core::traits::harness` expansion (new return types) → (2) `rollout-harness-text` (pure Rust) → (3) `rollout-harness-tool` process isolation sandbox → (4) `rollout-harness-tool` path/HTTP allowlist → (5) `rollout-harness-eval` loaders + scorers + CLI + fixtures
 
 **Research flag: HARNESS-02 seccomp allowlist needs a targeted exercise before planning.** Run `strace -c python3 -c 'print(1)'` against the actual sandbox Python version to derive ground-truth `clone3`/`openat2`/`faccessat2` requirements. 1–2 hour exercise; prevents kernel-version CI failures. HARNESS-01 and HARNESS-03 are standard patterns — skip research for those.
 
@@ -158,9 +158,9 @@ v1.1 is a **5-crate addition onto a fixed 13-crate substrate** with **~16 new/ex
 1. **gcloud-* exact crate versions:** STACK.md uses placeholder for all gcloud-* crates. Verify and pin exact monorepo release cohort at Phase 5 PR time.
 2. **aws-lc-rs license exact SPDX string:** audit `cargo metadata | jq '.packages[] | select(.name == "aws-lc-rs") | .license'` before updating deny.toml; if OpenSSL advertising clause is present, legal review advisable before public 0.1.0 release.
 3. **Rust workspace MSRV bump decision (1.88 → 1.91):** STACK.md recommends evaluating PyO3/tonic impact as a Phase 5 precursor task; if low-impact, bump to 1.91 and drop exact-pin constraint on AWS SDKs.
-4. **`rollout-evals` vs `rollout-harness-eval` crate name:** decide before Phase 7 planning; requires one-line change in `dependency_direction.rs` + PROJECT.md update.
+4. **`rollout-harness-eval` crate name (resolved):** renamed from `rollout-evals` in the Phase 5 precursor — one-line change in `dependency_direction.rs` landed ahead of Phase 7 planning.
 5. **PROJECT.md crate count (17 → 18):** update in the same PR that introduces the 5th new crate.
-6. **IFEval language-detection constraints:** document skip in `rollout-evals` README and emit plan-time warning; affects benchmark comparability with lm-eval-harness.
+6. **IFEval language-detection constraints:** document skip in `rollout-harness-eval` README and emit plan-time warning; affects benchmark comparability with lm-eval-harness.
 
 ---
 

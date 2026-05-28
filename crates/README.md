@@ -20,7 +20,7 @@ crates/
 ├── rollout-snapshots/         Layer 3 — four-flavor snapshots
 ├── rollout-harness-text/      Layer 3 — text env harness
 ├── rollout-harness-tool/      Layer 3 — sandboxed tool harness
-├── rollout-evals/             Layer 3 — eval runner + bundled evals
+├── rollout-harness-eval/      Layer 3 — eval runner + bundled evals
 │
 ├── rollout-algo-ppo/          Layer 4 — PPO
 ├── rollout-algo-grpo/         Layer 4 — GRPO

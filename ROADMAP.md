@@ -158,7 +158,7 @@ Phases 1–4 are complete; their detail below is preserved for reference. See [`
 
 - `rollout-harness-text` — text-completion env.
 - `rollout-harness-tool` — sandboxed code-exec, shell, file, HTTP.
-- `rollout-evals` with at least three bundled evals (MMLU, IFEval, GSM8K).
+- `rollout-harness-eval` with at least three bundled evals (MMLU, IFEval, GSM8K).
 - `EnvHarness`, `ToolHarness`, `EvalHarness` traits + plugin discovery for user-supplied versions.
 - Sandboxing: at minimum Linux namespaces / seccomp for code exec.
 

@@ -21,7 +21,7 @@ const ALGO_AND_ABOVE: &[&str] = &[
     "rollout-algo-rm",
     "rollout-harness-text",
     "rollout-harness-tool",
-    "rollout-evals",
+    "rollout-harness-eval",
     "rollout-snapshots",
     "rollout-plugin-host",
 ];
