@@ -2,6 +2,25 @@
 
 This document captures the v1 requirements with REQ-IDs, organized by category. The `ROADMAP.md` at the repo root maps these IDs to phases; per-phase plans (created later via `/gsd:plan-phase`) decompose them into tasks.
 
+## Milestone v1.1 Scope — cloud + distribution + harnesses
+
+**12 in-scope requirements (Phases 5 + 6 + 7):**
+
+| Category | REQ-IDs |
+|----------|---------|
+| Cloud    | CLOUD-01, CLOUD-02, CLOUD-03, CLOUD-04 |
+| Distribution | DIST-01, DIST-02, DIST-03, DIST-04, DIST-05 |
+| Harnesses | HARNESS-01, HARNESS-02, HARNESS-03 |
+
+**Explicitly deferred to v1.2:** HARNESS-04 (eval gate — needs algo + dist + harness coupling, lands with PPO consumers), INFER-01..04, RL-01..04, OFFLINE-01..03, SNAPSHOT-01, SHIP-01..04.
+
+**Phase 5 precursor tasks (no new REQ-ID — folded into Phase 5 plan):**
+- Postgres `scan_bytes` wildcard parity fix (v1.0 latent — load-bearing in Phase 6)
+- `rollout-evals` → `rollout-harness-eval` rename (dep-direction lint + PROJECT.md)
+- Rust workspace MSRV bump evaluation (1.88 → 1.91 spike; decide before AWS SDK lands)
+
+Research artifacts under `.planning/research/` (STACK / FEATURES / ARCHITECTURE / PITFALLS / SUMMARY) ground the per-phase plans.
+
 ## v1 Requirements
 
 ### Core (`CORE-*`)
@@ -33,25 +52,25 @@ This document captures the v1 requirements with REQ-IDs, organized by category. 
 
 ### Cloud (`CLOUD-*`)
 
-- [ ] **CLOUD-01** — `rollout-cloud-aws`: S3, SQS, Secrets Manager, EC2/EKS metadata. Compliance suite passes against localstack.
-- [ ] **CLOUD-02** — `rollout-cloud-gcp`: GCS, Pub/Sub, Secret Manager, GCE/GKE metadata. Compliance suite passes against emulators.
-- [ ] **CLOUD-03** — Object-store-backed snapshot storage replacing local-fs snapshots in cloud mode.
-- [ ] **CLOUD-04** — `rollout cloud doctor` CLI subcommand running reachability + auth + write-test against a live cloud.
+- [ ] **CLOUD-01** _[v1.1]_ — `rollout-cloud-aws`: S3, SQS, Secrets Manager, EC2/EKS metadata. Compliance suite passes against localstack. Stack picks per `research/STACK.md` (aws-sdk-s3 `=1.112.0` cohort, exact-pin for MSRV 1.88).
+- [ ] **CLOUD-02** _[v1.1]_ — `rollout-cloud-gcp`: GCS, Pub/Sub, Secret Manager, GCE/GKE metadata. Compliance suite passes against emulators (fake-gcs-server / pubsub-emulator). Official `googleapis/google-cloud-rust` SDK (MSRV 1.87, Apache-2.0).
+- [ ] **CLOUD-03** _[v1.1]_ — Object-store-backed snapshot storage replacing local-fs snapshots in cloud mode. `ObjectStore::put_stream/get_stream` extensions preserve blake3 content-addressing via incremental hasher. Re-witnessed by `bit_identical_resume_at_step_5_via_{s3,gcs}`.
+- [ ] **CLOUD-04** _[v1.1]_ — `rollout cloud doctor` CLI subcommand running reachability + auth + write-test against a live cloud.
 
 ### Distribution (`DIST-*`)
 
-- [ ] **DIST-01** — Coordinator process with persistent state in `Storage`; one coordinator per run; lease-based exclusion.
-- [ ] **DIST-02** — Work-stealing pull queue where idle workers can steal bounded batches from busy peers via the coordinator.
-- [ ] **DIST-03** — Coordinator-restart-from-storage proven by a kill-and-restart integration test on a 4-node run.
-- [ ] **DIST-04** — Spot-preemption signal handler that triggers an opportunistic process snapshot; on snapshot failure, falls back to TrainState + Buffer.
-- [ ] **DIST-05** — Split-brain prevention: `worker_self_fence_timeout < coordinator_failure_timeout`; verified by an integration test.
+- [ ] **DIST-01** _[v1.1]_ — Coordinator process with persistent state in `Storage` (new namespaces `"work"`, `"epoch"`, `"queue_items"`); one coordinator per run; lease-based exclusion via Postgres single-row lease.
+- [ ] **DIST-02** _[v1.1]_ — Work-stealing pull queue where idle workers can steal bounded batches from busy peers via the coordinator. CAS-on-state for dedup. CI test: `concurrent_ack_and_steal_no_double_execute`.
+- [ ] **DIST-03** _[v1.1]_ — Coordinator-restart-from-storage proven by a kill-and-restart integration test on a 3+-node run. Bespoke storage-backed stateless-replayer pattern (no Raft/etcd dependency). Needs architecture spike before phase planning.
+- [ ] **DIST-04** _[v1.1]_ — Spot-preemption signal handler (AWS IMDSv2 / GCP MDS) that triggers graceful drain: stop-pull → finish-or-requeue → opportunistic snapshot → ack-exit. Budgets: 120s AWS / 30s GCP. v1.1 falls back to TrainState only; process-snapshot path lands with SNAPSHOT-01 in v1.2+.
+- [ ] **DIST-05** _[v1.1]_ — Split-brain prevention: `worker_self_fence_timeout < coordinator_failure_timeout`; workers validate `coord_epoch` on every RPC; old coord self-aborts on stale-lease detection. Verified by `split_brain_old_coord_self_fences` integration test.
 
 ### Harnesses (`HARNESS-*`)
 
-- [ ] **HARNESS-01** — `rollout-harness-text`: text-completion env with reset / step / close on batches.
-- [ ] **HARNESS-02** — `rollout-harness-tool` with sandboxed tools: `python_exec`, `shell`, `file_read`, `file_write`, `http_get`, `http_post`. Linux namespaces + seccomp + cgroups.
-- [ ] **HARNESS-03** — `rollout-evals` with bundled MMLU, IFEval, GSM8K; `EvalHarness` trait open for user plugins.
-- [ ] **HARNESS-04** — Eval gate: training run can pause, run an eval, decide continue vs stop based on policy.
+- [ ] **HARNESS-01** _[v1.1]_ — `rollout-harness-text`: text-completion env (`Observation = prompt`, `Action = completion`); reset / step / close on batches; reward via plugin host. Deterministic-replay witness.
+- [ ] **HARNESS-02** _[v1.1]_ — `rollout-harness-tool` with sandboxed tools: `python_exec`, `shell`, `file_read`, `file_write`, `http_get`, `http_post`. Layered defense: rustix namespaces + landlock (kernel ≥5.13) + seccompiler allowlist + cap-std capability FS + cgroups v2 (memory.max / pids.max). Linux full; macOS = dev-only stub. **Out of scope:** gVisor/Firecracker. Needs strace-derived seccomp baseline before planning.
+- [ ] **HARNESS-03** _[v1.1]_ — `rollout-harness-eval` (renamed from `rollout-evals` per dep-direction lint symmetry) with bundled MMLU, IFEval, GSM8K; hash-pinned vendored fixtures + hf-hub runtime download; offline-mode default; `EvalHarness` trait open for user plugins. Score parity vs lm-eval-harness ≤1%.
+- [ ] **HARNESS-04** _[deferred v1.2+]_ — Eval gate: training run can pause, run an eval, decide continue vs stop based on policy. _(Needs algo + dist + harness coupling; lands with RL training context.)_
 
 ### Inference (`INFER-*`)
 
@@ -116,3 +135,25 @@ This document captures the v1 requirements with REQ-IDs, organized by category. 
 ## Traceability
 
 Filled in by the roadmapper / per-phase planning. Maps each REQ-ID to the phase that delivers it. See [`../ROADMAP.md`](../ROADMAP.md) for the source of truth on phase assignments.
+
+### v1.0 (Shipped)
+See archive at `.planning/milestones/v1.0-REQUIREMENTS.md` for the full v1.0 phase mapping (CORE-* → Phase 1, SUBSTR-* → Phase 2, BACKEND-* → Phase 3, TRAIN-* → Phase 4).
+
+### v1.1 (mapped 2026-05-27)
+
+| REQ-ID | Phase | Notes |
+|--------|-------|-------|
+| CLOUD-01 | 5 | AWS S3/SQS/SM/IMDSv2; exact-pin aws-sdk-s3 `=1.112.0` |
+| CLOUD-02 | 5 | GCP GCS/Pub-Sub/SM/GCE; official googleapis/google-cloud-rust SDK |
+| CLOUD-03 | 5 | Object-store snapshots; streaming put/get; witnesses on every commit via localstack + fake-gcs |
+| CLOUD-04 | 5 | `rollout cloud doctor` CLI |
+| DIST-01  | 6 | Coordinator state in Storage (`work`/`epoch`/`queue_items` namespaces); Postgres lease |
+| DIST-02  | 6 | Work-stealing pull queue; CAS-on-state dedup; `concurrent_ack_and_steal_no_double_execute` |
+| DIST-03  | 6 | Architecture spike before plan — `coordinator_lease` schema + `split_brain_old_coord_self_fences` skeleton first |
+| DIST-04  | 6 | Spot-drain orchestration; AWS 60s / GCP 15s conservative budget |
+| DIST-05  | 6 | Split-brain fencing; worker `coord_epoch` validation on every RPC |
+| HARNESS-01 | 7 | Text-completion env; `EchoEnv` + plugin-host reward; deterministic-replay witness |
+| HARNESS-02 | 7 | Strace-derived seccomp baseline before plan; layered defense; Linux full / macOS stub |
+| HARNESS-03 | 7 | Rename `rollout-evals` → `rollout-harness-eval` (done in Phase 5 precursor); MMLU + IFEval + GSM8K |
+
+**Coverage:** 12/12 v1.1 in-scope requirements mapped. No orphans.

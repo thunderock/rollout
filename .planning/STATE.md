@@ -1,29 +1,32 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-current_plan: Not started
-status: v1.0 milestone complete
-stopped_at: Completed 04-07-examples-docs-smoke-PLAN.md
-last_updated: "2026-05-27T03:31:51.537Z"
+milestone: v1.1
+milestone_name: — cloud + distribution + harnesses
+current_plan: 1
+status: unknown
+stopped_at: Phase 5 context gathered
+last_updated: "2026-05-28T19:24:43.207Z"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 30
-  completed_plans: 30
+  total_phases: 3
+  completed_phases: 0
+  total_plans: 8
+  completed_plans: 0
 ---
 
 # STATE — Project Memory
 
 This file tracks current project state. Updated at phase transitions.
 
-## Current Phase
+## Current Position
 
-**v1.0 milestone — COMPLETE (Shipped: 2026-05-27).**
+Phase: 05 (cloud-layer-object-store-snapshots) — EXECUTING
+Plan: 1 of 8
 
-All 4 phases (01-core-foundations, 02-local-substrate, 03-inference-batch, 04-train-sft-rm-snapshots) shipped. 18/18 v1.0 requirements satisfied. Archive at `.planning/milestones/v1.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md`. Retrospective at `.planning/RETROSPECTIVE.md`. Tech debt carried into v1.1: 9 items (audit `tech_debt:` block — all by-design human-gate / live-env GPU/HF/Docker + 1 latent Postgres `scan_bytes` wildcard divergence flagged for RL-01).
+## Previous Milestone — v1.0 (Shipped 2026-05-27)
 
-**Next: planning v1.1.** Likely scope: Phase 5 (cloud layer + object-store snapshots) + Phase 6 (multi-node distribution) + Phase 7 (harnesses). Bootstrap with `/gsd:new-milestone`.
+All 4 phases (01-core-foundations, 02-local-substrate, 03-inference-batch, 04-train-sft-rm-snapshots) shipped. 18/18 v1.0 requirements satisfied. Archive at `.planning/milestones/v1.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md`. Retrospective at `.planning/RETROSPECTIVE.md`. Tech debt carried into v1.1: 9 items (audit `tech_debt:` block — all by-design human-gate / live-env GPU/HF/Docker + 1 latent Postgres `scan_bytes` wildcard divergence flagged for RL-01 in v1.2).
+
+## Accumulated Context (preserved from v1.0)
 
 ---
 
@@ -41,16 +44,26 @@ Wave 4 plan 02-05 (rollout-plugin-host) shipped 2026-05-20 (SUBSTR-03). `rollout
 
 Wave 3 complete (solo): plan 02-04 (rollout-transport) shipped 2026-05-20. `rollout-transport` ships HTTP/2 tonic 0.14 + rustls 0.23 + mTLS-by-default as the plan-of-record per RESEARCH (tonic-h3 v0.0.5 stays opt-in EXPERIMENTAL behind a `quic` Cargo feature). Three logical channels (Heartbeat unary, Control server-stream, Work bidi-stub) multiplex over one H/2 connection. mTLS auto-bootstraps via rcgen-generated dev CA under `./data/tls/` (chmod 600 on private keys). Plan-time `TransportConfig::validate_cross_fields` enforces split-brain prevention (`self_fence < coord_failure`) + clock-skew bound (`skew < 2×hb`) per D-TIME-02. Deadline-based health helpers (`next_due_at`, `is_failed`) match spec 05 §6. Substrate/transport mdBook chapter ships. Plans 02-05 (rollout-plugin-host), 02-06 (rollout-coordinator), 02-07 (smoke + docs + CI) pending.
 
-**Current Plan:** Not started — v1.0 milestone complete.
+**Current Plan:** 1
 **Last completed plan:** 04-07-examples-docs-smoke (2026-05-22) — Wave 5, Phase-4 closeout: examples (`examples/{batch,sft,rm}-tiny.toml`), smoke recipes, mdBook polish, optional `train-smoke` / `infer-smoke` CI jobs gated on live-env vars. Closed Phase 4 and the v1.0 milestone.
 
 **Phase 2 — Local substrate is COMPLETE.** All four exit criteria satisfied: embedded `Storage` (redb 2.x; 02-02), gRPC transport with deadline-based heartbeats (HTTP/2 plan-of-record + QUIC EXPERIMENTAL; 02-04), `rollout-plugin-host` with cdylib + PyO3 + sidecar modes + hot-reload (02-05), `rollout-cloud-local` (02-03), and `make smoke` end-to-end (02-07). `cargo test --workspace --tests` reports 103 passing + 4 ignored (env-gated). Architecture-lint now enforces 4 invariants. CI grew to 12 jobs.
 
 ## Next Step
 
-**Plan v1.1.** v1.0 milestone is shipped (4/4 phases, 30/30 plans, 18/18 requirements, 2026-05-27). Use `/gsd:new-milestone` to bootstrap. Likely v1.1 scope: Phase 5 (cloud layer + object-store snapshots) + Phase 6 (multi-node distribution) + Phase 7 (harnesses).
+**Plan Phase 5.** Run `/gsd:plan-phase 5` to decompose the cloud layer + object-store snapshots phase into per-PR plans. Build order within Phase 5 (per `.planning/research/SUMMARY.md` and `ARCHITECTURE.md` §4):
 
-Optional cleanup before v1.1 planning: run `/gsd:validate-phase` for phases 02/03/04 to close the Nyquist gap (their VALIDATION.md scaffolding ships but has never been run through the validator — underlying tests + verifier coverage already strong, so this is for completeness).
+1. `rollout-core` trait extensions (`ObjectStore::put_stream/get_stream`, `Queue::dequeue_with_lease/extend_lease`, new types) + `public-api-cloud-leak` CI gate
+2. Phase 5 precursor tasks (no new REQ-ID): Postgres `scan_bytes` parity fix · `rollout-evals` → `rollout-harness-eval` rename · MSRV 1.88 → 1.91 evaluation spike
+3. `rollout-cloud-local` updates for new trait methods
+4. `rollout-cloud-aws` per-trait PRs (S3 → SQS → SM+IMDSv2)
+5. `rollout-cloud-gcp` per-trait PRs (GCS → Pub/Sub → SM+GCE metadata)
+6. Snapshot streaming witnesses (`bit_identical_resume_at_step_5_via_{s3,gcs}`)
+7. `rollout cloud doctor` CLI
+
+After Phase 5, run `/gsd:plan-phase 6` (architecture spike on DIST-03 lease-based fencing before plan), then `/gsd:plan-phase 7` (strace-derived seccomp baseline for HARNESS-02 before plan).
+
+Optional cleanup before Phase 5 kickoff: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Nyquist gap (their VALIDATION.md scaffolding ships but has never been run through the validator).
 
 ## Progress
 
@@ -60,9 +73,9 @@ Optional cleanup before v1.1 planning: run `/gsd:validate-phase` for phases 02/0
 | 2 — Local substrate | ✓ v1.0 (2026-05-19 → 2026-05-21) | Waves 1-5 shipped: 02-00..07. `make smoke` end-to-end green. Architecture-lint at 4 invariants. |
 | 3 — Inference backend + batch | ✓ v1.0 (2026-05-20 → 2026-05-21) | 03-00..05. `rollout infer batch` + CAS state machine + asyncio↔Tokio bridge. `restart_no_duplicates` test on every CI build. |
 | 4 — SFT + RM + train-state snapshots | ✓ v1.0 (2026-05-21 → 2026-05-22) | 04-00..07. SFT + RM + Postgres + `rollout train|snapshot` CLI. TRAIN-03 byte-identical resume green on two witnesses. |
-| 5 — Cloud layer + object-store snapshots | not started | v1.1 candidate |
-| 6 — Multi-node distribution | not started | v1.1 candidate |
-| 7 — Harnesses | not started | v1.1 candidate |
+| 5 — Cloud layer + object-store snapshots | v1.1 active — roadmap drafted | CLOUD-01..04; ready for `/gsd:plan-phase 5` |
+| 6 — Multi-node distribution | v1.1 active — roadmap drafted | DIST-01..05; architecture spike on DIST-03 before plan |
+| 7 — Harnesses | v1.1 active — roadmap drafted | HARNESS-01..03; strace exercise for HARNESS-02 before plan |
 | 8 — Online inference + episodic memory | not started | v1.2 candidate |
 | 9 — PPO + GRPO + buffer snapshots | not started | the headline phase — v1.2 candidate |
 | 10 — DPO / IPO / KTO | not started | v1.2 candidate |
@@ -249,8 +262,8 @@ Optional cleanup before v1.1 planning: run `/gsd:validate-phase` for phases 02/0
 
 ## Last Session
 
-- **Last session:** 2026-05-22T14:00:49.354Z
-- **Stopped at:** Completed 04-07-examples-docs-smoke-PLAN.md
+- **Last session:** 2026-05-28T17:21:19.093Z
+- **Stopped at:** Phase 5 context gathered
 
 ## Things Not To Forget
 

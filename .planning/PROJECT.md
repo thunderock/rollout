@@ -31,6 +31,19 @@ If any single requirement defines success: **plan-time validation catches all co
 - **Docs:** mdBook deployed at <https://thunderock.github.io/rollout/>; rustdoc gated by `rustdoc-check`; brand v1 system landed (favicon, gradient wordmark, social card all under `docs/assets/`)
 - **Tests:** ~200 tests pass on `cargo test --workspace --tests` (default features, no GPU/HF/Docker)
 
+## Current Milestone: v1.1 cloud + distribution + harnesses
+
+**Goal:** Lift v1.0's local substrate to real multi-host runs on real cloud, with the harness surface needed to feed RL training.
+
+**Target features:**
+- **Cloud** — AWS + GCP crates behind a shared abstraction; object-store-backed snapshot storage.
+- **Distribution** — Real multi-node coordinator + worker, work-stealing pull queue, coordinator restart from storage, spot-preemption graceful drain.
+- **Harnesses** — Env (text completion), Tool (best-effort sandbox: process isolation + resource limits + path/HTTP allowlist), and Eval (bundled MMLU, IFEval, GSM8K).
+
+**Proof bar:** 3+ node setup runs `make smoke` against real AWS/GCP; spot-preempt signal triggers graceful drain. No 7B training in v1.1 — RL phases stay v1.2.
+
+**Explicitly out of v1.1:** RL-01..04 (PPO/GRPO + perf bar), INFER-01..03 (online + tool-calling + episodic memory), OFFLINE-01..03 (DPO/IPO/KTO), SNAPSHOT-01 (process snapshots), SHIP-01..03, gVisor/Firecracker-grade harness sandboxing.
+
 ## Requirements
 
 ### ✓ Shipped — v1.0
@@ -132,4 +145,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-27 after v1.0 milestone*
+*Last updated: 2026-05-27 — v1.1 milestone (cloud + distribution + harnesses) started*
