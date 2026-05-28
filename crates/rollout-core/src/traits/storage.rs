@@ -168,7 +168,10 @@ mod validate_for_postgres_tests {
     fn validate_for_postgres_rejects_non_printable() {
         for bad in ["\u{0}", "\u{1}", "\u{7f}"] {
             let err = key(&[bad]).validate_for_postgres().unwrap_err();
-            assert!(is_config_invalid(&err), "expected ConfigInvalid for {bad:?}");
+            assert!(
+                is_config_invalid(&err),
+                "expected ConfigInvalid for {bad:?}"
+            );
         }
     }
 

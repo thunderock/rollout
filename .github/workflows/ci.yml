@@ -246,6 +246,11 @@ jobs:
           SQLX_OFFLINE: "true"
           RUST_LOG: rollout_storage=info,sqlx=warn
         run: cargo test -p rollout-storage --features postgres --test postgres_integration -- --include-ignored --test-threads=1
+      - name: Run scan_bytes parity proptest (PITFALLS.md §17)
+        env:
+          SQLX_OFFLINE: "true"
+          RUST_LOG: rollout_storage=info,sqlx=warn
+        run: cargo test -p rollout-storage --features postgres --test postgres_scan_bytes_parity -- --include-ignored --test-threads=1
 
   infer-smoke:
     # BACKEND-02 live acceptance gate. Opt-in: only fires when
