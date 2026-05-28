@@ -4,13 +4,13 @@ milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
 current_plan: 1
 status: unknown
-stopped_at: Phase 5 context gathered
-last_updated: "2026-05-28T19:24:43.207Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-05-28T20:01:30.119Z"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 8
-  completed_plans: 0
+  completed_plans: 2
 ---
 
 # STATE — Project Memory
@@ -20,7 +20,7 @@ This file tracks current project state. Updated at phase transitions.
 ## Current Position
 
 Phase: 05 (cloud-layer-object-store-snapshots) — EXECUTING
-Plan: 1 of 8
+Plan: 3 of 8
 
 ## Previous Milestone — v1.0 (Shipped 2026-05-27)
 
@@ -149,6 +149,8 @@ Optional cleanup before Phase 5 kickoff: `/gsd:validate-phase` for v1.0 phases 0
 | Phase 04-train-sft-rm-snapshots P05 | 10min | 2 tasks | 13 files |
 | Phase 04-train-sft-rm-snapshots P06 | 38m | 2 tasks | 6 files |
 | Phase 04 P07 | 4m | 2 tasks | 12 files |
+| Phase 05 P01 | 25 | 3 tasks | 7 files |
+| Phase 05 P02 | 13 | 1 tasks | 8 files |
 
 ## Decisions
 
@@ -259,11 +261,13 @@ Optional cleanup before Phase 5 kickoff: `/gsd:validate-phase` for v1.0 phases 0
 - [Phase 04-train-sft-rm-snapshots]: (04-05): worker_main_vllm refactored to lazy-import the inference module (deferred until first Init/Generate) so --features train smoke tests stay fast and don't require vllm at all.
 - [Phase 04]: Phase 4 v1 working-model recipe lands as scripts/train-smoke.sh + examples/sft-tiny.{toml,jsonl}; ROLLOUT_TRANSFORMERS_AVAILABLE=1 gate mirrors Phase-3 ROLLOUT_VLLM_AVAILABLE pattern. CI grows to 16 jobs.
 - [Phase 04]: Example TOMLs rewritten against actual rollout-core schema (flat [storage] backend=... + [algorithm] kind=... + sub-tables). Plan sketch's nested [storage.embedded] + [algorithm.sft.*] form did not match the serde-tagged-enum derives; documented in plan-07 SUMMARY for future plan templates.
+- [Phase 05]: Postgres scan_bytes parity fix via StorageKey::validate_for_postgres (Approach 1) — printable-ASCII guard, no schema migration, hex-encode binary IDs (PITFALLS.md §17)
+- [Phase 05]: Renamed forward-reference rollout-evals → rollout-harness-eval (dep-direction lint + active/research docs); preserved rename-documentation lines that must keep both names
 
 ## Last Session
 
-- **Last session:** 2026-05-28T17:21:19.093Z
-- **Stopped at:** Phase 5 context gathered
+- **Last session:** 2026-05-28T20:01:30.114Z
+- **Stopped at:** Completed 05-02-PLAN.md
 
 ## Things Not To Forget
 

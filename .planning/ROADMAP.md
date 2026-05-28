@@ -98,8 +98,8 @@ The narrative `../ROADMAP.md` is authoritative for goals, risks, and exit criter
 **Plans:** 8 plans
 
 Plans:
-- [ ] 05-01-precursor-postgres-scan-bytes-fix-PLAN.md — Wave 1 precursor A: StorageKey::validate_for_postgres + proptest parity (lands as standalone PR against `main` BEFORE Phase 5 stages 1-5)
-- [ ] 05-02-precursor-rollout-evals-rename-PLAN.md — Wave 1 precursor B: rename `rollout-evals` → `rollout-harness-eval` in dep-direction lint + planning docs (standalone PR)
+- [x] 05-01-precursor-postgres-scan-bytes-fix-PLAN.md — Wave 1 precursor A: StorageKey::validate_for_postgres + proptest parity (lands as standalone PR against `main` BEFORE Phase 5 stages 1-5)
+- [x] 05-02-precursor-rollout-evals-rename-PLAN.md — Wave 1 precursor B: rename `rollout-evals` → `rollout-harness-eval` in dep-direction lint + planning docs (standalone PR)
 - [ ] 05-03-precursor-msrv-bump-PLAN.md — Wave 1 precursor C: spike + BUMP/STAY decision for Rust MSRV 1.88 → 1.91 (standalone PR; has `checkpoint:decision`)
 - [ ] 05-04-stage1-trait-extensions-ci-gates-PLAN.md — Wave 2 stage 1: `ObjectStore::put_stream`/`get_stream` + `Queue::dequeue_with_lease`/`extend_lease` trait extensions + CloudConfig schema + 4 new dep-direction invariants (#11-14) + `public-api-cloud-leak` + `forbidden-patterns` CI gates
 - [ ] 05-05-stage2-cloud-aws-impl-PLAN.md — Wave 3 stage 2: `rollout-cloud-aws` impls (S3 → SQS → SecretsManager + IMDSv2) + MultipartGuard + blake3-hash-before-send + cloud-emulator-aws CI job; addresses CLOUD-01
