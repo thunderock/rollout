@@ -18,9 +18,11 @@ pub use errors::{CoreError, FatalError, RecoverableError, RetryHint};
 pub use ids::{ContentId, RunId, WorkerId};
 pub use traits::{
     AlgoContext, AlgoDependencies, AlgorithmId, Clock, Completion, ComputeHint, ComputeInventory,
-    ConfigViolation, Coordinator, DrainReason, EntrySpec, EnvHarness, EvalHarness, Event,
+    ConfigViolation, CoordEpoch, Coordinator, CoordinatorLease, DrainReason, EntrySpec, EnvHarness,
+    EvalHarness, Event,
     EventEmitter, EventKind, GpuInfo, GradHandle, Heartbeat, InferenceBackend, KeyRange,
-    LeaseToken, Level, LossOutput, LossScope, MaskSpec, ModelRef, ObjectStore, PeriodicPolicy,
+    LeaseRecord, LeaseToken, Level, LossOutput, LossScope, MaskSpec, ModelRef, ObjectStore,
+    PeriodicPolicy,
     Plan, Plugin, PluginDependencies, PluginHandle, PluginHost, PluginId, PluginKind,
     PluginManifest, PluginMode, PolicyAlgorithm, Prompt, PrunePolicy, PutHint, Queue, QueueItemId,
     RestoreTarget, RetentionPolicy, RewardModel, RunOutcome, RuntimeHints, SamplingParams,

@@ -5,6 +5,7 @@ pub mod backend;
 pub mod clock;
 pub mod cloud;
 pub mod harness;
+pub mod lease;
 pub mod observability;
 pub mod plugin;
 pub mod snapshot;
@@ -24,6 +25,7 @@ pub use cloud::{
     SecretStore,
 };
 pub use harness::{EnvHarness, EvalHarness, RewardModel, ToolHarness};
+pub use lease::{CoordEpoch, CoordinatorLease, LeaseRecord};
 pub use observability::{Event, EventEmitter, EventKind, Level, SpanPhase};
 pub use plugin::{
     EntrySpec, Plugin, PluginDependencies, PluginHandle, PluginHost, PluginId, PluginKind,
