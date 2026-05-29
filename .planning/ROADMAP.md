@@ -124,7 +124,14 @@ Plans:
   4. Two coordinator processes started against the same Postgres lease detect the split-brain: exactly one self-fences (`std::process::abort`) within 5s, the survivor advances the epoch, workers reject responses tagged with the stale epoch (`split_brain_old_coord_self_fences`).
   5. Work-stealing dedup race during fence-epoch flip never produces double-execution: `concurrent_ack_and_steal_no_double_execute` exercises CAS-on-state collapsing duplicate acks, runs on every commit.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 06-00-wave0-test-infra-lease-trait-PLAN.md — Wave 0: CoordinatorLease trait (rollout-core, no SDK) + shared WorkItemRecord CAS module + in-process N-worker sim harness + subprocess abort harness (DIST-01..05 infra)
+- [ ] 06-01-lease-epoch-fencing-PLAN.md — Wave 1: StorageLease (dual-backed single-row CAS) + epoch stamping/rejection + self-fence; witnesses lease_exclusion_single_winner (SC1) + split_brain_old_coord_self_fences (SC4); DIST-01, DIST-05
+- [ ] 06-02-work-ledger-stealing-PLAN.md — Wave 2: queue_items dispatch + coordinator-mediated steal (ceil(n/2), MAX_STEAL_BATCH) + CAS dedup; witness concurrent_ack_and_steal_no_double_execute (SC5); DIST-02
+- [ ] 06-03-restart-replayer-spot-drain-PLAN.md — Wave 3: stateless-replayer boot + spot-drain state machine + D-SPOT-04 doc reconciliation; witnesses coord_restart_no_duplicates (SC2) + spot_drain_completes_within_lead_time (SC3); DIST-03, DIST-04
+- [ ] 06-04-smoke-cli-pg-lane-PLAN.md — Wave 4: make smoke-3node-aws/-gcp (1 coord + 3 workers, mock backend) + Postgres-lease CI lane + --test-fence abort subcommand + mdBook chapter; closes all 5 SCs
 
 #### Phase 7: Harnesses (env + tool + eval)
 
