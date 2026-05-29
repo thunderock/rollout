@@ -284,6 +284,11 @@ jobs:
           SQLX_OFFLINE: "true"
           RUST_LOG: rollout_storage=info,sqlx=warn
         run: cargo test -p rollout-storage --features postgres --test postgres_scan_bytes_parity -- --include-ignored --test-threads=1
+      - name: Run Postgres coordinator-lease CAS witness (D-LEASE-01/02)
+        env:
+          SQLX_OFFLINE: "true"
+          RUST_LOG: rollout_storage=info,sqlx=warn
+        run: cargo test -p rollout-storage --features postgres --test postgres_lease -- --include-ignored --test-threads=1
 
   cloud-emulator-aws:
     # CLOUD-01 always-on conformance witness. localstack-backed S3 + SQS +

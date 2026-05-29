@@ -46,6 +46,7 @@ infer-smoke:
 postgres-test:
 	@docker info >/dev/null 2>&1 || { echo "Docker not running; start Docker and retry"; exit 1; }
 	SQLX_OFFLINE=true cargo test -p rollout-storage --features postgres --test postgres_integration -- --include-ignored --test-threads=1
+	SQLX_OFFLINE=true cargo test -p rollout-storage --features postgres --test postgres_lease -- --include-ignored --test-threads=1
 
 train-smoke:
 	bash scripts/train-smoke.sh
