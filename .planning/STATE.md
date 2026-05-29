@@ -4,13 +4,13 @@ milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
 current_plan: 1
 status: unknown
-stopped_at: Completed 06-02-PLAN.md
-last_updated: "2026-05-29T15:58:40.979Z"
+stopped_at: Completed 06-03-PLAN.md
+last_updated: "2026-05-29T16:21:52.091Z"
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # STATE — Project Memory
@@ -20,7 +20,7 @@ This file tracks current project state. Updated at phase transitions.
 ## Current Position
 
 Phase: 06 (multi-node-distribution) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 
 ### Quick Tasks Completed
 
@@ -165,6 +165,7 @@ Optional cleanup: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Ny
 | Phase 06 P00 | 8 | 3 tasks | 11 files |
 | Phase 06 P01 | 6min | 3 tasks | 10 files |
 | Phase 06 P02 | 6min | 3 tasks | 5 files |
+| Phase 06 P03 | 15min | 3 tasks | 11 files |
 
 ## Decisions
 
@@ -294,11 +295,13 @@ Optional cleanup: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Ny
 - [Phase 06]: Epoch proto field deferred to 06-04 smoke wiring; EpochGuard worker-side rejection + self-fence/abort path fully landed and witnessed (SC1/SC4/abort-within-5s)
 - [Phase 06]: 06-02: coordinator-mediated work-stealing via two-step CAS reassign (try_repending then try_claim) over the same Running(victim) bytes; ceil(n/2) capped at MAX_STEAL_BATCH=32
 - [Phase 06]: 06-02: queue_items ULID-ordered dispatch queue with content-addressed work_id (blake3); reads on Storage, writes on the txn (StorageTxn is write-only)
+- [Phase 06]: DIST-03 stateless-replayer: replay_and_serve reconstructs in-flight from the work ledger on boot WITHOUT requeuing Running (Pitfall 4); coord_restart_no_duplicates (SC2) green
+- [Phase 06]: DIST-04 spot-drain: two-number DrainConfig (notice lead 120/30 vs drain deadline 60/15); drain consumes preemption_signal via ComputeHint trait only (coord ↛ cloud); spot_drain_completes_within_lead_time (SC3) green
 
 ## Last Session
 
-- **Last session:** 2026-05-29T15:58:32.391Z
-- **Stopped at:** Completed 06-02-PLAN.md
+- **Last session:** 2026-05-29T16:21:44.105Z
+- **Stopped at:** Completed 06-03-PLAN.md
 
 ## Things Not To Forget
 
