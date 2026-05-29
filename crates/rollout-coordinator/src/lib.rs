@@ -8,6 +8,7 @@
 pub mod config;
 pub mod emitter;
 pub mod failure_scan;
+pub mod epoch;
 pub mod heartbeat;
 pub mod lease;
 pub mod registry;

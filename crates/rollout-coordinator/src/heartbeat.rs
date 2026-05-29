@@ -33,6 +33,18 @@ impl CoordinatorImpl {
         }
     }
 
+    /// Current coordinator epoch, read from the authoritative `epoch` namespace.
+    ///
+    /// The transport layer stamps this on every RPC response (via
+    /// [`crate::epoch::stamp_epoch`]) so workers can reject stale-epoch responses
+    /// from a deposed coordinator (point 2 of the fencing invariant chain).
+    ///
+    /// # Errors
+    /// Propagates [`CoreError`] from the underlying storage read.
+    pub async fn current_epoch(&self) -> Result<rollout_core::CoordEpoch, CoreError> {
+        crate::epoch::current_epoch(self.storage.as_ref(), self.run_id).await
+    }
+
     fn make_event(&self, worker_id: WorkerId, topic: &'static str) -> Event {
         Event {
             ts: SystemTime::now(),
