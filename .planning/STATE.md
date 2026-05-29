@@ -2,16 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
-current_plan: Not started
+current_plan: 1
 status: unknown
-stopped_at: Phase 6 context gathered
-last_updated: "2026-05-29T06:24:36.291Z"
-last_activity: "2026-05-29 - Completed quick task 260528-w1p: free always-on CPU smoke tests"
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-05-29T15:50:14.401Z"
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 13
+  completed_plans: 10
 ---
 
 # STATE — Project Memory
@@ -20,10 +19,8 @@ This file tracks current project state. Updated at phase transitions.
 
 ## Current Position
 
-Phase: 6 — Multi-node distribution (not started; architecture spike on DIST-03 required before planning)
-Plan: — (Phase 5 complete, 8/8; Phase 6 not yet planned)
-
-Last activity: 2026-05-29 - Completed quick task 260528-w1p: free always-on CPU smoke tests
+Phase: 06 (multi-node-distribution) — EXECUTING
+Plan: 3 of 5
 
 ### Quick Tasks Completed
 
@@ -53,7 +50,7 @@ Wave 4 plan 02-05 (rollout-plugin-host) shipped 2026-05-20 (SUBSTR-03). `rollout
 
 Wave 3 complete (solo): plan 02-04 (rollout-transport) shipped 2026-05-20. `rollout-transport` ships HTTP/2 tonic 0.14 + rustls 0.23 + mTLS-by-default as the plan-of-record per RESEARCH (tonic-h3 v0.0.5 stays opt-in EXPERIMENTAL behind a `quic` Cargo feature). Three logical channels (Heartbeat unary, Control server-stream, Work bidi-stub) multiplex over one H/2 connection. mTLS auto-bootstraps via rcgen-generated dev CA under `./data/tls/` (chmod 600 on private keys). Plan-time `TransportConfig::validate_cross_fields` enforces split-brain prevention (`self_fence < coord_failure`) + clock-skew bound (`skew < 2×hb`) per D-TIME-02. Deadline-based health helpers (`next_due_at`, `is_failed`) match spec 05 §6. Substrate/transport mdBook chapter ships. Plans 02-05 (rollout-plugin-host), 02-06 (rollout-coordinator), 02-07 (smoke + docs + CI) pending.
 
-**Current Plan:** Not started
+**Current Plan:** 1
 **Last completed plan:** 04-07-examples-docs-smoke (2026-05-22) — Wave 5, Phase-4 closeout: examples (`examples/{batch,sft,rm}-tiny.toml`), smoke recipes, mdBook polish, optional `train-smoke` / `infer-smoke` CI jobs gated on live-env vars. Closed Phase 4 and the v1.0 milestone.
 
 **Phase 2 — Local substrate is COMPLETE.** All four exit criteria satisfied: embedded `Storage` (redb 2.x; 02-02), gRPC transport with deadline-based heartbeats (HTTP/2 plan-of-record + QUIC EXPERIMENTAL; 02-04), `rollout-plugin-host` with cdylib + PyO3 + sidecar modes + hot-reload (02-05), `rollout-cloud-local` (02-03), and `make smoke` end-to-end (02-07). `cargo test --workspace --tests` reports 103 passing + 4 ignored (env-gated). Architecture-lint now enforces 4 invariants. CI grew to 12 jobs.
@@ -165,6 +162,8 @@ Optional cleanup: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Ny
 | Phase 05 P06 | 27min | 5 tasks | 27 files |
 | Phase 05 P07 | 22 | 4 tasks | 13 files |
 | Phase 05-cloud-layer-object-store-snapshots P08 | 40 | 2 tasks | 23 files |
+| Phase 06 P00 | 8 | 3 tasks | 11 files |
+| Phase 06 P01 | 6min | 3 tasks | 10 files |
 
 ## Decisions
 
@@ -286,11 +285,17 @@ Optional cleanup: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Ny
 - [Phase 05]: 05-07: cloud snapshot witnesses drive save_train_state/restore_train_state (production streaming path) — MockBackend::save_weights doesn't touch the ObjectStore, so swapping the Snapshotter's store alone wouldn't exercise S3/GCS.
 - [Phase 05]: 05-07: example TOMLs use the real flattened CloudConfig shape ([cloud.s3]/[cloud.gcs]); the tagged-enum inlines variant fields under [cloud].
 - [Phase 05-cloud-layer-object-store-snapshots]: rollout cloud doctor: auth check uses compute_hint.inventory() credential probe instead of aws-sdk-sts; internal _doctor feature gates TLS+blake3 deps; emulator-aware cloud_factory honors *_ENDPOINT_URL/*_EMULATOR_HOST so the production path runs against localstack/fake-gcs/pubsub-emulator with no live cloud.
+- [Phase 06]: Wave-0 contracts shipped: CoordinatorLease trait + CoordEpoch/LeaseRecord in rollout-core (no SDK)
+- [Phase 06]: WorkItemRecord CAS module duplicated from SampleRecord (no shared crate); single-winner + idempotent-repending witnessed
+- [Phase 06]: Phase-6 storage namespaces (work/coordinator_lease/epoch/queue_items) registered in embedded redb
+- [Phase 06]: Sim harness + CountingEmitter + subprocess abort harness ready for the 4 distribution witnesses
+- [Phase 06]: StorageLease: one CoordinatorLease impl over dual-backed Storage satisfies D-LEASE-01 (both backends) without two impls; monotonic epoch on steal, constant on renew
+- [Phase 06]: Epoch proto field deferred to 06-04 smoke wiring; EpochGuard worker-side rejection + self-fence/abort path fully landed and witnessed (SC1/SC4/abort-within-5s)
 
 ## Last Session
 
-- **Last session:** 2026-05-29T06:24:36.286Z
-- **Stopped at:** Phase 6 context gathered
+- **Last session:** 2026-05-29T15:50:07.010Z
+- **Stopped at:** Completed 06-01-PLAN.md
 
 ## Things Not To Forget
 
