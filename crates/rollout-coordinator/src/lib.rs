@@ -15,6 +15,7 @@ pub mod ledger;
 pub mod lease;
 pub mod registry;
 pub mod run;
+pub mod steal;
 pub mod work_item;
 
 pub use config::CoordinatorConfig;
