@@ -4,13 +4,13 @@ milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
 current_plan: 1
 status: unknown
-stopped_at: Completed 05-03-PLAN.md
-last_updated: "2026-05-28T23:55:20.881Z"
+stopped_at: Completed 05-04-PLAN.md
+last_updated: "2026-05-29T00:16:03.852Z"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 8
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # STATE — Project Memory
@@ -20,7 +20,7 @@ This file tracks current project state. Updated at phase transitions.
 ## Current Position
 
 Phase: 05 (cloud-layer-object-store-snapshots) — EXECUTING
-Plan: 4 of 8
+Plan: 5 of 8
 
 ## Previous Milestone — v1.0 (Shipped 2026-05-27)
 
@@ -152,6 +152,7 @@ Optional cleanup before Phase 5 kickoff: `/gsd:validate-phase` for v1.0 phases 0
 | Phase 05 P01 | 25 | 3 tasks | 7 files |
 | Phase 05 P02 | 13 | 1 tasks | 8 files |
 | Phase 05-cloud-layer-object-store-snapshots P03 | 12 | 1 tasks | 5 files |
+| Phase 05 P04 | 32min | 4 tasks | 34 files |
 
 ## Decisions
 
@@ -265,11 +266,13 @@ Optional cleanup before Phase 5 kickoff: `/gsd:validate-phase` for v1.0 phases 0
 - [Phase 05]: Postgres scan_bytes parity fix via StorageKey::validate_for_postgres (Approach 1) — printable-ASCII guard, no schema migration, hex-encode binary IDs (PITFALLS.md §17)
 - [Phase 05]: Renamed forward-reference rollout-evals → rollout-harness-eval (dep-direction lint + active/research docs); preserved rename-documentation lines that must keep both names
 - [Phase 05-cloud-layer-object-store-snapshots]: BUMP workspace MSRV 1.88 -> 1.91 (precursor C); aws-sdk-* exact-pin tax retired, Plan 05 may use caret selectors
+- [Phase 05]: ObjectStore/Queue gained streaming+lease methods with #[deprecated] backward-compat defaults; CloudConfig tagged-enum makes cross-cloud structurally impossible
+- [Phase 05]: Dep-direction lint at 14 invariants + stub rollout-cloud-aws/gcp crates; public-api-cloud-leak + forbidden-patterns CI gates added (14->16 jobs)
 
 ## Last Session
 
-- **Last session:** 2026-05-28T23:55:15.079Z
-- **Stopped at:** Completed 05-03-PLAN.md
+- **Last session:** 2026-05-29T00:15:55.588Z
+- **Stopped at:** Completed 05-04-PLAN.md
 
 ## Things Not To Forget
 
