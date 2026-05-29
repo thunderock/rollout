@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
-current_plan: 1
+current_plan: Not started
 status: unknown
 stopped_at: Completed 05-08-PLAN.md
-last_updated: "2026-05-29T04:16:00.692Z"
+last_updated: "2026-05-29T04:24:24.196Z"
 progress:
   total_phases: 3
   completed_phases: 1
@@ -19,7 +19,7 @@ This file tracks current project state. Updated at phase transitions.
 
 ## Current Position
 
-Phase: 05 (cloud-layer-object-store-snapshots) — EXECUTING
+Phase: 6
 Plan: 8 of 8
 
 ## Previous Milestone — v1.0 (Shipped 2026-05-27)
@@ -44,7 +44,7 @@ Wave 4 plan 02-05 (rollout-plugin-host) shipped 2026-05-20 (SUBSTR-03). `rollout
 
 Wave 3 complete (solo): plan 02-04 (rollout-transport) shipped 2026-05-20. `rollout-transport` ships HTTP/2 tonic 0.14 + rustls 0.23 + mTLS-by-default as the plan-of-record per RESEARCH (tonic-h3 v0.0.5 stays opt-in EXPERIMENTAL behind a `quic` Cargo feature). Three logical channels (Heartbeat unary, Control server-stream, Work bidi-stub) multiplex over one H/2 connection. mTLS auto-bootstraps via rcgen-generated dev CA under `./data/tls/` (chmod 600 on private keys). Plan-time `TransportConfig::validate_cross_fields` enforces split-brain prevention (`self_fence < coord_failure`) + clock-skew bound (`skew < 2×hb`) per D-TIME-02. Deadline-based health helpers (`next_due_at`, `is_failed`) match spec 05 §6. Substrate/transport mdBook chapter ships. Plans 02-05 (rollout-plugin-host), 02-06 (rollout-coordinator), 02-07 (smoke + docs + CI) pending.
 
-**Current Plan:** 1
+**Current Plan:** Not started
 **Last completed plan:** 04-07-examples-docs-smoke (2026-05-22) — Wave 5, Phase-4 closeout: examples (`examples/{batch,sft,rm}-tiny.toml`), smoke recipes, mdBook polish, optional `train-smoke` / `infer-smoke` CI jobs gated on live-env vars. Closed Phase 4 and the v1.0 milestone.
 
 **Phase 2 — Local substrate is COMPLETE.** All four exit criteria satisfied: embedded `Storage` (redb 2.x; 02-02), gRPC transport with deadline-based heartbeats (HTTP/2 plan-of-record + QUIC EXPERIMENTAL; 02-04), `rollout-plugin-host` with cdylib + PyO3 + sidecar modes + hot-reload (02-05), `rollout-cloud-local` (02-03), and `make smoke` end-to-end (02-07). `cargo test --workspace --tests` reports 103 passing + 4 ignored (env-gated). Architecture-lint now enforces 4 invariants. CI grew to 12 jobs.
