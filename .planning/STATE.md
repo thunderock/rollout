@@ -4,8 +4,9 @@ milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
 current_plan: Not started
 status: unknown
-stopped_at: Completed 05-08-PLAN.md
-last_updated: "2026-05-29T04:24:24.196Z"
+stopped_at: Phase 6 context gathered
+last_updated: "2026-05-29T06:24:36.291Z"
+last_activity: "2026-05-29 - Completed quick task 260528-w1p: free always-on CPU smoke tests"
 progress:
   total_phases: 3
   completed_phases: 1
@@ -62,6 +63,7 @@ Wave 3 complete (solo): plan 02-04 (rollout-transport) shipped 2026-05-20. `roll
 **Phase 5 is COMPLETE (8/8, CLOUD-01..04 verified 5/5).** Next is **Phase 6 — Multi-node distribution (DIST-01..05).**
 
 **Mandatory architecture spike before planning Phase 6.** Per ROADMAP, DIST-03 (coordinator restart) is the hardest item in v1.1 — the storage-backed stateless-replayer + Postgres-lease fencing pattern has no direct peer-framework template. Before committing to a PR plan, design:
+
 - the `coordinator_lease` table schema (epoch-fenced)
 - the `split_brain_old_coord_self_fences` test skeleton (one coord self-fences via `std::process::abort` within 5s; survivor advances epoch; workers reject stale-epoch responses)
 
@@ -287,8 +289,8 @@ Optional cleanup: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Ny
 
 ## Last Session
 
-- **Last session:** 2026-05-29T04:15:53.366Z
-- **Stopped at:** Completed 05-08-PLAN.md
+- **Last session:** 2026-05-29T06:24:36.286Z
+- **Stopped at:** Phase 6 context gathered
 
 ## Things Not To Forget
 
