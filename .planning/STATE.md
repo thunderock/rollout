@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
 current_plan: 1
 status: unknown
-stopped_at: Completed 06-03-PLAN.md
-last_updated: "2026-05-29T16:21:52.091Z"
+stopped_at: "06-04 Tasks 1-3 done; PAUSED at Task 4 checkpoint:human-verify (awaiting operator approval)"
+last_updated: "2026-05-29T16:40:00.000Z"
 progress:
   total_phases: 3
   completed_phases: 1
@@ -20,7 +20,20 @@ This file tracks current project state. Updated at phase transitions.
 ## Current Position
 
 Phase: 06 (multi-node-distribution) — EXECUTING
-Plan: 5 of 5
+Plan: 5 of 5 (06-04 — PAUSED at Task 4 checkpoint)
+
+**06-04 (smoke + PG lane + docs):** Tasks 1-3 complete and committed; Task 4 is a
+blocking `checkpoint:human-verify` awaiting operator approval. No SUMMARY yet.
+
+| Task | Name | Commit | Status |
+|---|---|---|---|
+| 1 | 3-node smoke driver + Make targets + worker drain edge | `6faadea` | done |
+| 2 | Postgres-lease CAS witness (D-LEASE-01/02) | `6abb63a` | done |
+| 3 | mdBook multi-node distribution chapter | `dd3132f` | done |
+| 4 | Operator verification of the assembled runtime | — | **CHECKPOINT (awaiting "approved")** |
+
+To resume: run `cargo test -p rollout-coordinator` (4 witnesses) + `make smoke-3node-aws`/`-gcp`
+(both pass locally — done in 0-1s with a steal), then type "approved". Live-cloud is operator-optional.
 
 ### Quick Tasks Completed
 
