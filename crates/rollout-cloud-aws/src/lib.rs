@@ -11,12 +11,16 @@ pub(crate) mod config;
 #[cfg(feature = "aws")]
 pub(crate) mod error;
 #[cfg(feature = "aws")]
+pub mod imds;
+#[cfg(feature = "aws")]
 pub mod s3;
 #[cfg(feature = "aws")]
 pub mod secrets_manager;
 #[cfg(feature = "aws")]
 pub mod sqs;
 
+#[cfg(feature = "aws")]
+pub use imds::Ec2MetadataComputeHint;
 #[cfg(feature = "aws")]
 pub use s3::S3ObjectStore;
 #[cfg(feature = "aws")]
