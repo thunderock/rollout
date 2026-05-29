@@ -23,9 +23,11 @@ train                = ["rollout-backend-vllm/vllm", "rollout-backend-vllm/train
 # Swaps VllmBackend for MockBackend at runtime when ROLLOUT_TEST_MOCK_BACKEND=1.
 test-mock-backend    = ["rollout-runtime-batch/test-mock-backend"]
 # AWS cloud backends (S3 / SQS / SecretsManager / IMDSv2). Default-off (D-FEAT-01).
-aws                  = ["dep:rollout-cloud-aws", "rollout-cloud-aws/aws", "dep:aws-config", "dep:aws-sdk-s3", "dep:aws-sdk-sqs", "dep:aws-sdk-secretsmanager"]
+aws                  = ["dep:rollout-cloud-aws", "rollout-cloud-aws/aws", "dep:aws-config", "dep:aws-sdk-s3", "dep:aws-sdk-sqs", "dep:aws-sdk-secretsmanager", "_doctor"]
 # GCP cloud backends (GCS / Pub-Sub / Secret Manager / GCE MDS). Default-off (D-FEAT-01).
-gcp                  = ["dep:rollout-cloud-gcp", "rollout-cloud-gcp/gcp", "dep:gcloud-storage", "dep:gcloud-pubsub"]
+gcp                  = ["dep:rollout-cloud-gcp", "rollout-cloud-gcp/gcp", "dep:gcloud-storage", "dep:gcloud-pubsub", "_doctor"]
+# Internal: deps the `cloud doctor` subcommand needs (TLS reachability probe + blake3). Enabled by aws|gcp.
+_doctor              = ["dep:tokio-rustls", "dep:webpki-roots", "dep:blake3"]
 
 [dependencies]
 rollout-core         = { path = "../rollout-core",          version = "0.1" }
@@ -48,6 +50,9 @@ aws-sdk-sqs            = { workspace = true, optional = true }
 aws-sdk-secretsmanager = { workspace = true, optional = true }
 gcloud-storage         = { workspace = true, optional = true }
 gcloud-pubsub          = { workspace = true, optional = true }
+tokio-rustls           = { workspace = true, optional = true }
+webpki-roots           = { workspace = true, optional = true }
+blake3                 = { workspace = true, optional = true }
 clap                 = { workspace = true }
 serde_json           = { workspace = true }
 schemars             = { workspace = true }

@@ -11,8 +11,8 @@ use rollout_core::config::RunConfig;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-#[allow(dead_code)] // wired into commands by Plan 06+ (rollout cloud doctor / run)
 mod cloud_factory;
+mod commands;
 mod infer;
 mod infer_config;
 mod snapshot;
@@ -50,6 +50,21 @@ enum Cmd {
     Train(train::TrainCmd),
     /// Snapshot subcommand group (Phase-4: list, show, prune).
     Snapshot(snapshot::SnapshotCmd),
+    /// Cloud diagnostics and pre-flight checks (Phase-5: doctor).
+    Cloud(CloudCmd),
+}
+
+/// `rollout cloud ...` command group.
+#[derive(clap::Args)]
+struct CloudCmd {
+    #[command(subcommand)]
+    sub: CloudSub,
+}
+
+#[derive(Subcommand)]
+enum CloudSub {
+    /// Verify cloud provider configuration end-to-end.
+    Doctor(commands::cloud::doctor::DoctorArgs),
 }
 
 #[derive(Subcommand)]
@@ -109,7 +124,23 @@ fn main() -> ExitCode {
         Cmd::Infer(c) => infer_dispatch(c),
         Cmd::Train(c) => train_dispatch(c),
         Cmd::Snapshot(c) => snapshot_dispatch(c),
+        Cmd::Cloud(c) => cloud_dispatch(c),
     }
+}
+
+fn cloud_dispatch(cmd: CloudCmd) -> ExitCode {
+    init_tracing();
+    let Ok(rt) = tokio::runtime::Runtime::new() else {
+        eprintln!("failed to start tokio runtime");
+        return ExitCode::from(2);
+    };
+    // `doctor::run` terminates the process via `std::process::exit` (D-DOCTOR-03);
+    // it never returns, so this dispatch never falls through.
+    rt.block_on(async move {
+        match cmd.sub {
+            CloudSub::Doctor(args) => commands::cloud::doctor::run(args).await,
+        }
+    })
 }
 
 fn train_dispatch(cmd: train::TrainCmd) -> ExitCode {

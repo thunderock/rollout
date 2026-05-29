@@ -4102,6 +4102,7 @@ dependencies = [
  "aws-sdk-s3",
  "aws-sdk-secretsmanager",
  "aws-sdk-sqs",
+ "blake3",
  "clap",
  "gcloud-pubsub",
  "gcloud-storage",
@@ -4128,11 +4129,13 @@ dependencies = [
  "smol_str",
  "tempfile",
  "tokio",
+ "tokio-rustls",
  "tokio-util",
  "toml",
  "tracing",
  "tracing-subscriber",
  "ulid",
+ "webpki-roots",
 ]
 
 [[package]]

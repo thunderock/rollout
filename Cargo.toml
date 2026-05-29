@@ -157,3 +157,6 @@ gcloud-metadata        = "1.0"
 token-source           = "1.0"
 reqwest                = { version = "0.13", default-features = false, features = ["json", "rustls"] }
 futures-util           = "0.3"
+# Phase 5 — `rollout cloud doctor` TLS reachability probe (rustls 0.23-compatible).
+tokio-rustls           = { version = "0.26", default-features = false, features = ["ring"] }
+webpki-roots           = "1.0"
