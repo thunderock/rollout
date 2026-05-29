@@ -3082,10 +3082,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "rollout-cloud-aws"
+version = "0.1.0"
+dependencies = [
+ "rollout-core",
+]
+
+[[package]]
+name = "rollout-cloud-gcp"
+version = "0.1.0"
+dependencies = [
+ "rollout-core",
+]
+
+[[package]]
 name = "rollout-cloud-local"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "blake3",
  "nvml-wrapper",
  "rollout-core",
  "rollout-storage",
