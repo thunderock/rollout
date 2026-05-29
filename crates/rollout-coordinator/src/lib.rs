@@ -9,6 +9,7 @@ pub mod config;
 pub mod emitter;
 pub mod failure_scan;
 pub mod heartbeat;
+pub mod lease;
 pub mod registry;
 pub mod run;
 pub mod work_item;
