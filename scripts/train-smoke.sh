@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Phase-4 train smoke driver. Gated on ROLLOUT_TRANSFORMERS_AVAILABLE=1.
+# Phase-4 train smoke driver. Runs unconditionally in CPU mode on default
+# public runners (CPU torch + transformers + accelerate).
 # Exercises the full SFT path against Qwen/Qwen2.5-0.5B-Instruct on CPU.
 # Expected wall-clock: ~3-5 minutes on M-series CPU; longer on x86 CPU runners.
 # Mirrors scripts/infer-smoke.sh shape.
@@ -8,11 +9,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-if [[ "${ROLLOUT_TRANSFORMERS_AVAILABLE:-0}" != "1" ]]; then
-  echo "train-smoke: skipped (ROLLOUT_TRANSFORMERS_AVAILABLE != 1); see docs/book/src/training/cpu-mode.md"
-  exit 0
-fi
 
 cd "$REPO_ROOT"
 

@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 # Phase-3 end-to-end smoke. Runs `rollout infer batch` against
-# examples/batch-tiny.toml. Gated on `ROLLOUT_VLLM_AVAILABLE=1`; skips with a
-# clear message when unset so default public-runner CI stays green.
+# examples/batch-tiny.toml. Always runs in CPU mode on default public runners
+# via the `vllm-cpu` wheel (engine.py's torch.cuda.is_available() probe selects
+# device="cpu"); see docs/book/src/inference/cpu-mode.md.
 set -euo pipefail
-
-if [[ "${ROLLOUT_VLLM_AVAILABLE:-0}" != "1" ]]; then
-  echo "infer-smoke: skipped (ROLLOUT_VLLM_AVAILABLE != 1); see docs/book/src/inference/cpu-mode.md"
-  exit 0
-fi
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
