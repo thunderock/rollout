@@ -4216,6 +4216,7 @@ name = "rollout-coordinator"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "chrono",
  "clap",
  "postcard",
  "rollout-core",
