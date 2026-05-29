@@ -19,8 +19,8 @@ This file tracks current project state. Updated at phase transitions.
 
 ## Current Position
 
-Phase: 6
-Plan: 8 of 8
+Phase: 6 — Multi-node distribution (not started; architecture spike on DIST-03 required before planning)
+Plan: — (Phase 5 complete, 8/8; Phase 6 not yet planned)
 
 Last activity: 2026-05-29 - Completed quick task 260528-w1p: free always-on CPU smoke tests
 
@@ -59,19 +59,17 @@ Wave 3 complete (solo): plan 02-04 (rollout-transport) shipped 2026-05-20. `roll
 
 ## Next Step
 
-**Plan Phase 5.** Run `/gsd:plan-phase 5` to decompose the cloud layer + object-store snapshots phase into per-PR plans. Build order within Phase 5 (per `.planning/research/SUMMARY.md` and `ARCHITECTURE.md` §4):
+**Phase 5 is COMPLETE (8/8, CLOUD-01..04 verified 5/5).** Next is **Phase 6 — Multi-node distribution (DIST-01..05).**
 
-1. `rollout-core` trait extensions (`ObjectStore::put_stream/get_stream`, `Queue::dequeue_with_lease/extend_lease`, new types) + `public-api-cloud-leak` CI gate
-2. Phase 5 precursor tasks (no new REQ-ID): Postgres `scan_bytes` parity fix · `rollout-evals` → `rollout-harness-eval` rename · MSRV 1.88 → 1.91 evaluation spike
-3. `rollout-cloud-local` updates for new trait methods
-4. `rollout-cloud-aws` per-trait PRs (S3 → SQS → SM+IMDSv2)
-5. `rollout-cloud-gcp` per-trait PRs (GCS → Pub/Sub → SM+GCE metadata)
-6. Snapshot streaming witnesses (`bit_identical_resume_at_step_5_via_{s3,gcs}`)
-7. `rollout cloud doctor` CLI
+**Mandatory architecture spike before planning Phase 6.** Per ROADMAP, DIST-03 (coordinator restart) is the hardest item in v1.1 — the storage-backed stateless-replayer + Postgres-lease fencing pattern has no direct peer-framework template. Before committing to a PR plan, design:
+- the `coordinator_lease` table schema (epoch-fenced)
+- the `split_brain_old_coord_self_fences` test skeleton (one coord self-fences via `std::process::abort` within 5s; survivor advances epoch; workers reject stale-epoch responses)
 
-After Phase 5, run `/gsd:plan-phase 6` (architecture spike on DIST-03 lease-based fencing before plan), then `/gsd:plan-phase 7` (strace-derived seccomp baseline for HARNESS-02 before plan).
+Recommended entry: `/gsd:discuss-phase 6` (surfaces the fencing/abort/lease-renewal design decisions), then `/gsd:plan-phase 6`, then `/gsd:execute-phase 6`. The roadmap also calls `/gsd:research-phase 6` as the spike vehicle.
 
-Optional cleanup before Phase 5 kickoff: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Nyquist gap (their VALIDATION.md scaffolding ships but has never been run through the validator).
+After Phase 6, Phase 7 (Harnesses) needs a strace-derived seccomp baseline for HARNESS-02 before its plan.
+
+Optional cleanup: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Nyquist gap (their VALIDATION.md scaffolding ships but has never been run through the validator).
 
 ## Progress
 
