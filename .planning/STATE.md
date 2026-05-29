@@ -4,13 +4,13 @@ milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
 current_plan: 1
 status: unknown
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-05-29T15:50:14.401Z"
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-05-29T15:58:40.979Z"
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 13
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # STATE — Project Memory
@@ -20,7 +20,7 @@ This file tracks current project state. Updated at phase transitions.
 ## Current Position
 
 Phase: 06 (multi-node-distribution) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 
 ### Quick Tasks Completed
 
@@ -164,6 +164,7 @@ Optional cleanup: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Ny
 | Phase 05-cloud-layer-object-store-snapshots P08 | 40 | 2 tasks | 23 files |
 | Phase 06 P00 | 8 | 3 tasks | 11 files |
 | Phase 06 P01 | 6min | 3 tasks | 10 files |
+| Phase 06 P02 | 6min | 3 tasks | 5 files |
 
 ## Decisions
 
@@ -291,11 +292,13 @@ Optional cleanup: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Ny
 - [Phase 06]: Sim harness + CountingEmitter + subprocess abort harness ready for the 4 distribution witnesses
 - [Phase 06]: StorageLease: one CoordinatorLease impl over dual-backed Storage satisfies D-LEASE-01 (both backends) without two impls; monotonic epoch on steal, constant on renew
 - [Phase 06]: Epoch proto field deferred to 06-04 smoke wiring; EpochGuard worker-side rejection + self-fence/abort path fully landed and witnessed (SC1/SC4/abort-within-5s)
+- [Phase 06]: 06-02: coordinator-mediated work-stealing via two-step CAS reassign (try_repending then try_claim) over the same Running(victim) bytes; ceil(n/2) capped at MAX_STEAL_BATCH=32
+- [Phase 06]: 06-02: queue_items ULID-ordered dispatch queue with content-addressed work_id (blake3); reads on Storage, writes on the txn (StorageTxn is write-only)
 
 ## Last Session
 
-- **Last session:** 2026-05-29T15:50:07.010Z
-- **Stopped at:** Completed 06-01-PLAN.md
+- **Last session:** 2026-05-29T15:58:32.391Z
+- **Stopped at:** Completed 06-02-PLAN.md
 
 ## Things Not To Forget
 
