@@ -4,13 +4,13 @@ milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
 current_plan: 1
 status: unknown
-stopped_at: Completed 05-06-PLAN.md
-last_updated: "2026-05-29T03:29:33.180Z"
+stopped_at: Completed 05-08-PLAN.md
+last_updated: "2026-05-29T04:16:00.692Z"
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 8
 ---
 
 # STATE — Project Memory
@@ -20,7 +20,7 @@ This file tracks current project state. Updated at phase transitions.
 ## Current Position
 
 Phase: 05 (cloud-layer-object-store-snapshots) — EXECUTING
-Plan: 7 of 8
+Plan: 8 of 8
 
 ## Previous Milestone — v1.0 (Shipped 2026-05-27)
 
@@ -155,6 +155,8 @@ Optional cleanup before Phase 5 kickoff: `/gsd:validate-phase` for v1.0 phases 0
 | Phase 05 P04 | 32min | 4 tasks | 34 files |
 | Phase 05 P05 | 155min | 5 tasks | 36 files |
 | Phase 05 P06 | 27min | 5 tasks | 27 files |
+| Phase 05 P07 | 22 | 4 tasks | 13 files |
+| Phase 05-cloud-layer-object-store-snapshots P08 | 40 | 2 tasks | 23 files |
 
 ## Decisions
 
@@ -273,11 +275,14 @@ Optional cleanup before Phase 5 kickoff: `/gsd:validate-phase` for v1.0 phases 0
 - [Phase 05]: Toolchain bumped 1.91.0->1.91.1: published AWS SDK requires rustc 1.91.1 (the MSRV-BUMP precursor's motivation)
 - [Phase 05]: AWS SDK error mapping by rendered-string classification (SDK-version-agnostic; no SDK type in any error #[source] chain)
 - [Phase 05]: 05-06: used verified gcloud-* SDK cohort (storage/pubsub/auth/metadata/googleapis) instead of planned gcloud-secretmanager-v1/gcloud_auth::mds (different incompatible cohort); SM over v1 REST, MDS over gcloud-metadata constants
+- [Phase 05]: 05-07: cloud snapshot witnesses drive save_train_state/restore_train_state (production streaming path) — MockBackend::save_weights doesn't touch the ObjectStore, so swapping the Snapshotter's store alone wouldn't exercise S3/GCS.
+- [Phase 05]: 05-07: example TOMLs use the real flattened CloudConfig shape ([cloud.s3]/[cloud.gcs]); the tagged-enum inlines variant fields under [cloud].
+- [Phase 05-cloud-layer-object-store-snapshots]: rollout cloud doctor: auth check uses compute_hint.inventory() credential probe instead of aws-sdk-sts; internal _doctor feature gates TLS+blake3 deps; emulator-aware cloud_factory honors *_ENDPOINT_URL/*_EMULATOR_HOST so the production path runs against localstack/fake-gcs/pubsub-emulator with no live cloud.
 
 ## Last Session
 
-- **Last session:** 2026-05-29T03:29:27.030Z
-- **Stopped at:** Completed 05-06-PLAN.md
+- **Last session:** 2026-05-29T04:15:53.366Z
+- **Stopped at:** Completed 05-08-PLAN.md
 
 ## Things Not To Forget
 
