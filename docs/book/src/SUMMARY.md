@@ -32,4 +32,6 @@
   - [GCP](./cloud/gcp.md)
   - [Cloud-backed snapshots](./cloud/snapshots.md)
   - [Doctor (pre-flight)](./cloud/doctor.md)
+- [Distribution](./distribution/index.md)
+  - [Multi-node](./distribution/multi-node.md)
 - [Examples](./examples/index.md)
