@@ -390,6 +390,12 @@ jobs:
           PUBSUB_EMULATOR_HOST: localhost:8085
           PUBSUB_PROJECT_ID: rollout-test
         run: cargo test -p rollout-cloud-gcp --features gcp --tests -- --include-ignored --test-threads=1
+      - name: Run GCS-backed snapshot resume witness (CLOUD-03)
+        env:
+          STORAGE_EMULATOR_HOST: http://localhost:4443
+          PUBSUB_EMULATOR_HOST: localhost:8085
+          PUBSUB_PROJECT_ID: rollout-test
+        run: cargo test -p rollout-snapshots --test bit_identical_resume_at_step_5_via_gcs -- --include-ignored
 
   cloud-live-gcp:
     # CLOUD-02 nightly live cloud conformance. Real GCP via Workload Identity

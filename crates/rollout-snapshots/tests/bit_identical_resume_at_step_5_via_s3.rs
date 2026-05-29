@@ -12,6 +12,10 @@ mod support;
 
 use tempfile::tempdir;
 
+// The injected store is `rollout_cloud_aws::S3ObjectStore` (built inside
+// `support::build_localstack_object_store`).
+type _InjectedStore = rollout_cloud_aws::S3ObjectStore;
+
 #[tokio::test]
 #[ignore = "requires LOCALSTACK_ENDPOINT (set by cloud-emulator-aws CI job)"]
 async fn bit_identical_resume_at_step_5_via_s3() {
