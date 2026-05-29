@@ -4,9 +4,12 @@
 //! `<hex>.meta.json` carrying size + content-type + created-at.
 
 use async_trait::async_trait;
-use rollout_core::{ContentId, CoreError, FatalError, ObjectStore, PutHint};
+use blake3::Hasher;
+use rollout_core::{ContentId, CoreError, FatalError, ObjectStore, PutHint, RecoverableError, RetryHint};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ObjectMeta {
@@ -42,6 +45,13 @@ impl FsObjectStore {
             .join(&hex[0..2])
             .join(&hex[2..4])
             .join(format!("{hex}.meta.json"))
+    }
+
+    /// Per-write staging path under `<root>/pending/<ulid>` for atomic streaming puts.
+    fn temp_path_for_pending(&self) -> PathBuf {
+        self.root
+            .join("pending")
+            .join(ulid::Ulid::new().to_string())
     }
 }
 
@@ -95,8 +105,83 @@ impl ObjectStore for FsObjectStore {
             .await
             .map_err(internal)
     }
+
+    async fn put_stream(
+        &self,
+        mut stream: Pin<Box<dyn AsyncRead + Send>>,
+        _hint: PutHint,
+    ) -> Result<ContentId, CoreError> {
+        // Stream to a temp file, hashing incrementally; atomic-rename to the
+        // content-addressed path on success. Never buffers the whole payload.
+        let temp = self.temp_path_for_pending();
+        if let Some(parent) = temp.parent() {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e| transient(&e))?;
+        }
+        let mut file = tokio::fs::File::create(&temp)
+            .await
+            .map_err(|e| transient(&e))?;
+        let mut hasher = Hasher::new();
+        let mut buf = vec![0u8; 64 * 1024];
+        loop {
+            let n = stream.read(&mut buf).await.map_err(|e| transient(&e))?;
+            if n == 0 {
+                break;
+            }
+            hasher.update(&buf[..n]);
+            file.write_all(&buf[..n]).await.map_err(|e| transient(&e))?;
+        }
+        file.flush().await.map_err(|e| transient(&e))?;
+        file.sync_all().await.map_err(|e| transient(&e))?;
+        drop(file);
+
+        let id = ContentId(*hasher.finalize().as_bytes());
+        let final_path = self.path_for(&id);
+        if let Some(parent) = final_path.parent() {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e| transient(&e))?;
+        }
+        // Idempotent put: if the blob already exists, discard the temp.
+        if tokio::fs::try_exists(&final_path)
+            .await
+            .map_err(|e| transient(&e))?
+        {
+            tokio::fs::remove_file(&temp).await.ok();
+        } else {
+            tokio::fs::rename(&temp, &final_path)
+                .await
+                .map_err(|e| transient(&e))?;
+        }
+        Ok(id)
+    }
+
+    async fn get_stream(
+        &self,
+        id: &ContentId,
+    ) -> Result<Pin<Box<dyn AsyncRead + Send>>, CoreError> {
+        let path = self.path_for(id);
+        let file = tokio::fs::File::open(&path).await.map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                CoreError::Fatal(FatalError::Internal {
+                    msg: format!("object not found: {id}"),
+                })
+            } else {
+                transient(&e)
+            }
+        })?;
+        Ok(Box::pin(file))
+    }
 }
 
 fn internal<E: std::fmt::Display>(e: E) -> CoreError {
     CoreError::Fatal(FatalError::Internal { msg: e.to_string() })
+}
+
+fn transient(e: &std::io::Error) -> CoreError {
+    CoreError::Recoverable(RecoverableError::Transient {
+        msg: format!("fs object_store io: {e}"),
+        hint: RetryHint::After(std::time::Duration::from_millis(50)),
+    })
 }

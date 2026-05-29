@@ -17,6 +17,7 @@ nvml = ["dep:nvml-wrapper"]
 rollout-core    = { path = "../rollout-core", version = "0.1" }
 rollout-storage = { path = "../rollout-storage", version = "0.1" }
 async-trait     = { workspace = true }
+blake3          = { workspace = true }
 serde           = { workspace = true }
 serde_json      = { workspace = true }
 schemars        = { workspace = true }
@@ -32,3 +33,4 @@ ignored = ["nvml-wrapper"]
 [dev-dependencies]
 tempfile = { workspace = true }
 tokio    = { workspace = true, features = ["macros", "rt-multi-thread"] }
+ulid     = { workspace = true }

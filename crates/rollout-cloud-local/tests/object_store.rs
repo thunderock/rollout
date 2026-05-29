@@ -1,4 +1,9 @@
 //! `FsObjectStore` tests — D-LOCAL-01 round-trip + sharded layout + idempotency.
+//!
+//! `put_stream`/`get_stream` are `#[deprecated]` on the trait to nudge non-cloud
+//! impls into overriding; `FsObjectStore` *does* override, so calling them here is
+//! intentional and the lint is silenced file-wide.
+#![allow(deprecated)]
 
 use rollout_cloud_local::FsObjectStore;
 use rollout_core::{ContentId, CoreError, ObjectStore, PutHint};
@@ -98,4 +103,49 @@ async fn get_missing_returns_fatal_internal() {
         }
         other => panic!("expected Fatal(Internal), got {other:?}"),
     }
+}
+
+#[tokio::test]
+async fn fs_object_store_put_stream_content_id_matches_put_bytes() {
+    use std::pin::Pin;
+    use tokio::io::AsyncRead;
+    let dir = tempfile::TempDir::new().unwrap();
+    let store = FsObjectStore::open(dir.path()).await.unwrap();
+    let buf = vec![0xABu8; 1024 * 1024];
+    let stream: Pin<Box<dyn AsyncRead + Send>> = Box::pin(std::io::Cursor::new(buf.clone()));
+    let id = store.put_stream(stream, PutHint::default()).await.unwrap();
+    assert_eq!(id, ContentId::of(&buf));
+    // Blob landed at the sharded path.
+    let hex = id.to_string();
+    let expected = dir.path().join(&hex[0..2]).join(&hex[2..4]).join(&hex);
+    assert!(expected.exists(), "streamed blob not at sharded path");
+}
+
+#[tokio::test]
+async fn fs_object_store_put_stream_streams_to_disk_no_buffering() {
+    use std::pin::Pin;
+    use tokio::io::AsyncRead;
+    let dir = tempfile::TempDir::new().unwrap();
+    let store = FsObjectStore::open(dir.path()).await.unwrap();
+    // 4 MiB payload; the impl reads in 64 KiB chunks (never holds the whole blob).
+    let logical = vec![0x5Au8; 4 * 1024 * 1024];
+    let stream: Pin<Box<dyn AsyncRead + Send>> = Box::pin(std::io::Cursor::new(logical.clone()));
+    let id = store.put_stream(stream, PutHint::default()).await.unwrap();
+    // Stream-hashed ContentId must equal the direct blake3 of the logical bytes.
+    assert_eq!(id, ContentId::of(&logical));
+    let got = store.get_bytes(&id).await.unwrap();
+    assert_eq!(got, logical);
+}
+
+#[tokio::test]
+async fn fs_object_store_get_stream_yields_async_read() {
+    use tokio::io::AsyncReadExt;
+    let dir = tempfile::TempDir::new().unwrap();
+    let store = FsObjectStore::open(dir.path()).await.unwrap();
+    let original = b"async-read-roundtrip".to_vec();
+    let id = store.put_bytes(original.clone(), PutHint::default()).await.unwrap();
+    let mut rd = store.get_stream(&id).await.unwrap();
+    let mut out = Vec::new();
+    rd.read_to_end(&mut out).await.unwrap();
+    assert_eq!(out, original);
 }

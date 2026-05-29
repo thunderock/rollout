@@ -8,10 +8,14 @@
 //! without touching storage so the next restart still replays it.
 
 use async_trait::async_trait;
-use rollout_core::{CoreError, FatalError, KeyRange, Queue, QueueItemId, Storage, StorageKey};
+use rollout_core::{
+    CoreError, FatalError, KeyRange, LeaseToken, Queue, QueueItemId, RecoverableError, RetryHint,
+    Storage, StorageKey,
+};
 use smol_str::SmolStr;
 use std::collections::VecDeque;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::Mutex;
 
 const NAMESPACE: &str = "cloudlocal_queue";
@@ -99,5 +103,43 @@ impl Queue for InMemQueue {
             })?;
         self.inner.lock().await.push_front((id, payload));
         Ok(())
+    }
+
+    async fn dequeue_with_lease(
+        &self,
+        _lease: Duration,
+    ) -> Result<Option<(QueueItemId, Vec<u8>, LeaseToken)>, CoreError> {
+        // In-mem queue has no visibility timeout; the lease arg is ignored and
+        // the token is synthesized from the item id.
+        match self.dequeue().await? {
+            None => Ok(None),
+            Some((id, payload)) => Ok(Some((id, payload, LeaseToken::from_queue_item_id(id)))),
+        }
+    }
+
+    async fn extend_lease(
+        &self,
+        id: QueueItemId,
+        _token: LeaseToken,
+        _extend_by: Duration,
+    ) -> Result<(), CoreError> {
+        // An item is in-flight if it is still backed by storage (not yet acked)
+        // but absent from the pending deque (already dequeued). The in-mem queue
+        // is permissive: extend is a no-op success for in-flight items.
+        let in_storage = self.storage.get_bytes(&Self::key_for(&id)).await?.is_some();
+        let in_deque = self
+            .inner
+            .lock()
+            .await
+            .iter()
+            .any(|(qid, _)| qid.0 == id.0);
+        if in_storage && !in_deque {
+            Ok(())
+        } else {
+            Err(CoreError::Recoverable(RecoverableError::Transient {
+                msg: format!("extend_lease: QueueItemId {id:?} not in-flight"),
+                hint: RetryHint::Never,
+            }))
+        }
     }
 }

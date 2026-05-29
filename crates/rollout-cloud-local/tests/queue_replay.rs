@@ -141,3 +141,57 @@ async fn nack_keeps_in_storage_returns_to_queue() {
     assert_eq!(got2.0, id.0);
     assert_eq!(v, b"y".to_vec());
 }
+
+#[tokio::test]
+async fn in_mem_queue_dequeue_with_lease_yields_lease_token() {
+    use rollout_core::LeaseToken;
+    use std::time::Duration;
+    let dir = tempfile::TempDir::new().unwrap();
+    let storage = fresh_storage(dir.path()).await;
+    let q = InMemQueue::open(Arc::clone(&storage)).await.unwrap();
+    let id = q.enqueue(b"job".to_vec()).await.unwrap();
+    let (got_id, payload, token) = q
+        .dequeue_with_lease(Duration::from_secs(30))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(got_id.0, id.0);
+    assert_eq!(payload, b"job".to_vec());
+    assert_eq!(token, LeaseToken::from_queue_item_id(id));
+}
+
+#[tokio::test]
+async fn in_mem_queue_extend_lease_succeeds_with_inflight_id() {
+    use std::time::Duration;
+    let dir = tempfile::TempDir::new().unwrap();
+    let storage = fresh_storage(dir.path()).await;
+    let q = InMemQueue::open(Arc::clone(&storage)).await.unwrap();
+    let _id = q.enqueue(b"job".to_vec()).await.unwrap();
+    // Dequeue moves the item in-flight (out of deque, still in storage).
+    let (id, _payload, token) = q
+        .dequeue_with_lease(Duration::from_secs(30))
+        .await
+        .unwrap()
+        .unwrap();
+    q.extend_lease(id, token, Duration::from_secs(60))
+        .await
+        .expect("extend on in-flight item must succeed");
+}
+
+#[tokio::test]
+async fn in_mem_queue_extend_lease_fails_on_unknown_id() {
+    use rollout_core::{CoreError, LeaseToken, QueueItemId, RecoverableError};
+    use std::time::Duration;
+    let dir = tempfile::TempDir::new().unwrap();
+    let storage = fresh_storage(dir.path()).await;
+    let q = InMemQueue::open(Arc::clone(&storage)).await.unwrap();
+    let unknown = QueueItemId(ulid::Ulid::new());
+    let err = q
+        .extend_lease(unknown, LeaseToken(vec![]), Duration::from_secs(60))
+        .await
+        .unwrap_err();
+    assert!(matches!(
+        err,
+        CoreError::Recoverable(RecoverableError::Transient { .. })
+    ));
+}
