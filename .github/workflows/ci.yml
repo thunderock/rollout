@@ -114,6 +114,37 @@ jobs:
       - name: Dependency-direction lint
         run: cargo test -p rollout-core --test dependency_direction
 
+  public-api-cloud-leak:
+    # D-CI-03 + Pitfall #1 — asserts rollout-core's public API contains zero AWS/GCP SDK symbols.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.91.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-public-api
+      - name: Install cargo-public-api
+        run: cargo install cargo-public-api --locked --version 0.39
+      - name: Dump rollout-core public API
+        run: cargo public-api -p rollout-core --simplified > rollout-core.public-api.txt
+      - name: Assert no SDK type leakage
+        run: bash scripts/check-public-api-cloud-leak.sh rollout-core.public-api.txt
+      - name: Upload public-api dump on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rollout-core-public-api
+          path: rollout-core.public-api.txt
+
+  forbidden-patterns:
+    # D-CI-03 + Pitfalls #3, #10a, #13 — no IMDSv1 raw URLs, no metadata.google.internal raw URLs,
+    # no shell=True in Python, no libc::fork().
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Forbidden-patterns grep
+        run: bash scripts/check-forbidden-patterns.sh
+
   unused-deps:
     runs-on: ubuntu-latest
     steps:
