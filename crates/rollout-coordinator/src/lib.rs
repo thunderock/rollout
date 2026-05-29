@@ -11,6 +11,7 @@ pub mod failure_scan;
 pub mod epoch;
 pub mod fence;
 pub mod heartbeat;
+pub mod ledger;
 pub mod lease;
 pub mod registry;
 pub mod run;
