@@ -42,16 +42,16 @@ Either way, the Rust-side test surface (~80 % of Phase 3's automated tests — `
 
 ## CI posture
 
-- **Default CI (public runners):** `ROLLOUT_VLLM_AVAILABLE` unset. The `infer-smoke` workflow job is gated on `vars.ROLLOUT_VLLM_AVAILABLE == '1'` and therefore does not fire. The `cargo test --workspace --tests` job still runs `restart_no_duplicates` (gated on `--features test-mock-backend`); the load-bearing exit criterion (b) proof is exercised on every PR.
-- **Self-hosted runner with vLLM installed:** set `vars.ROLLOUT_VLLM_AVAILABLE = '1'` in repo settings. The `infer-smoke` job downloads `Qwen2.5-0.5B-Instruct` on first run (~1 GiB; cached under `~/.cache/huggingface/hub/`), runs `rollout infer batch --config examples/batch-tiny.toml`, and asserts the produced `data/completions/batch-tiny/completions.jsonl` has 4 non-empty completion rows.
-- **Local dev:** `ROLLOUT_VLLM_AVAILABLE=1 make infer-smoke` after `pip install 'vllm>=0.10,<0.22'`. On Apple-Silicon, prefer the Docker path documented in `dev-on-macos.md`.
+- **Default CI (public runners):** `infer-smoke` now runs on every PR and merge — no `ROLLOUT_VLLM_AVAILABLE` gate. It installs the `vllm-cpu` PyPI wheel (~101 MB unified CPU wheel, AVX2 fallback) instead of the ~10 GB CUDA wheel; the `torch.cuda.is_available()` probe in `engine.py` selects `device="cpu"` automatically. The job downloads `Qwen2.5-0.5B-Instruct` (cached under `~/.cache/huggingface`), runs `rollout infer batch --config examples/batch-tiny.toml`, and asserts 4 non-empty completion rows — all on the free 4-vCPU `ubuntu-latest` runner in well under 60 s of inference. `train-smoke` is likewise always-on, installing CPU torch + transformers + accelerate and running the `examples/sft-tiny.toml` SFT (`max_steps = 2`) on CPU. pip + HuggingFace caches keep both jobs fast on repeat runs.
+- **MockBackend proofs unchanged:** the load-bearing `restart_no_duplicates` (BACKEND-02 exit (b)) and bit-identical-resume (TRAIN-03) proofs still run in the standard `test` job via MockBackend — no GPU/vLLM/transformers required there.
+- **Local dev:** `make infer-smoke` after `pip install 'vllm-cpu>=0.17'`. On Apple-Silicon, prefer the Docker path documented in `dev-on-macos.md`.
 
 ## Failure modes
 
 | Failure | Surface | Diagnosis |
 |---|---|---|
 | `import torch` fails | Python ImportError at engine init | Active venv missing torch — `pip install torch` first |
-| `import vllm` fails | Python ImportError at engine init | Active venv missing vllm — `pip install 'vllm>=0.10,<0.22'` |
+| `import vllm` fails | Python ImportError at engine init | Active venv missing vllm — for the CPU/CI path `pip install 'vllm-cpu>=0.17'`; on a CUDA host install the matching CUDA wheel |
 | `torch.cuda.is_available() == False` on a GPU host | engine boots in CPU mode silently | NVIDIA driver/runtime mismatch — install matching CUDA runtime; the explicit probe surfaces this rather than masking it |
 | `vllm` import succeeds but `AsyncLLMEngine.from_engine_args` panics with `device="cpu"` not supported | vLLM version too old | upgrade to `vllm>=0.10` |
 | `make infer-smoke` times out (>300 s) on a CPU host | model larger than `Qwen2.5-0.5B-Instruct` | use the canonical `examples/batch-tiny.toml` model; do not run multi-billion-param models on CPU |
