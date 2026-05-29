@@ -338,7 +338,10 @@ fn deliberate_violation_invariant_11_algo_uses_cloud_aws() {
     let deps = toml_dep_names(&body);
     let caught = deps.iter().any(|d| any_violation(&pkg, d));
     assert!(
-        caught && deps.iter().any(|d| invariant_11_algo_uses_cloud_aws(&pkg, d)),
+        caught
+            && deps
+                .iter()
+                .any(|d| invariant_11_algo_uses_cloud_aws(&pkg, d)),
         "fixture must trigger invariant_11_algo_uses_cloud_aws, pkg={pkg} deps={deps:?}",
     );
 }
@@ -353,7 +356,10 @@ fn deliberate_violation_invariant_12_algo_uses_cloud_gcp() {
     let deps = toml_dep_names(&body);
     let caught = deps.iter().any(|d| any_violation(&pkg, d));
     assert!(
-        caught && deps.iter().any(|d| invariant_12_algo_uses_cloud_gcp(&pkg, d)),
+        caught
+            && deps
+                .iter()
+                .any(|d| invariant_12_algo_uses_cloud_gcp(&pkg, d)),
         "fixture must trigger invariant_12_algo_uses_cloud_gcp, pkg={pkg} deps={deps:?}",
     );
 }
@@ -368,7 +374,10 @@ fn deliberate_violation_invariant_13_cloud_aws_uses_cloud_gcp() {
     let deps = toml_dep_names(&body);
     let caught = deps.iter().any(|d| any_violation(&pkg, d));
     assert!(
-        caught && deps.iter().any(|d| invariant_13_cloud_aws_uses_cloud_gcp(&pkg, d)),
+        caught
+            && deps
+                .iter()
+                .any(|d| invariant_13_cloud_aws_uses_cloud_gcp(&pkg, d)),
         "fixture must trigger invariant_13_cloud_aws_uses_cloud_gcp, pkg={pkg} deps={deps:?}",
     );
 }
@@ -383,7 +392,10 @@ fn deliberate_violation_invariant_14_core_pulls_sdk() {
     let deps = toml_dep_names(&body);
     let caught = deps.iter().any(|d| any_violation(&pkg, d));
     assert!(
-        caught && deps.iter().any(|d| invariant_14_rollout_core_no_sdk_deps(&pkg, d)),
+        caught
+            && deps
+                .iter()
+                .any(|d| invariant_14_rollout_core_no_sdk_deps(&pkg, d)),
         "fixture must trigger invariant_14_rollout_core_no_sdk_deps, pkg={pkg} deps={deps:?}",
     );
 }

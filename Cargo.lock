@@ -3842,6 +3842,10 @@ name = "rollout-cli"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
+ "aws-config",
+ "aws-sdk-s3",
+ "aws-sdk-secretsmanager",
+ "aws-sdk-sqs",
  "clap",
  "glob",
  "predicates",
@@ -3849,6 +3853,7 @@ dependencies = [
  "rollout-algo-rm",
  "rollout-algo-sft",
  "rollout-backend-vllm",
+ "rollout-cloud-aws",
  "rollout-cloud-local",
  "rollout-coordinator",
  "rollout-core",

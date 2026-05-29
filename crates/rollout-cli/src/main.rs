@@ -11,6 +11,8 @@ use rollout_core::config::RunConfig;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
+#[allow(dead_code)] // wired into commands by Plan 06+ (rollout cloud doctor / run)
+mod cloud_factory;
 mod infer;
 mod infer_config;
 mod snapshot;

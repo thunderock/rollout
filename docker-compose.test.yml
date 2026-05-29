@@ -1,0 +1,21 @@
+# Phase 5 — emulator setup for the cloud-emulator-{aws,gcp} CI jobs and local dev.
+# Versions pinned per Claude's Discretion (05-CONTEXT.md): localstack 3.7.0.
+services:
+  localstack:
+    image: localstack/localstack:3.7.0
+    environment:
+      SERVICES: s3,sqs,secretsmanager
+      DEBUG: 0
+      PERSISTENCE: 0
+      # FAILURE_INJECTION intentionally OFF here; the throttle fixture witnesses
+      # the error-mapping contract directly rather than relying on emulator chaos.
+    ports:
+      - "4566:4566"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:4566/_localstack/health"]
+      interval: 2s
+      timeout: 1s
+      retries: 30
+    restart: "no"
+
+  # fake-gcs-server / pubsub-emulator land in Plan 06 (Stage 3).

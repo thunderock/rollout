@@ -46,7 +46,9 @@ impl CloudConfig {
     /// Returns `Fatal(ConfigInvalid)` if any bound is violated.
     pub fn validate_cross_fields(&self) -> Result<(), crate::CoreError> {
         let invalid = |msg: &str| {
-            crate::CoreError::Fatal(crate::FatalError::ConfigInvalid { msg: msg.to_owned() })
+            crate::CoreError::Fatal(crate::FatalError::ConfigInvalid {
+                msg: msg.to_owned(),
+            })
         };
         match self {
             Self::Aws(aws) => {
@@ -233,7 +235,9 @@ allowlist = ["s"]
             "gcp": { "project": "p" }
         });
         let res: Result<CloudConfig, _> = serde_json::from_value(mixed);
-        let err = res.expect_err("mixed aws+gcp body must be rejected").to_string();
+        let err = res
+            .expect_err("mixed aws+gcp body must be rejected")
+            .to_string();
         assert!(
             err.contains("gcp") || err.contains("unknown field") || err.contains("cross-cloud"),
             "unexpected error: {err}"

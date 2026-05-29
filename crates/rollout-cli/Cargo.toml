@@ -22,6 +22,8 @@ vllm                 = ["rollout-backend-vllm/vllm"]
 train                = ["rollout-backend-vllm/vllm", "rollout-backend-vllm/train"]
 # Swaps VllmBackend for MockBackend at runtime when ROLLOUT_TEST_MOCK_BACKEND=1.
 test-mock-backend    = ["rollout-runtime-batch/test-mock-backend"]
+# AWS cloud backends (S3 / SQS / SecretsManager / IMDSv2). Default-off (D-FEAT-01).
+aws                  = ["dep:rollout-cloud-aws", "rollout-cloud-aws/aws", "dep:aws-config", "dep:aws-sdk-s3", "dep:aws-sdk-sqs", "dep:aws-sdk-secretsmanager"]
 
 [dependencies]
 rollout-core         = { path = "../rollout-core",          version = "0.1" }
@@ -36,6 +38,11 @@ rollout-backend-vllm = { path = "../rollout-backend-vllm",  version = "0.1" }
 rollout-algo-sft     = { path = "../rollout-algo-sft",      version = "0.1" }
 rollout-algo-rm      = { path = "../rollout-algo-rm",       version = "0.1" }
 rollout-snapshots    = { path = "../rollout-snapshots",     version = "0.1" }
+rollout-cloud-aws    = { path = "../rollout-cloud-aws",     version = "0.1", optional = true }
+aws-config             = { workspace = true, optional = true }
+aws-sdk-s3             = { workspace = true, optional = true }
+aws-sdk-sqs            = { workspace = true, optional = true }
+aws-sdk-secretsmanager = { workspace = true, optional = true }
 clap                 = { workspace = true }
 serde_json           = { workspace = true }
 schemars             = { workspace = true }

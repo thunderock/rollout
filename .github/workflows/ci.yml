@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  schedule:
+    - cron: '0 6 * * *' # Nightly 06:00 UTC for cloud-live-* jobs
 
 # docs-deploy needs these to publish GitHub Pages.
 permissions:
@@ -282,6 +284,69 @@ jobs:
           SQLX_OFFLINE: "true"
           RUST_LOG: rollout_storage=info,sqlx=warn
         run: cargo test -p rollout-storage --features postgres --test postgres_scan_bytes_parity -- --include-ignored --test-threads=1
+
+  cloud-emulator-aws:
+    # CLOUD-01 always-on conformance witness. localstack-backed S3 + SQS +
+    # SecretsManager. No live AWS creds. The conformance + fixture tests carry
+    # `#[ignore = "requires LOCALSTACK_ENDPOINT"]` so the Docker-free dev loop
+    # stays green; this job opts in via `-- --include-ignored`.
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 15
+    services:
+      localstack:
+        image: localstack/localstack:3.7.0
+        ports: ["4566:4566"]
+        env:
+          SERVICES: s3,sqs,secretsmanager
+          DEBUG: 0
+          PERSISTENCE: 0
+        options: >-
+          --health-cmd "curl -fsS http://localhost:4566/_localstack/health"
+          --health-interval 2s
+          --health-timeout 1s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.91.1
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-cloud-emulator-aws
+      - name: Run rollout-cloud-aws conformance against localstack
+        env:
+          LOCALSTACK_ENDPOINT: http://localhost:4566
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_REGION: us-east-1
+        run: cargo test -p rollout-cloud-aws --features aws --tests -- --include-ignored --test-threads=1
+
+  cloud-live-aws:
+    # CLOUD-01 nightly + path-triggered live cloud conformance. Real AWS via
+    # GitHub OIDC. Operator setup: an IAM role with the bucket/queue/secret
+    # permissions in crates/rollout-cloud-aws/docs/bucket-setup.md.
+    if: ${{ github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      id-token: write
+      contents: read
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.91.1
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.ROLLOUT_CLOUD_LIVE_AWS_ROLE_ARN }}
+          aws-region: us-west-2
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-cloud-live-aws
+      - name: Run conformance against real AWS
+        env:
+          ROLLOUT_TEST_BUCKET: ${{ vars.ROLLOUT_CLOUD_LIVE_AWS_BUCKET }}
+          ROLLOUT_TEST_QUEUE_URL: ${{ vars.ROLLOUT_CLOUD_LIVE_AWS_QUEUE_URL }}
+          ROLLOUT_TEST_SECRET_NAME: rollout/test-secret
+        run: cargo test -p rollout-cloud-aws --features aws --tests -- --include-ignored --test-threads=1
 
   infer-smoke:
     # BACKEND-02 live acceptance gate. Opt-in: only fires when

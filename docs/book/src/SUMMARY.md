@@ -28,4 +28,5 @@
   - [CPU mode](./training/cpu-mode.md)
 - [Cloud](./cloud/index.md)
   - [Streaming + lease traits](./cloud/traits.md)
+  - [AWS](./cloud/aws.md)
 - [Examples](./examples/index.md)
