@@ -72,7 +72,6 @@ pub(crate) fn map_s3_sdk_error<E: Display>(err: E) -> CoreError {
 }
 
 /// SQS operation-error mapper. `ReceiptHandleIsInvalid` collapses to `Transient`.
-#[allow(dead_code)] // wired in by the SQS module (same plan, Task 2)
 pub(crate) fn map_sqs_sdk_error<E: Display>(err: E) -> CoreError {
     let rendered = format!("sqs: {err}");
     if rendered.to_ascii_lowercase().contains("receipthandle") {

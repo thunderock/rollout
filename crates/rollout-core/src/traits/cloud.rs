@@ -68,6 +68,21 @@ pub struct QueueItemId(
     pub ulid::Ulid,
 );
 
+impl QueueItemId {
+    /// Derive a deterministic `QueueItemId` from a backend message-id string.
+    ///
+    /// Cloud queues (SQS, Pub/Sub) hand back opaque, non-ULID message ids. We
+    /// fold the id into a stable 128-bit ULID via blake3 so the same message id
+    /// always maps to the same `QueueItemId` (idempotent re-dequeue).
+    #[must_use]
+    pub fn from_message_id_string(mid: &str) -> Self {
+        let digest = blake3::hash(mid.as_bytes());
+        let mut b16 = [0u8; 16];
+        b16.copy_from_slice(&digest.as_bytes()[..16]);
+        Self(ulid::Ulid::from(u128::from_be_bytes(b16)))
+    }
+}
+
 /// Blob storage abstraction (S3 / GCS / local filesystem).
 #[async_trait]
 pub trait ObjectStore: Send + Sync {
@@ -173,6 +188,23 @@ pub trait Queue: Send + Sync {
 }
 
 #[cfg(test)]
+mod queue_item_id_tests {
+    use super::QueueItemId;
+
+    #[test]
+    fn from_message_id_string_is_deterministic_and_collision_distinct() {
+        let a = QueueItemId::from_message_id_string("msg-uuid-1");
+        let a2 = QueueItemId::from_message_id_string("msg-uuid-1");
+        let b = QueueItemId::from_message_id_string("msg-uuid-2");
+        assert_eq!(a, a2, "same message id must map to the same QueueItemId");
+        assert_ne!(
+            a, b,
+            "distinct message ids must map to distinct QueueItemIds"
+        );
+    }
+}
+
+#[cfg(test)]
 #[allow(deprecated)] // exercising the default impls we intentionally tag #[deprecated]
 mod default_impl_tests {
     use super::*;
@@ -207,14 +239,20 @@ mod default_impl_tests {
             Box::pin(std::io::Cursor::new(payload.clone()));
         let id = store.put_stream(stream, PutHint::default()).await.unwrap();
         assert_eq!(id, ContentId::of(&payload));
-        assert_eq!(store.last_put.lock().unwrap().as_deref(), Some(&payload[..]));
+        assert_eq!(
+            store.last_put.lock().unwrap().as_deref(),
+            Some(&payload[..])
+        );
     }
 
     #[tokio::test]
     async fn object_store_default_get_stream_buffers_through_get_bytes() {
         let store = MockObjectStore::default();
         let payload = b"streamed-back".to_vec();
-        let id = store.put_bytes(payload.clone(), PutHint::default()).await.unwrap();
+        let id = store
+            .put_bytes(payload.clone(), PutHint::default())
+            .await
+            .unwrap();
         let mut rd = store.get_stream(&id).await.unwrap();
         let mut out = Vec::new();
         rd.read_to_end(&mut out).await.unwrap();

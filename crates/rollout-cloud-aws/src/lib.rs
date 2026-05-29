@@ -12,9 +12,13 @@ pub(crate) mod config;
 pub(crate) mod error;
 #[cfg(feature = "aws")]
 pub mod s3;
+#[cfg(feature = "aws")]
+pub mod sqs;
 
 #[cfg(feature = "aws")]
 pub use s3::S3ObjectStore;
+#[cfg(feature = "aws")]
+pub use sqs::SqsQueue;
 
 // Re-exported for the conformance test harness + the CLI cloud factory.
 #[cfg(feature = "aws")]
