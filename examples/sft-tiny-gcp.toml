@@ -1,0 +1,63 @@
+# Phase-5 SFT smoke against GCP. Identical to examples/sft-tiny.toml apart from
+# the [cloud] block — snapshots stream to GCS, work leases over Pub/Sub, secrets
+# read from Secret Manager (read-only allowlist). Dry-runs cleanly without creds:
+#   cargo run -p rollout-cli --features gcp -- train sft --config examples/sft-tiny-gcp.toml --dry-run
+#
+# CloudConfig is a `#[serde(tag = "provider")]` enum, so the GCP variant fields
+# (project / gcs / pubsub / secrets) live directly under [cloud] — a single TOML
+# cannot name two providers (cross-cloud is structurally impossible, D-XPROV-02).
+schema_version = 1
+
+[run]
+name = "sft-tiny-smoke-gcp"
+
+[storage]
+backend = "embedded"
+path = "./data/sft-tiny.db"
+
+[cloud]
+provider = "gcp"
+project = "rollout-prod-123"
+
+[cloud.gcs]
+bucket = "rollout-snapshots-prod"
+prefix = "sft-tiny/"
+
+[cloud.pubsub]
+topic = "projects/rollout-prod-123/topics/rollout-work"
+subscription = "projects/rollout-prod-123/subscriptions/rollout-workers"
+ack_deadline_secs = 30
+
+[cloud.secrets]
+allowlist = ["rollout/hf_token"]
+
+[algorithm]
+kind = "sft"
+minibatch_size = 1
+gradient_accumulation = 1
+
+[algorithm.base_model]
+uri = "Qwen/Qwen2.5-0.5B-Instruct"
+
+[algorithm.optimizer]
+kind = "adam_w"
+lr = 1e-5
+weight_decay = 0.0
+betas = [0.9, 0.999]
+eps = 1e-8
+warmup_steps = 0
+schedule = "constant"
+
+[algorithm.budget]
+max_steps = 2
+
+[algorithm.dataset]
+kind = "jsonl_path"
+path = "examples/sft-tiny.jsonl"
+
+[algorithm.packing]
+kind = "concat"
+max_seq_len = 512
+
+[algorithm.loss_on]
+kind = "assistant_only"

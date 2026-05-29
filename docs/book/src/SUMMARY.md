@@ -30,4 +30,5 @@
   - [Streaming + lease traits](./cloud/traits.md)
   - [AWS](./cloud/aws.md)
   - [GCP](./cloud/gcp.md)
+  - [Cloud-backed snapshots](./cloud/snapshots.md)
 - [Examples](./examples/index.md)
