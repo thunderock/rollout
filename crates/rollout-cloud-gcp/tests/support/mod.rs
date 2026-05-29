@@ -14,8 +14,10 @@ pub mod mock_secret_manager;
 
 use std::sync::Arc;
 
+use gcloud_pubsub::client::{Client as PubSubClient, ClientConfig as PubSubClientConfig};
+use gcloud_pubsub::subscription::SubscriptionConfig;
 use gcloud_storage::http::buckets::insert::{InsertBucketParam, InsertBucketRequest};
-use rollout_cloud_gcp::GcsObjectStore;
+use rollout_cloud_gcp::{GcsObjectStore, PubSubQueue};
 
 /// Read the fake-gcs-server endpoint, or `None` when not configured.
 pub fn fake_gcs_endpoint() -> Option<String> {
@@ -43,4 +45,29 @@ pub async fn build_fake_gcs_store(endpoint: &str) -> Arc<GcsObjectStore> {
         String::new(),
         16 * 1024 * 1024,
     ))
+}
+
+/// Read the pubsub-emulator host, or `None` when not configured.
+pub fn pubsub_emulator_host() -> Option<String> {
+    std::env::var("PUBSUB_EMULATOR_HOST").ok()
+}
+
+/// Build a `PubSubQueue` over a freshly-created random topic + subscription on
+/// the pubsub-emulator (selected via the `PUBSUB_EMULATOR_HOST` env var).
+pub async fn build_emulator_pubsub_queue() -> PubSubQueue {
+    // ClientConfig::default() prefers PUBSUB_EMULATOR_HOST when set.
+    let client = PubSubClient::new(PubSubClientConfig::default())
+        .await
+        .expect("pubsub emulator client");
+    let topic_id = format!("rollout-test-topic-{}", ulid::Ulid::new());
+    let sub_id = format!("rollout-test-sub-{}", ulid::Ulid::new());
+    client
+        .create_topic(&topic_id, None, None)
+        .await
+        .expect("create topic");
+    client
+        .create_subscription(&sub_id, &topic_id, SubscriptionConfig::default(), None)
+        .await
+        .expect("create subscription");
+    PubSubQueue::new(Arc::new(client), topic_id, sub_id, 10)
 }

@@ -4166,6 +4166,7 @@ dependencies = [
  "bytes",
  "futures-util",
  "gcloud-auth",
+ "gcloud-googleapis",
  "gcloud-metadata",
  "gcloud-pubsub",
  "gcloud-storage",

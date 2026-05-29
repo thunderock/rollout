@@ -13,9 +13,13 @@ pub(crate) mod config;
 pub(crate) mod error;
 #[cfg(feature = "gcp")]
 pub mod gcs;
+#[cfg(feature = "gcp")]
+pub mod pubsub;
 
 #[cfg(feature = "gcp")]
 pub use gcs::GcsObjectStore;
+#[cfg(feature = "gcp")]
+pub use pubsub::PubSubQueue;
 
 // Re-exported for the conformance test harness + the CLI cloud factory.
 #[cfg(feature = "gcp")]
