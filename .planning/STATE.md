@@ -22,6 +22,14 @@ This file tracks current project state. Updated at phase transitions.
 Phase: 6
 Plan: 8 of 8
 
+Last activity: 2026-05-29 - Completed quick task 260528-w1p: free always-on CPU smoke tests
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260528-w1p | Make train-smoke + infer-smoke CI jobs always-on and free on public runners (vllm-cpu wheel + un-gating + caching) | 2026-05-29 | 14060e8 | [260528-w1p-make-train-smoke-and-infer-smoke-ci-jobs](./quick/260528-w1p-make-train-smoke-and-infer-smoke-ci-jobs/) |
+
 ## Previous Milestone — v1.0 (Shipped 2026-05-27)
 
 All 4 phases (01-core-foundations, 02-local-substrate, 03-inference-batch, 04-train-sft-rm-snapshots) shipped. 18/18 v1.0 requirements satisfied. Archive at `.planning/milestones/v1.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md`. Retrospective at `.planning/RETROSPECTIVE.md`. Tech debt carried into v1.1: 9 items (audit `tech_debt:` block — all by-design human-gate / live-env GPU/HF/Docker + 1 latent Postgres `scan_bytes` wildcard divergence flagged for RL-01 in v1.2).
