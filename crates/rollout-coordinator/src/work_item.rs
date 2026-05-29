@@ -13,7 +13,7 @@
 //! `["item", <work_id hex>]`. Postcard value.
 
 use rollout_core::{
-    ContentId, CoreError, FatalError, RunId, StorageKey, StorageTxn, WorkerId,
+    ContentId, CoreError, FatalError, KeyRange, RunId, StorageKey, StorageTxn, WorkerId,
 };
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
@@ -62,6 +62,19 @@ pub fn work_key(run_id: &RunId, work_id: &ContentId) -> StorageKey {
         namespace: SmolStr::new_static("work"),
         run_id: Some(*run_id),
         path: vec![SmolStr::new_static("item"), SmolStr::new(work_id.to_string())],
+    }
+}
+
+/// Scan range covering the whole `work` ledger of a run (`work/<run>/item/*`).
+#[must_use]
+pub fn work_prefix(run_id: &RunId) -> KeyRange {
+    KeyRange {
+        prefix: StorageKey {
+            namespace: SmolStr::new_static("work"),
+            run_id: Some(*run_id),
+            path: vec![SmolStr::new_static("item")],
+        },
+        limit: None,
     }
 }
 

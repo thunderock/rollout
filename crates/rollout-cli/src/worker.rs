@@ -140,11 +140,38 @@ pub async fn run(
         let _ = shutdown_tx_for_signal.send(true);
     });
 
+    // Spot-drain fault injection (06-03 stop-pull edge): if
+    // `ROLLOUT_MOCK_PREEMPT_MS` is set, the worker observes a mock preemption
+    // notice after that delay, sets a stop-pull flag, and gracefully drains.
+    // Real-cloud preemption flows through `ComputeHint::preemption_signal`; this
+    // is the Docker-free smoke vehicle (the every-commit witness for the drain
+    // state machine is `spot_drain_completes_within_lead_time`).
+    let preempt_after: Option<Duration> = std::env::var("ROLLOUT_MOCK_PREEMPT_MS")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .map(Duration::from_millis);
+    let stop_pull = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    if let Some(lead) = preempt_after {
+        let stop_pull = stop_pull.clone();
+        let shutdown_tx = shutdown_tx.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(lead).await;
+            stop_pull.store(true, std::sync::atomic::Ordering::SeqCst);
+            tracing::info!("worker_preemption_observed");
+            let _ = shutdown_tx.send(true);
+        });
+    }
+
     let mut ticker = tokio::time::interval(hb_interval);
     let mut state = ProtoState::Init;
     loop {
         tokio::select! {
             _ = ticker.tick() => {
+                // Stop-pull observance (06-03): once preempted, stop pulling new
+                // work and beat `Draining` until shutdown lands.
+                if stop_pull.load(std::sync::atomic::Ordering::SeqCst) {
+                    state = ProtoState::Draining;
+                }
                 let beat = BeatRequest {
                     worker_id: worker_ulid.to_string(),
                     run_id: run_id_ulid.to_string(),

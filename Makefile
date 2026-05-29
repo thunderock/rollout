@@ -1,4 +1,4 @@
-.PHONY: lint test build check schema-gen validate-schema docs graphify protos smoke infer-smoke postgres-test train-smoke help
+.PHONY: lint test build check schema-gen validate-schema docs graphify protos smoke smoke-3node-aws smoke-3node-gcp infer-smoke postgres-test train-smoke help
 
 export CARGO_TERM_COLOR := always
 
@@ -34,6 +34,12 @@ protos:
 smoke:
 	bash scripts/smoke.sh
 
+smoke-3node-aws:
+	bash scripts/smoke-3node.sh aws
+
+smoke-3node-gcp:
+	bash scripts/smoke-3node.sh gcp
+
 infer-smoke:
 	bash scripts/infer-smoke.sh
 
@@ -55,6 +61,8 @@ help:
 	@echo "graphify         build codebase knowledge graph via graphify-ts (out: graphify-out/)"
 	@echo "protos           regenerate python/rollout/_proto/ stubs (requires grpcio-tools; opt-in)"
 	@echo "smoke            end-to-end Phase-2 substrate test (1 coord + 2 workers + plugins; kills w1; asserts deadline detection)"
+	@echo "smoke-3node-aws  Phase-6 1 coord + 3 workers (mock backend, no GPU); dispatch+steal; run done < 30s (aws variant)"
+	@echo "smoke-3node-gcp  Phase-6 1 coord + 3 workers (mock backend, no GPU); dispatch+steal; run done < 30s (gcp variant)"
 	@echo "infer-smoke      Phase-3 end-to-end batch-inference smoke (requires ROLLOUT_VLLM_AVAILABLE=1)"
 	@echo "postgres-test    Phase-4 testcontainers Postgres integration tests (requires Docker)"
 	@echo "train-smoke      Phase-4 end-to-end SFT train smoke (requires ROLLOUT_TRANSFORMERS_AVAILABLE=1)"

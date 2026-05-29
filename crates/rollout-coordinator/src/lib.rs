@@ -14,6 +14,7 @@ pub mod fence;
 pub mod heartbeat;
 pub mod ledger;
 pub mod lease;
+pub mod mock_run;
 pub mod registry;
 pub mod run;
 pub mod steal;
