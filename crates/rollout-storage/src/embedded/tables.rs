@@ -22,6 +22,14 @@ pub const T_CLOUDLOCAL: BytesTable = TableDefinition::new("cloudlocal_queue");
 pub const T_INFER: BytesTable = TableDefinition::new("infer");
 /// `snapshots/*` — Phase-4 snapshot metadata rows (spec 04 §5.1).
 pub const T_SNAPSHOTS: BytesTable = TableDefinition::new("snapshots");
+/// `coordinator_lease/*` — Phase-6 single-row CAS lease + epoch (DIST-01/03).
+pub const T_COORD_LEASE: BytesTable = TableDefinition::new("coordinator_lease");
+/// `epoch/*` — Phase-6 authoritative current epoch (replayer reads this).
+pub const T_EPOCH: BytesTable = TableDefinition::new("epoch");
+/// `work/*` — Phase-6 work-item CAS ledger (`work/<run>/item/<work_id>`).
+pub const T_WORK: BytesTable = TableDefinition::new("work");
+/// `queue_items/*` — Phase-6 pending (unassigned) work queue (ULID-ordered).
+pub const T_QUEUE_ITEMS: BytesTable = TableDefinition::new("queue_items");
 
 /// Map `StorageKey.namespace` to its `TableDefinition`.
 ///
@@ -37,6 +45,10 @@ pub fn table_for(namespace: &str) -> Result<BytesTable, CoreError> {
         "cloudlocal_queue" => T_CLOUDLOCAL,
         "infer" => T_INFER,
         "snapshots" => T_SNAPSHOTS,
+        "coordinator_lease" => T_COORD_LEASE,
+        "epoch" => T_EPOCH,
+        "work" => T_WORK,
+        "queue_items" => T_QUEUE_ITEMS,
         other => {
             return Err(CoreError::Fatal(FatalError::ConfigInvalid {
                 msg: format!("unknown storage namespace: {other}"),
@@ -48,7 +60,7 @@ pub fn table_for(namespace: &str) -> Result<BytesTable, CoreError> {
 /// All known table definitions (used by `get_many_bytes` / scans that
 /// want to walk every namespace).
 #[must_use]
-pub fn all_tables() -> [(&'static str, BytesTable); 8] {
+pub fn all_tables() -> [(&'static str, BytesTable); 12] {
     [
         ("runs", T_RUNS),
         ("workers", T_WORKERS),
@@ -58,5 +70,9 @@ pub fn all_tables() -> [(&'static str, BytesTable); 8] {
         ("cloudlocal_queue", T_CLOUDLOCAL),
         ("infer", T_INFER),
         ("snapshots", T_SNAPSHOTS),
+        ("coordinator_lease", T_COORD_LEASE),
+        ("epoch", T_EPOCH),
+        ("work", T_WORK),
+        ("queue_items", T_QUEUE_ITEMS),
     ]
 }

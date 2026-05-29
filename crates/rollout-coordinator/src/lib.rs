@@ -11,6 +11,7 @@ pub mod failure_scan;
 pub mod heartbeat;
 pub mod registry;
 pub mod run;
+pub mod work_item;
 
 pub use config::CoordinatorConfig;
 pub use emitter::{NoopEmitter, StdoutJsonEmitter};
