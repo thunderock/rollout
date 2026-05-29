@@ -85,6 +85,39 @@ fn invariant_9_snapshots_uses_algo(pkg: &str, dep: &str) -> bool {
     pkg == SNAPSHOTS_CRATE && dep.starts_with("rollout-algo-")
 }
 
+// Phase 5 invariant #11: rollout-algo-* must not depend on rollout-cloud-aws specifically.
+// (Subsumed by #1/#7 via CLOUD_CRATES, but split out for per-cloud fixture coverage per D-CI-04.)
+fn invariant_11_algo_uses_cloud_aws(pkg: &str, dep: &str) -> bool {
+    ALGO_CRATES.contains(&pkg) && dep == "rollout-cloud-aws"
+}
+
+// Phase 5 invariant #12: rollout-algo-* must not depend on rollout-cloud-gcp specifically.
+fn invariant_12_algo_uses_cloud_gcp(pkg: &str, dep: &str) -> bool {
+    ALGO_CRATES.contains(&pkg) && dep == "rollout-cloud-gcp"
+}
+
+// Phase 5 invariant #13: cross-provider isolation — rollout-cloud-aws ↮ rollout-cloud-gcp.
+fn invariant_13_cloud_aws_uses_cloud_gcp(pkg: &str, dep: &str) -> bool {
+    (pkg == "rollout-cloud-aws" && dep == "rollout-cloud-gcp")
+        || (pkg == "rollout-cloud-gcp" && dep == "rollout-cloud-aws")
+}
+
+// Phase 5 invariant #14: rollout-core direct dependencies must contain no AWS/GCP SDK crates.
+// Companion to scripts/check-public-api-cloud-leak.sh — enforces no-leak from the dep side.
+const SDK_CRATE_PREFIXES: &[&str] = &[
+    "aws-config",
+    "aws-sdk-",
+    "aws-smithy-",
+    "aws-credential-types",
+    "gcloud-",
+    "google-cloud-",
+    "googleapis-",
+];
+
+fn invariant_14_rollout_core_no_sdk_deps(pkg: &str, dep: &str) -> bool {
+    pkg == "rollout-core" && SDK_CRATE_PREFIXES.iter().any(|p| dep.starts_with(p))
+}
+
 fn any_violation(pkg: &str, dep: &str) -> bool {
     violation_algo_uses_cloud(pkg, dep)
         || violation_transport_uses_cloud(pkg, dep)
@@ -95,17 +128,24 @@ fn any_violation(pkg: &str, dep: &str) -> bool {
         || invariant_7_algo_uses_cloud(pkg, dep)
         || invariant_8_algo_uses_transport(pkg, dep)
         || invariant_9_snapshots_uses_algo(pkg, dep)
+        || invariant_11_algo_uses_cloud_aws(pkg, dep)
+        || invariant_12_algo_uses_cloud_gcp(pkg, dep)
+        || invariant_13_cloud_aws_uses_cloud_gcp(pkg, dep)
+        || invariant_14_rollout_core_no_sdk_deps(pkg, dep)
 }
 
 #[test]
 fn dep_direction_invariants_hold() {
-    // Nine invariants total (Phases 1-4):
+    // Fourteen invariants total (Phases 1-5):
     //   #1-#4 (Phase 1/2): algo crates ↛ cloud crates; rollout-transport ↛ cloud;
     //          rollout-plugin-host ↛ rollout-transport; rollout-coordinator ↛
     //          rollout-plugin-host / cloud crates.
     //   #5-#6 (Phase 3): rollout-backend-vllm ↛ cloud / transport.
     //   #7-#9 (Phase 4): rollout-algo-{sft,rm} ↛ cloud (#7); ↛ rollout-transport
     //          (#8); rollout-snapshots ↛ rollout-algo-* (#9).
+    //   #11-#14 (Phase 5): rollout-algo-* ↛ rollout-cloud-aws (#11) / cloud-gcp (#12);
+    //          rollout-cloud-aws ↮ rollout-cloud-gcp (#13); rollout-core ↛ AWS/GCP
+    //          SDK crates (#14).
     let meta = MetadataCommand::new().exec().expect("cargo metadata");
     for pkg in meta.workspace_packages() {
         for dep in &pkg.dependencies {
@@ -285,6 +325,66 @@ fn invariant_9_snapshots_does_not_depend_on_algo() {
     assert!(
         caught,
         "fixture failed: expected snapshots->algo violation (#9), pkg={pkg} deps={deps:?}",
+    );
+}
+
+#[test]
+fn deliberate_violation_invariant_11_algo_uses_cloud_aws() {
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/violation_algo_uses_cloud_aws/Cargo.toml");
+    let body = std::fs::read_to_string(&fixture)
+        .unwrap_or_else(|e| panic!("read fixture {fixture:?}: {e}"));
+    let pkg = toml_pkg_name(&body);
+    let deps = toml_dep_names(&body);
+    let caught = deps.iter().any(|d| any_violation(&pkg, d));
+    assert!(
+        caught && deps.iter().any(|d| invariant_11_algo_uses_cloud_aws(&pkg, d)),
+        "fixture must trigger invariant_11_algo_uses_cloud_aws, pkg={pkg} deps={deps:?}",
+    );
+}
+
+#[test]
+fn deliberate_violation_invariant_12_algo_uses_cloud_gcp() {
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/violation_algo_uses_cloud_gcp/Cargo.toml");
+    let body = std::fs::read_to_string(&fixture)
+        .unwrap_or_else(|e| panic!("read fixture {fixture:?}: {e}"));
+    let pkg = toml_pkg_name(&body);
+    let deps = toml_dep_names(&body);
+    let caught = deps.iter().any(|d| any_violation(&pkg, d));
+    assert!(
+        caught && deps.iter().any(|d| invariant_12_algo_uses_cloud_gcp(&pkg, d)),
+        "fixture must trigger invariant_12_algo_uses_cloud_gcp, pkg={pkg} deps={deps:?}",
+    );
+}
+
+#[test]
+fn deliberate_violation_invariant_13_cloud_aws_uses_cloud_gcp() {
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/violation_cloud_aws_uses_gcp/Cargo.toml");
+    let body = std::fs::read_to_string(&fixture)
+        .unwrap_or_else(|e| panic!("read fixture {fixture:?}: {e}"));
+    let pkg = toml_pkg_name(&body);
+    let deps = toml_dep_names(&body);
+    let caught = deps.iter().any(|d| any_violation(&pkg, d));
+    assert!(
+        caught && deps.iter().any(|d| invariant_13_cloud_aws_uses_cloud_gcp(&pkg, d)),
+        "fixture must trigger invariant_13_cloud_aws_uses_cloud_gcp, pkg={pkg} deps={deps:?}",
+    );
+}
+
+#[test]
+fn deliberate_violation_invariant_14_core_pulls_sdk() {
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/violation_core_pulls_sdk/Cargo.toml");
+    let body = std::fs::read_to_string(&fixture)
+        .unwrap_or_else(|e| panic!("read fixture {fixture:?}: {e}"));
+    let pkg = toml_pkg_name(&body);
+    let deps = toml_dep_names(&body);
+    let caught = deps.iter().any(|d| any_violation(&pkg, d));
+    assert!(
+        caught && deps.iter().any(|d| invariant_14_rollout_core_no_sdk_deps(&pkg, d)),
+        "fixture must trigger invariant_14_rollout_core_no_sdk_deps, pkg={pkg} deps={deps:?}",
     );
 }
 

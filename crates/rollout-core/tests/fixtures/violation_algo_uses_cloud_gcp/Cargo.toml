@@ -1,0 +1,13 @@
+# FIXTURE -- DO NOT BUILD. Read-only fixture for crates/rollout-core/tests/dependency_direction.rs.
+# Simulates a forbidden edge: an algorithm crate depending on rollout-cloud-gcp.
+# Exercises Phase-5 invariant #12 (algo ↛ cloud-gcp).
+[package]
+name    = "rollout-algo-sft"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+rollout-cloud-gcp = "0.1"
+
+[package.metadata.cargo-machete]
+ignored = ["rollout-cloud-gcp"]

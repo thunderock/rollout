@@ -5,6 +5,8 @@ members = [
     "crates/rollout-proto",
     "crates/rollout-storage",
     "crates/rollout-cloud-local",
+    "crates/rollout-cloud-aws",
+    "crates/rollout-cloud-gcp",
     "crates/rollout-transport",
     "crates/rollout-plugin-host",
     "crates/rollout-coordinator",
@@ -14,6 +16,15 @@ members = [
     "crates/rollout-algo-rm",
     "crates/rollout-snapshots",
     "xtask",
+]
+# Dependency-direction violation fixtures are standalone manifests consumed by
+# crates/rollout-core/tests/dependency_direction.rs (read as text, never built).
+# Listed here so cargo never auto-discovers them as workspace members.
+exclude = [
+    "crates/rollout-core/tests/fixtures/violation_algo_uses_cloud_aws",
+    "crates/rollout-core/tests/fixtures/violation_algo_uses_cloud_gcp",
+    "crates/rollout-core/tests/fixtures/violation_cloud_aws_uses_gcp",
+    "crates/rollout-core/tests/fixtures/violation_core_pulls_sdk",
 ]
 resolver = "2"
 

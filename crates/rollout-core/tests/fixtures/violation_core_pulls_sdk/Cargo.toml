@@ -1,0 +1,13 @@
+# FIXTURE -- DO NOT BUILD. Read-only fixture for crates/rollout-core/tests/dependency_direction.rs.
+# Simulates a forbidden edge: rollout-core pulling an AWS SDK crate directly.
+# Exercises Phase-5 invariant #14 (rollout-core has no aws-*/gcloud-* SDK deps).
+[package]
+name    = "rollout-core"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+aws-sdk-s3 = "1"
+
+[package.metadata.cargo-machete]
+ignored = ["aws-sdk-s3"]

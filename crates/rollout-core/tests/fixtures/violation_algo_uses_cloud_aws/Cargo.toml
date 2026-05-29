@@ -1,0 +1,14 @@
+# FIXTURE -- DO NOT BUILD. Read-only fixture for crates/rollout-core/tests/dependency_direction.rs.
+# Simulates a forbidden edge: an algorithm crate depending on rollout-cloud-aws.
+# Exercises Phase-5 invariant #11 (algo ↛ cloud-aws).
+[package]
+name    = "rollout-algo-sft"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+rollout-cloud-aws = "0.1"
+
+[package.metadata.cargo-machete]
+# Fixture intentionally declares the forbidden edge under test. Do not "fix".
+ignored = ["rollout-cloud-aws"]

@@ -1,0 +1,18 @@
+[package]
+name = "rollout-cloud-gcp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "GCP impls of rollout-core cloud traits. Stub introduced in Phase 5 Plan 04; fleshed out in Plan 06."
+publish = false
+
+[lints]
+workspace = true
+
+[features]
+default = []
+
+[dependencies]
+rollout-core = { path = "../rollout-core", version = "0.1" }
