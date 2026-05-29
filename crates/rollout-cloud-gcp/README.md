@@ -11,7 +11,8 @@ GCP implementations of the `rollout-core` cloud traits, behind a default-off
 - **`SecretManagerSecretStore`** — read-only `SecretStore` over the Secret
   Manager v1 REST API with allowlist enforcement.
 - **`GceMetadataComputeHint`** — `ComputeHint` over [`gcloud-metadata`] (GCE
-  metadata server); no raw `metadata.google.internal` URL appears in this crate.
+  metadata server); the raw link-local metadata host comes from the SDK
+  constants, never written in this crate's source.
 
 No GCP SDK type leaks into `rollout-core`'s public API: every SDK error is
 collapsed to `CoreError` at this crate's `error.rs` boundary.

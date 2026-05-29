@@ -238,3 +238,70 @@ async fn secret_manager_put_returns_read_only_error() {
         other => panic!("expected ConfigInvalid, got {other:?}"),
     }
 }
+
+// ---------------------------------------------------------------------------
+// GCE MDS conformance (Task 4) — Docker-free via in-process mock MDS server.
+// ---------------------------------------------------------------------------
+
+use rollout_cloud_gcp::GceMetadataComputeHint;
+use rollout_core::traits::cloud::ComputeHint;
+use std::sync::atomic::Ordering;
+use support::mock_mds::MdsFixture;
+
+#[tokio::test]
+async fn gce_metadata_compute_hint_inventory_yields_instance_type() {
+    let mock = support::mock_mds::spawn(MdsFixture {
+        machine_type: Some("projects/123/machineTypes/n1-standard-4".to_owned()),
+        preempted: None,
+    })
+    .await;
+    let hint = GceMetadataComputeHint::with_host(
+        &mock.host,
+        rollout_cloud_local::hints::for_current_platform(),
+    );
+    let inv = hint.inventory().await.unwrap();
+    assert_eq!(inv.instance_type.as_deref(), Some("n1-standard-4"));
+}
+
+#[tokio::test]
+async fn gce_metadata_compute_hint_preemption_signal_observes_preempt_flag() {
+    let mock = support::mock_mds::spawn(MdsFixture {
+        machine_type: None,
+        preempted: Some("TRUE".to_owned()),
+    })
+    .await;
+    let hint = GceMetadataComputeHint::with_host(
+        &mock.host,
+        rollout_cloud_local::hints::for_current_platform(),
+    );
+    assert!(hint.preemption_signal().await.unwrap().is_some());
+}
+
+#[tokio::test]
+async fn gce_metadata_compute_hint_preemption_signal_no_notice_yet() {
+    // 404 on instance/preempted -> Ok(None).
+    let mock = support::mock_mds::spawn(MdsFixture::default()).await;
+    let hint = GceMetadataComputeHint::with_host(
+        &mock.host,
+        rollout_cloud_local::hints::for_current_platform(),
+    );
+    assert!(hint.preemption_signal().await.unwrap().is_none());
+}
+
+#[tokio::test]
+async fn gce_metadata_compute_hint_uses_metadata_flavor_header() {
+    let mock = support::mock_mds::spawn(MdsFixture {
+        machine_type: Some("projects/1/machineTypes/e2-medium".to_owned()),
+        preempted: None,
+    })
+    .await;
+    let hint = GceMetadataComputeHint::with_host(
+        &mock.host,
+        rollout_cloud_local::hints::for_current_platform(),
+    );
+    let _ = hint.inventory().await.unwrap();
+    assert!(
+        mock.saw_flavor_header.load(Ordering::SeqCst),
+        "every MDS request must carry Metadata-Flavor: Google"
+    );
+}

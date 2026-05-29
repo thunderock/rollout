@@ -10,6 +10,7 @@
 
 #![allow(dead_code)] // each test file pulls a different subset of helpers
 
+pub mod mock_mds;
 pub mod mock_secret_manager;
 
 use std::sync::Arc;

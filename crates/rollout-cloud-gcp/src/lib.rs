@@ -14,12 +14,16 @@ pub(crate) mod error;
 #[cfg(feature = "gcp")]
 pub mod gcs;
 #[cfg(feature = "gcp")]
+pub mod mds;
+#[cfg(feature = "gcp")]
 pub mod pubsub;
 #[cfg(feature = "gcp")]
 pub mod secret_manager;
 
 #[cfg(feature = "gcp")]
 pub use gcs::GcsObjectStore;
+#[cfg(feature = "gcp")]
+pub use mds::GceMetadataComputeHint;
 #[cfg(feature = "gcp")]
 pub use pubsub::PubSubQueue;
 #[cfg(feature = "gcp")]
