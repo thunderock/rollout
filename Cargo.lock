@@ -4310,10 +4310,17 @@ name = "rollout-snapshots"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "aws-config",
+ "aws-sdk-s3",
  "blake3",
  "chrono",
+ "ndarray",
+ "postcard",
+ "rollout-cloud-aws",
+ "rollout-cloud-gcp",
  "rollout-cloud-local",
  "rollout-core",
+ "rollout-runtime-batch",
  "rollout-storage",
  "serde_json",
  "smol_str",

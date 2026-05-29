@@ -319,6 +319,13 @@ jobs:
           AWS_SECRET_ACCESS_KEY: test
           AWS_REGION: us-east-1
         run: cargo test -p rollout-cloud-aws --features aws --tests -- --include-ignored --test-threads=1
+      - name: Run S3-backed snapshot resume witness (CLOUD-03)
+        env:
+          LOCALSTACK_ENDPOINT: http://localhost:4566
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_REGION: us-east-1
+        run: cargo test -p rollout-snapshots --test bit_identical_resume_at_step_5_via_s3 -- --include-ignored
 
   cloud-live-aws:
     # CLOUD-01 nightly + path-triggered live cloud conformance. Real AWS via

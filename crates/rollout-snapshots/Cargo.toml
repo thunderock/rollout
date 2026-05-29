@@ -25,5 +25,15 @@ tokio = { workspace = true }
 tempfile = { workspace = true }
 rollout-storage = { path = "../rollout-storage", version = "0.1" }
 rollout-cloud-local = { path = "../rollout-cloud-local", version = "0.1" }
+# Cloud-witness dev-deps (Plan 05-07). Dev-deps are exempt from the dep-direction
+# lint (invariant #9 filters DependencyKind::Normal only), so the layer-3 → layer-1
+# edge here never ships in a production dependency closure.
+rollout-cloud-aws = { path = "../rollout-cloud-aws", version = "0.1", features = ["aws"] }
+rollout-cloud-gcp = { path = "../rollout-cloud-gcp", version = "0.1", features = ["gcp"] }
+rollout-runtime-batch = { path = "../rollout-runtime-batch", version = "0.1", features = ["test-mock-backend"] }
+aws-config = { workspace = true }
+aws-sdk-s3 = { workspace = true }
+ndarray = { workspace = true }
+postcard = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 ulid = { workspace = true }
