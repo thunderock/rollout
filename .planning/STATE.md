@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
-current_plan: 1
-status: unknown
-stopped_at: "06-04 Tasks 1-3 done; PAUSED at Task 4 checkpoint:human-verify (awaiting operator approval)"
-last_updated: "2026-05-29T16:40:00.000Z"
+current_plan: 5
+status: ready_for_verification
+stopped_at: Completed 06-04-PLAN.md — Phase 6 done (5/5)
+last_updated: "2026-05-29T22:21:11.841Z"
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 13
-  completed_plans: 12
+  completed_plans: 13
 ---
 
 # STATE — Project Memory
@@ -19,21 +19,23 @@ This file tracks current project state. Updated at phase transitions.
 
 ## Current Position
 
-Phase: 06 (multi-node-distribution) — EXECUTING
-Plan: 5 of 5 (06-04 — PAUSED at Task 4 checkpoint)
+Phase: 06 (multi-node-distribution) — COMPLETE (5/5; DIST-01..05 satisfied)
+Plan: 5 of 5 (06-04 — complete; ready for phase verification)
 
-**06-04 (smoke + PG lane + docs):** Tasks 1-3 complete and committed; Task 4 is a
-blocking `checkpoint:human-verify` awaiting operator approval. No SUMMARY yet.
+**06-04 (smoke + PG lane + docs):** All 4 tasks complete. Tasks 1-3 committed;
+Task 4 `checkpoint:human-verify` APPROVED by operator (live-cloud operator-optional,
+deferred). SUMMARY at `06-04-SUMMARY.md`.
 
 | Task | Name | Commit | Status |
 |---|---|---|---|
 | 1 | 3-node smoke driver + Make targets + worker drain edge | `6faadea` | done |
 | 2 | Postgres-lease CAS witness (D-LEASE-01/02) | `6abb63a` | done |
 | 3 | mdBook multi-node distribution chapter | `dd3132f` | done |
-| 4 | Operator verification of the assembled runtime | — | **CHECKPOINT (awaiting "approved")** |
+| 4 | Operator verification of the assembled runtime | — | **approved** (live-cloud deferred) |
 
-To resume: run `cargo test -p rollout-coordinator` (4 witnesses) + `make smoke-3node-aws`/`-gcp`
-(both pass locally — done in 0-1s with a steal), then type "approved". Live-cloud is operator-optional.
+Phase 6 is the assembled multi-node runtime: lease/epoch fencing, work-stealing,
+stateless-replayer restart, spot-drain — witnessed Docker-free on every commit,
+exercised by the 3-node smoke, documented in the mdBook, operator-approved.
 
 ### Quick Tasks Completed
 
@@ -179,6 +181,7 @@ Optional cleanup: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Ny
 | Phase 06 P01 | 6min | 3 tasks | 10 files |
 | Phase 06 P02 | 6min | 3 tasks | 5 files |
 | Phase 06 P03 | 15min | 3 tasks | 11 files |
+| Phase 06-multi-node-distribution P04 | 7min | 4 tasks | 12 files |
 
 ## Decisions
 
@@ -310,11 +313,13 @@ Optional cleanup: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Ny
 - [Phase 06]: 06-02: queue_items ULID-ordered dispatch queue with content-addressed work_id (blake3); reads on Storage, writes on the txn (StorageTxn is write-only)
 - [Phase 06]: DIST-03 stateless-replayer: replay_and_serve reconstructs in-flight from the work ledger on boot WITHOUT requeuing Running (Pitfall 4); coord_restart_no_duplicates (SC2) green
 - [Phase 06]: DIST-04 spot-drain: two-number DrainConfig (notice lead 120/30 vs drain deadline 60/15); drain consumes preemption_signal via ComputeHint trait only (coord ↛ cloud); spot_drain_completes_within_lead_time (SC3) green
+- [Phase 06-multi-node-distribution]: 06-04: PG lease witness targets the LeaseRecord CAS primitive (rollout-core types only) via Postgres cas_bytes, not StorageLease — keeps rollout-storage independent of the coordinator crate while proving the dual-backed lease (D-LEASE-01)
+- [Phase 06-multi-node-distribution]: 06-04: 3-node smoke is local-transport-by-default (Docker-free wiring check); live-cloud gates behind ROLLOUT_SMOKE_CLOUD=1 as the operator-optional path. Every-commit witnesses are the load-bearing gate
 
 ## Last Session
 
-- **Last session:** 2026-05-29T16:21:44.105Z
-- **Stopped at:** Completed 06-03-PLAN.md
+- **Last session:** 2026-05-29T22:21:03.644Z
+- **Stopped at:** Completed 06-04-PLAN.md — Phase 6 done (5/5)
 
 ## Things Not To Forget
 

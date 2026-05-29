@@ -131,7 +131,7 @@ Plans:
 - [x] 06-01-lease-epoch-fencing-PLAN.md — Wave 1: StorageLease (dual-backed single-row CAS) + epoch stamping/rejection + self-fence; witnesses lease_exclusion_single_winner (SC1) + split_brain_old_coord_self_fences (SC4); DIST-01, DIST-05
 - [x] 06-02-work-ledger-stealing-PLAN.md — Wave 2: queue_items dispatch + coordinator-mediated steal (ceil(n/2), MAX_STEAL_BATCH) + CAS dedup; witness concurrent_ack_and_steal_no_double_execute (SC5); DIST-02
 - [x] 06-03-restart-replayer-spot-drain-PLAN.md — Wave 3: stateless-replayer boot + spot-drain state machine + D-SPOT-04 doc reconciliation; witnesses coord_restart_no_duplicates (SC2) + spot_drain_completes_within_lead_time (SC3); DIST-03, DIST-04
-- [ ] 06-04-smoke-cli-pg-lane-PLAN.md — Wave 4: make smoke-3node-aws/-gcp (1 coord + 3 workers, mock backend) + Postgres-lease CI lane + --test-fence abort subcommand + mdBook chapter; closes all 5 SCs
+- [x] 06-04-smoke-cli-pg-lane-PLAN.md — Wave 4: make smoke-3node-aws/-gcp (1 coord + 3 workers, mock backend) + Postgres-lease CI lane + --test-fence abort subcommand + mdBook chapter; closes all 5 SCs
 
 #### Phase 7: Harnesses (env + tool + eval)
 
