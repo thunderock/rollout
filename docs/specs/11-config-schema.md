@@ -178,6 +178,35 @@ We **never** accept raw secrets in the config file. They reference a `SecretStor
 
 Pre-commit hook + CI lint detect anything in a config file that pattern-matches a secret (`sk_`, `AKIA`, etc.).
 
+## 9a. Cloud provider config (`[cloud]`)
+
+Phase 5 adds `CloudConfig` to `RunConfig` as a `#[serde(tag = "provider")]` tagged union:
+`local` (default) | `aws` | `gcp`. Because the provider is a single tagged enum, a
+config cannot name two providers at once — **cross-cloud is structurally rejected at
+deserialize time** (one cloud per run, per PROJECT.md out-of-scope). `[cloud]` defaults to
+`provider = "local"`, so every v1.0 TOML deserializes unchanged.
+
+```toml
+[cloud]
+provider = "aws"
+region = "us-west-2"
+
+[cloud.s3]
+bucket = "my-rollout-artifacts"
+multipart_chunk_bytes = 16777216      # 16 MiB; rejected below the S3 5 MiB floor
+max_snapshot_part_bytes = 5368709120  # 5 GiB; rejected above the 10 GiB hard cap
+
+[cloud.sqs]
+queue_url = "https://sqs.us-west-2.amazonaws.com/123456789012/rollout"
+
+[cloud.secrets]
+allowlist = ["HF_TOKEN"]
+```
+
+`CloudConfig::validate_cross_fields` enforces the S3/GCS 5 MiB multipart floor and the
+10 GiB single-part hard cap (D-SNAP-03) at plan time. The GCP shape mirrors this with
+`[cloud.gcs]` / `[cloud.pubsub]` / `[cloud.secrets]`.
+
 ## 10. Test contract
 
 - **Schema codegen drift:** CI runs `cargo xtask schema-gen` and asserts `git diff` is clean. A drift fails CI.

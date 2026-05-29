@@ -8,6 +8,13 @@
       "description": "Algorithm and its settings.",
       "$ref": "#/$defs/AlgorithmConfig"
     },
+    "cloud": {
+      "description": "Cloud provider selection (defaults to `local` so v1.0 TOMLs are unchanged).",
+      "$ref": "#/$defs/CloudConfig",
+      "default": {
+        "provider": "local"
+      }
+    },
     "run": {
       "description": "Free-form metadata about the run.",
       "$ref": "#/$defs/RunMetadata",
@@ -175,6 +182,168 @@
         }
       ]
     },
+    "AwsS3Config": {
+      "description": "AWS S3 object-store settings.",
+      "type": "object",
+      "properties": {
+        "bucket": {
+          "description": "Target bucket name.",
+          "type": "string"
+        },
+        "max_snapshot_part_bytes": {
+          "description": "Hard cap on a single snapshot part (10 GiB ceiling).",
+          "type": "integer",
+          "format": "uint64",
+          "default": 5368709120,
+          "minimum": 0
+        },
+        "multipart_chunk_bytes": {
+          "description": "Multipart upload chunk size in bytes (S3 minimum 5 MiB).",
+          "type": "integer",
+          "format": "uint64",
+          "default": 16777216,
+          "minimum": 0
+        },
+        "prefix": {
+          "description": "Optional key prefix for all objects.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket"
+      ]
+    },
+    "AwsSecretsConfig": {
+      "description": "AWS Secrets Manager settings.",
+      "type": "object",
+      "properties": {
+        "allowlist": {
+          "description": "Read-allowlisted secret names.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "AwsSqsConfig": {
+      "description": "AWS SQS queue settings.",
+      "type": "object",
+      "properties": {
+        "queue_url": {
+          "description": "Fully-qualified SQS queue URL.",
+          "type": "string"
+        },
+        "visibility_timeout_secs": {
+          "description": "Visibility timeout in seconds (default 300).",
+          "type": "integer",
+          "format": "uint32",
+          "default": 300,
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "queue_url"
+      ]
+    },
+    "CloudConfig": {
+      "description": "Cloud provider selection. `local` is the default so v1.0 TOMLs deserialize unchanged.",
+      "oneOf": [
+        {
+          "description": "Local filesystem + in-memory backends (no cloud creds).",
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "const": "local"
+            }
+          },
+          "required": [
+            "provider"
+          ]
+        },
+        {
+          "description": "Amazon Web Services (S3 + SQS + Secrets Manager + EC2 `IMDSv2`).",
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "const": "aws"
+            },
+            "region": {
+              "description": "AWS region (e.g., `us-west-2`).",
+              "type": "string"
+            },
+            "s3": {
+              "description": "S3 object-store settings.",
+              "$ref": "#/$defs/AwsS3Config"
+            },
+            "secrets": {
+              "description": "Secrets Manager settings.",
+              "$ref": "#/$defs/AwsSecretsConfig",
+              "default": {
+                "allowlist": []
+              }
+            },
+            "sqs": {
+              "description": "SQS queue settings.",
+              "$ref": "#/$defs/AwsSqsConfig"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "provider",
+            "region",
+            "s3",
+            "sqs"
+          ]
+        },
+        {
+          "description": "Google Cloud Platform (GCS + Pub/Sub + Secret Manager + GCE metadata).",
+          "type": "object",
+          "properties": {
+            "gcs": {
+              "description": "GCS object-store settings.",
+              "$ref": "#/$defs/GcpGcsConfig"
+            },
+            "project": {
+              "description": "GCP project id.",
+              "type": "string"
+            },
+            "provider": {
+              "type": "string",
+              "const": "gcp"
+            },
+            "pubsub": {
+              "description": "Pub/Sub queue settings.",
+              "$ref": "#/$defs/GcpPubSubConfig"
+            },
+            "secrets": {
+              "description": "Secret Manager settings.",
+              "$ref": "#/$defs/GcpSecretsConfig",
+              "default": {
+                "allowlist": []
+              }
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "provider",
+            "project",
+            "gcs",
+            "pubsub"
+          ]
+        }
+      ]
+    },
     "ContentId": {
       "description": "blake3 content hash; equality implies content equality.",
       "type": "string"
@@ -234,6 +403,83 @@
         "secs",
         "nanos"
       ]
+    },
+    "GcpGcsConfig": {
+      "description": "GCP GCS object-store settings.",
+      "type": "object",
+      "properties": {
+        "bucket": {
+          "description": "Target GCS bucket.",
+          "type": "string"
+        },
+        "max_snapshot_part_bytes": {
+          "description": "Hard cap on a single snapshot part (10 GiB ceiling).",
+          "type": "integer",
+          "format": "uint64",
+          "default": 5368709120,
+          "minimum": 0
+        },
+        "prefix": {
+          "description": "Optional object-name prefix.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "resumable_chunk_bytes": {
+          "description": "Resumable-upload chunk size in bytes (5 MiB minimum).",
+          "type": "integer",
+          "format": "uint64",
+          "default": 16777216,
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "bucket"
+      ]
+    },
+    "GcpPubSubConfig": {
+      "description": "GCP Pub/Sub queue settings.",
+      "type": "object",
+      "properties": {
+        "ack_deadline_secs": {
+          "description": "Ack deadline in seconds (default 30).",
+          "type": "integer",
+          "format": "uint32",
+          "default": 30,
+          "minimum": 0
+        },
+        "subscription": {
+          "description": "Subscription id to pull from.",
+          "type": "string"
+        },
+        "topic": {
+          "description": "Topic id to publish to.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "subscription",
+        "topic"
+      ]
+    },
+    "GcpSecretsConfig": {
+      "description": "GCP Secret Manager settings.",
+      "type": "object",
+      "properties": {
+        "allowlist": {
+          "description": "Read-allowlisted secret names.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
     },
     "LossScope": {
       "description": "Selector for which tokens contribute to the loss in supervised training.",

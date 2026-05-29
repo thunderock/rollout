@@ -19,7 +19,7 @@ async-trait = { workspace = true }
 ulid = { workspace = true }
 blake3 = { workspace = true }
 smol_str = { workspace = true }
-tokio = { workspace = true, features = ["sync"] }
+tokio = { workspace = true, features = ["sync", "io-util"] }
 
 # Phase 4 — Snapshotter timestamps + parallel watch_stream + cancellation token
 chrono = { workspace = true }

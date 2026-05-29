@@ -26,4 +26,6 @@
   - [Determinism](./training/determinism.md)
   - [CLI: rollout train + snapshot](./training/cli.md)
   - [CPU mode](./training/cpu-mode.md)
+- [Cloud](./cloud/index.md)
+  - [Streaming + lease traits](./cloud/traits.md)
 - [Examples](./examples/index.md)

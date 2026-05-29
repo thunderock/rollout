@@ -4,8 +4,11 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+pub mod cloud;
 pub mod defaults;
 pub mod training;
+
+pub use cloud::CloudConfig;
 
 // Phase-3 (D-BACKEND-05): lift ModelRef + SamplingParams into the config namespace
 // so future config blocks (e.g., InferBatchConfig) compose them without crossing
@@ -37,6 +40,10 @@ pub struct RunConfig {
 
     /// Algorithm and its settings.
     pub algorithm: AlgorithmConfig,
+
+    /// Cloud provider selection (defaults to `local` so v1.0 TOMLs are unchanged).
+    #[serde(default)]
+    pub cloud: CloudConfig,
 }
 
 /// Free-form run metadata; persisted but not interpreted by the framework.

@@ -17,6 +17,58 @@ class AlgorithmConfig3(BaseModel):
     kl_coef_init: float | None = Field(None, description='Initial KL coefficient.')
 
 
+class AwsS3Config(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    bucket: str = Field(..., description='Target bucket name.')
+    max_snapshot_part_bytes: conint(ge=0) | None = Field(
+        5368709120, description='Hard cap on a single snapshot part (10 GiB ceiling).'
+    )
+    multipart_chunk_bytes: conint(ge=0) | None = Field(
+        16777216, description='Multipart upload chunk size in bytes (S3 minimum 5 MiB).'
+    )
+    prefix: str | None = Field(None, description='Optional key prefix for all objects.')
+
+
+class AwsSecretsConfig(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    allowlist: list[str] | None = Field(
+        [], description='Read-allowlisted secret names.'
+    )
+
+
+class AwsSqsConfig(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    queue_url: str = Field(..., description='Fully-qualified SQS queue URL.')
+    visibility_timeout_secs: conint(ge=0) | None = Field(
+        300, description='Visibility timeout in seconds (default 300).'
+    )
+
+
+class CloudConfig1(BaseModel):
+    provider: Literal['local']
+
+
+class CloudConfig2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    provider: Literal['aws']
+    region: str = Field(..., description='AWS region (e.g., `us-west-2`).')
+    s3: AwsS3Config = Field(..., description='S3 object-store settings.')
+    secrets: AwsSecretsConfig | None = Field(
+        {'allowlist': []},
+        description='Secrets Manager settings.',
+        validate_default=True,
+    )
+    sqs: AwsSqsConfig = Field(..., description='SQS queue settings.')
+
+
 class ContentId(RootModel[str]):
     root: str = Field(
         ..., description='blake3 content hash; equality implies content equality.'
@@ -45,6 +97,40 @@ class DatasetRef(RootModel[DatasetRef1 | DatasetRef2]):
 class Duration(BaseModel):
     nanos: conint(ge=0)
     secs: conint(ge=0)
+
+
+class GcpGcsConfig(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    bucket: str = Field(..., description='Target GCS bucket.')
+    max_snapshot_part_bytes: conint(ge=0) | None = Field(
+        5368709120, description='Hard cap on a single snapshot part (10 GiB ceiling).'
+    )
+    prefix: str | None = Field(None, description='Optional object-name prefix.')
+    resumable_chunk_bytes: conint(ge=0) | None = Field(
+        16777216, description='Resumable-upload chunk size in bytes (5 MiB minimum).'
+    )
+
+
+class GcpPubSubConfig(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    ack_deadline_secs: conint(ge=0) | None = Field(
+        30, description='Ack deadline in seconds (default 30).'
+    )
+    subscription: str = Field(..., description='Subscription id to pull from.')
+    topic: str = Field(..., description='Topic id to publish to.')
+
+
+class GcpSecretsConfig(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    allowlist: list[str] | None = Field(
+        [], description='Read-allowlisted secret names.'
+    )
 
 
 class LossScope1(BaseModel):
@@ -232,11 +318,36 @@ class AlgorithmConfig(
     )
 
 
+class CloudConfig3(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    gcs: GcpGcsConfig = Field(..., description='GCS object-store settings.')
+    project: str = Field(..., description='GCP project id.')
+    provider: Literal['gcp']
+    pubsub: GcpPubSubConfig = Field(..., description='Pub/Sub queue settings.')
+    secrets: GcpSecretsConfig | None = Field(
+        {'allowlist': []}, description='Secret Manager settings.', validate_default=True
+    )
+
+
+class CloudConfig(RootModel[CloudConfig1 | CloudConfig2 | CloudConfig3]):
+    root: CloudConfig1 | CloudConfig2 | CloudConfig3 = Field(
+        ...,
+        description='Cloud provider selection. `local` is the default so v1.0 TOMLs deserialize unchanged.',
+    )
+
+
 class RunConfig(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     algorithm: AlgorithmConfig = Field(..., description='Algorithm and its settings.')
+    cloud: CloudConfig | None = Field(
+        {'provider': 'local'},
+        description='Cloud provider selection (defaults to `local` so v1.0 TOMLs are unchanged).',
+        validate_default=True,
+    )
     run: RunMetadata | None = Field(
         {'name': None, 'tags': []},
         description='Free-form metadata about the run.',

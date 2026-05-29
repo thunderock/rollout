@@ -20,7 +20,8 @@ pub use backend::{
 };
 pub use clock::Clock;
 pub use cloud::{
-    ComputeHint, ComputeInventory, GpuInfo, ObjectStore, PutHint, Queue, QueueItemId, SecretStore,
+    ComputeHint, ComputeInventory, GpuInfo, LeaseToken, ObjectStore, PutHint, Queue, QueueItemId,
+    SecretStore,
 };
 pub use harness::{EnvHarness, EvalHarness, RewardModel, ToolHarness};
 pub use observability::{Event, EventEmitter, EventKind, Level, SpanPhase};
