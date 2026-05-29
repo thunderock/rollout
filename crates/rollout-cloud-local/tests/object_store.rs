@@ -143,7 +143,10 @@ async fn fs_object_store_get_stream_yields_async_read() {
     let dir = tempfile::TempDir::new().unwrap();
     let store = FsObjectStore::open(dir.path()).await.unwrap();
     let original = b"async-read-roundtrip".to_vec();
-    let id = store.put_bytes(original.clone(), PutHint::default()).await.unwrap();
+    let id = store
+        .put_bytes(original.clone(), PutHint::default())
+        .await
+        .unwrap();
     let mut rd = store.get_stream(&id).await.unwrap();
     let mut out = Vec::new();
     rd.read_to_end(&mut out).await.unwrap();

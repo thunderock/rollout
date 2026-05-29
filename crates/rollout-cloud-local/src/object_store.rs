@@ -5,7 +5,9 @@
 
 use async_trait::async_trait;
 use blake3::Hasher;
-use rollout_core::{ContentId, CoreError, FatalError, ObjectStore, PutHint, RecoverableError, RetryHint};
+use rollout_core::{
+    ContentId, CoreError, FatalError, ObjectStore, PutHint, RecoverableError, RetryHint,
+};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::pin::Pin;

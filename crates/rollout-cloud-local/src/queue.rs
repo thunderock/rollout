@@ -127,12 +127,7 @@ impl Queue for InMemQueue {
         // but absent from the pending deque (already dequeued). The in-mem queue
         // is permissive: extend is a no-op success for in-flight items.
         let in_storage = self.storage.get_bytes(&Self::key_for(&id)).await?.is_some();
-        let in_deque = self
-            .inner
-            .lock()
-            .await
-            .iter()
-            .any(|(qid, _)| qid.0 == id.0);
+        let in_deque = self.inner.lock().await.iter().any(|(qid, _)| qid.0 == id.0);
         if in_storage && !in_deque {
             Ok(())
         } else {
