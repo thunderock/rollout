@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "GCP impls of rollout-core cloud traits. Stub introduced in Phase 5 Plan 04; fleshed out in Plan 06."
+description = "GCP impls of rollout-core cloud traits (GCS, Pub/Sub, Secret Manager, GCE MDS)."
 publish = false
 
 [lints]
@@ -13,6 +13,39 @@ workspace = true
 
 [features]
 default = []
+gcp = [
+    "dep:gcloud-storage",
+    "dep:gcloud-pubsub",
+    "dep:gcloud-auth",
+    "dep:gcloud-metadata",
+    "dep:reqwest",
+    "dep:futures-util",
+    "dep:tokio-util",
+]
 
 [dependencies]
-rollout-core = { path = "../rollout-core", version = "0.1" }
+rollout-core        = { path = "../rollout-core", version = "0.1" }
+rollout-cloud-local = { path = "../rollout-cloud-local", version = "0.1" }
+async-trait = { workspace = true }
+tokio       = { workspace = true }
+bytes       = { workspace = true }
+blake3      = { workspace = true }
+tracing     = { workspace = true }
+hex         = { workspace = true }
+ulid        = { workspace = true }
+base64      = { workspace = true }
+
+gcloud-storage  = { workspace = true, optional = true }
+gcloud-pubsub   = { workspace = true, optional = true }
+gcloud-auth     = { workspace = true, optional = true }
+gcloud-metadata = { workspace = true, optional = true }
+reqwest         = { workspace = true, optional = true }
+futures-util    = { workspace = true, optional = true }
+tokio-util      = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio          = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }
+hyper          = { workspace = true }
+hyper-util     = { workspace = true }
+http-body-util = { workspace = true }
+serde_json     = { workspace = true }
