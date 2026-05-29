@@ -102,6 +102,24 @@ The coordinator is the broker; workers do not talk peer-to-peer directly. This s
 
 Steal requests are bounded: at most `K` items per steal; a worker can refuse if it's near its `WorkBudget` limit.
 
+### Coordinator-mediated steal + CAS dedup (DIST-02)
+
+The v1.1 implementation (`rollout-coordinator::{ledger, steal}`) is coordinator-mediated and reactive:
+
+- **Trigger (D-STEAL-01).** A worker steals only when its local queue drains to empty (`ledger::backlog(thief) == 0`). A non-idle thief's request is a no-op.
+- **Victim (D-STEAL-03).** The coordinator picks the **busiest peer by `Running` backlog** (`ledger::busiest`, excluding the thief). Workers never talk peer-to-peer.
+- **Batch (D-STEAL-02).** `n = min(ceil(victim_backlog / 2), MAX_STEAL_BATCH)`. `MAX_STEAL_BATCH = 32` is a fixed const for v1.1 (not a config knob).
+- **Reassign (D-STEAL-04).** For each of the first `n` of the victim's `Running` items, the coordinator runs a two-step CAS over the SAME prior `Running(victim)` bytes: `try_repending` (`Running(victim) → Pending`) then `try_claim` (`Pending → Running(thief)`).
+
+**Stolen-then-reclaimed items never double-execute.** The dedup is the CAS expected-bytes drift of the `WorkItemRecord` state machine. When the victim's ack (`try_complete`, `Running(victim) → Done`) races the steal's `try_repending` (`Running(victim) → Pending`), both CAS against the same `expected` bytes and **exactly one wins**:
+
+- ack wins → item is `Done`; the steal's `try_repending` sees stale `expected`, returns `false`, the item is skipped (never stolen, never re-run);
+- steal wins → item is `Pending` and reassigned to the thief; the victim's late ack sees stale `expected`, returns `false`, and its result is dropped (the victim never committed a terminal transition).
+
+This is the same single-winner property as the batch runtime's `cas_state_machine.rs`, witnessed every commit by `concurrent_ack_and_steal_no_double_execute` (SC5, Docker-free, in-process over `EmbeddedStorage`).
+
+The pending (unassigned) dispatch queue lives in the `queue_items` namespace, keyed `["q", <ulid>]`; entries dispatch in ULID (insertion) order, mirroring `InMemQueue`. `dispatch` content-addresses the payload into a deterministic `work_id` (blake3, CORE-05), writes a `Pending` `WorkItemRecord`, and `try_claim`s it for the worker.
+
 ## 6. Fault tolerance
 
 ### Worker failure
