@@ -306,6 +306,16 @@ jobs:
           --health-interval 2s
           --health-timeout 1s
           --health-retries 30
+      # Second emulator for the D-XPROV-01 cross-provider witness (option (b):
+      # one job boots both emulators — minimal CI sprawl).
+      fake-gcs-server:
+        image: fsouza/fake-gcs-server:1.50.2
+        ports: ["4443:4443"]
+        options: >-
+          --health-cmd "wget -q -O- http://localhost:4443/storage/v1/b"
+          --health-interval 2s
+          --health-timeout 1s
+          --health-retries 30
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.91.1
@@ -326,6 +336,14 @@ jobs:
           AWS_SECRET_ACCESS_KEY: test
           AWS_REGION: us-east-1
         run: cargo test -p rollout-snapshots --test bit_identical_resume_at_step_5_via_s3 -- --include-ignored
+      - name: Run cross-provider portability witness (D-XPROV-01)
+        env:
+          LOCALSTACK_ENDPOINT: http://localhost:4566
+          STORAGE_EMULATOR_HOST: http://localhost:4443
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_REGION: us-east-1
+        run: cargo test -p rollout-snapshots --test snapshot_resume_s3_to_gcs_via_manual_copy -- --include-ignored
 
   cloud-live-aws:
     # CLOUD-01 nightly + path-triggered live cloud conformance. Real AWS via
