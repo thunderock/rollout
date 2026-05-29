@@ -35,9 +35,11 @@ pub async fn build_cloud_runtime(cfg: &CloudConfig) -> Result<CloudRuntime, Core
         CloudConfig::Aws(_) => Err(CoreError::Fatal(FatalError::ConfigInvalid {
             msg: "binary built without the `aws` feature; rebuild with --features aws".to_owned(),
         })),
+        #[cfg(feature = "gcp")]
+        CloudConfig::Gcp(gcp) => build_gcp_runtime(gcp).await,
+        #[cfg(not(feature = "gcp"))]
         CloudConfig::Gcp(_) => Err(CoreError::Fatal(FatalError::ConfigInvalid {
-            msg: "GCP cloud runtime lands in Plan 06; rebuild with --features gcp once available"
-                .to_owned(),
+            msg: "binary built without the `gcp` feature; rebuild with --features gcp".to_owned(),
         })),
     }
 }
@@ -100,6 +102,59 @@ async fn build_aws_runtime(
     )) as Arc<dyn SecretStore>;
     let local_hint = rollout_cloud_local::hints::for_current_platform();
     let compute_hint = Arc::new(Ec2MetadataComputeHint::new(local_hint)) as Arc<dyn ComputeHint>;
+
+    Ok(CloudRuntime {
+        object_store,
+        queue,
+        secret_store,
+        compute_hint,
+    })
+}
+
+#[cfg(feature = "gcp")]
+async fn build_gcp_runtime(
+    cfg: &rollout_core::config::cloud::GcpConfig,
+) -> Result<CloudRuntime, CoreError> {
+    use gcloud_pubsub::client::{Client as PubSubClient, ClientConfig as PubSubClientConfig};
+    use rollout_cloud_gcp::{
+        GceMetadataComputeHint, GcsObjectStore, PubSubQueue, SecretManagerSecretStore,
+    };
+
+    let gcs_client = Arc::new(rollout_cloud_gcp::load_gcs_client().await?);
+    let pubsub_cfg = PubSubClientConfig::default()
+        .with_auth()
+        .await
+        .map_err(|e| {
+            CoreError::Fatal(FatalError::ConfigInvalid {
+                msg: format!("pubsub ADC load failed: {e}"),
+            })
+        })?;
+    let pubsub_client = Arc::new(PubSubClient::new(pubsub_cfg).await.map_err(|e| {
+        CoreError::Fatal(FatalError::ConfigInvalid {
+            msg: format!("pubsub client init: {e}"),
+        })
+    })?);
+
+    let prefix = cfg.gcs.prefix.clone().unwrap_or_default();
+    let chunk = usize::try_from(cfg.gcs.resumable_chunk_bytes).unwrap_or(16 * 1024 * 1024);
+    let object_store = Arc::new(GcsObjectStore::new(
+        gcs_client,
+        cfg.gcs.bucket.clone(),
+        prefix,
+        chunk,
+    )) as Arc<dyn ObjectStore>;
+    let queue = Arc::new(PubSubQueue::new(
+        pubsub_client,
+        cfg.pubsub.topic.clone(),
+        cfg.pubsub.subscription.clone(),
+        cfg.pubsub.ack_deadline_secs,
+    )) as Arc<dyn Queue>;
+    let secret_store = Arc::new(
+        SecretManagerSecretStore::from_adc(cfg.project.clone(), cfg.secrets.allowlist.clone())
+            .await?,
+    ) as Arc<dyn SecretStore>;
+    let local_hint = rollout_cloud_local::hints::for_current_platform();
+    let compute_hint = Arc::new(GceMetadataComputeHint::new(local_hint)) as Arc<dyn ComputeHint>;
 
     Ok(CloudRuntime {
         object_store,

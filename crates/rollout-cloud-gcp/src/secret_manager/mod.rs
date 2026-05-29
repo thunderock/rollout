@@ -53,6 +53,30 @@ impl SecretManagerSecretStore {
         }
     }
 
+    /// Construct a production store, resolving the bearer token from ADC.
+    ///
+    /// # Errors
+    /// Returns `Fatal::ConfigInvalid` if the credential chain cannot be resolved.
+    pub async fn from_adc(project: String, allowlist: Vec<String>) -> Result<Self, CoreError> {
+        use gcloud_auth::project::Config;
+        use gcloud_auth::token::DefaultTokenSourceProvider;
+        use token_source::TokenSourceProvider;
+
+        const SCOPES: [&str; 1] = ["https://www.googleapis.com/auth/cloud-platform"];
+        let provider = DefaultTokenSourceProvider::new(Config::default().with_scopes(&SCOPES))
+            .await
+            .map_err(|e| config_invalid(format!("Secret Manager ADC load failed: {e}")))?;
+        // `TokenSource::token()` returns a ready "Bearer <token>" header value.
+        let header = provider
+            .token_source()
+            .token()
+            .await
+            .map_err(|e| config_invalid(format!("Secret Manager ADC token fetch failed: {e}")))?;
+        // We re-attach via `bearer_auth`, so strip the leading "Bearer ".
+        let raw = header.strip_prefix("Bearer ").unwrap_or(&header).to_owned();
+        Ok(Self::new(project, allowlist, Some(raw)))
+    }
+
     /// Construct a store pointed at an explicit (mock) endpoint with no auth.
     #[must_use]
     pub fn with_endpoint(endpoint: &str, project: String, allowlist: Vec<String>) -> Self {

@@ -29,4 +29,5 @@
 - [Cloud](./cloud/index.md)
   - [Streaming + lease traits](./cloud/traits.md)
   - [AWS](./cloud/aws.md)
+  - [GCP](./cloud/gcp.md)
 - [Examples](./examples/index.md)

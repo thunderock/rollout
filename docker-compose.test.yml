@@ -18,4 +18,26 @@ services:
       retries: 30
     restart: "no"
 
-  # fake-gcs-server / pubsub-emulator land in Plan 06 (Stage 3).
+  fake-gcs-server:
+    image: fsouza/fake-gcs-server:1.50.2
+    command: ["-scheme", "http", "-port", "4443", "-public-host", "fake-gcs-server:4443"]
+    ports:
+      - "4443:4443"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:4443/storage/v1/b"]
+      interval: 2s
+      timeout: 1s
+      retries: 30
+    restart: "no"
+
+  pubsub-emulator:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command: ["gcloud", "beta", "emulators", "pubsub", "start", "--host-port=0.0.0.0:8085", "--project=rollout-test"]
+    ports:
+      - "8085:8085"
+    restart: "no"
+
+  # NOTE: No first-party GCP Secret Manager emulator exists.
+  # rollout-cloud-gcp Secret Manager tests use an in-test hyper mock
+  # (crates/rollout-cloud-gcp/tests/support/mock_secret_manager.rs), so no Docker
+  # service is needed for SecretStore tests.

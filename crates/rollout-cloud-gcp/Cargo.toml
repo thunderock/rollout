@@ -23,6 +23,7 @@ gcp = [
     "dep:futures-util",
     "dep:tokio-util",
     "dep:serde",
+    "dep:token-source",
 ]
 
 [dependencies]
@@ -46,6 +47,7 @@ reqwest         = { workspace = true, optional = true }
 futures-util    = { workspace = true, optional = true }
 tokio-util      = { workspace = true, optional = true }
 serde           = { workspace = true, optional = true }
+token-source    = { workspace = true, optional = true }
 
 [dev-dependencies]
 tokio          = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }
