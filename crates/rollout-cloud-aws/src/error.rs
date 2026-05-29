@@ -84,7 +84,6 @@ pub(crate) fn map_sqs_sdk_error<E: Display>(err: E) -> CoreError {
 }
 
 /// Secrets Manager operation-error mapper. `ResourceNotFound` -> `ConfigInvalid`.
-#[allow(dead_code)] // wired in by the secrets_manager module (same plan, Task 3)
 pub(crate) fn map_sm_sdk_error<E: Display>(err: E) -> CoreError {
     let rendered = format!("secretsmanager: {err}");
     if rendered.to_ascii_lowercase().contains("resourcenotfound")

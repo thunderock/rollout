@@ -204,3 +204,83 @@ async fn sqs_queue_extend_lease_fails_on_stale_token() {
         "stale receipt -> Recoverable::Transient, got {err:?}"
     );
 }
+
+// ---------------------------------------------------------------------------
+// Secrets Manager conformance (Task 3)
+// ---------------------------------------------------------------------------
+
+use rollout_core::traits::cloud::SecretStore;
+use rollout_core::FatalError;
+
+#[tokio::test]
+#[ignore = "requires LOCALSTACK_ENDPOINT"]
+async fn secrets_manager_get_returns_secret_value_for_allowed_name() {
+    let Some(ep) = support::localstack_endpoint() else {
+        return;
+    };
+    let client = support::sm_client(&ep).await;
+    let name = format!("test-secret-{}", ulid::Ulid::new());
+    client
+        .create_secret()
+        .name(&name)
+        .secret_string("hello")
+        .send()
+        .await
+        .unwrap();
+    let store = rollout_cloud_aws::SecretsManagerSecretStore::new(client, vec![name.clone()]);
+    assert_eq!(store.get(&name).await.unwrap(), "hello");
+}
+
+#[tokio::test]
+#[ignore = "requires LOCALSTACK_ENDPOINT"]
+async fn secrets_manager_get_rejects_non_allowlisted_name() {
+    let Some(ep) = support::localstack_endpoint() else {
+        return;
+    };
+    let client = support::sm_client(&ep).await;
+    let store =
+        rollout_cloud_aws::SecretsManagerSecretStore::new(client, vec!["only-this".to_owned()]);
+    let err = store.get("other").await.expect_err("must reject");
+    match err {
+        rollout_core::CoreError::Fatal(FatalError::ConfigInvalid { msg }) => {
+            assert!(msg.contains("not in allowlist"), "got: {msg}");
+        }
+        other => panic!("expected ConfigInvalid, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+#[ignore = "requires LOCALSTACK_ENDPOINT"]
+async fn secrets_manager_get_missing_secret_returns_fatal() {
+    let Some(ep) = support::localstack_endpoint() else {
+        return;
+    };
+    let client = support::sm_client(&ep).await;
+    let name = format!("nope-{}", ulid::Ulid::new());
+    let store = rollout_cloud_aws::SecretsManagerSecretStore::new(client, vec![name.clone()]);
+    let err = store.get(&name).await.expect_err("missing secret");
+    assert!(
+        matches!(
+            err,
+            rollout_core::CoreError::Fatal(FatalError::ConfigInvalid { .. })
+        ),
+        "missing secret -> Fatal::ConfigInvalid, got {err:?}"
+    );
+}
+
+#[tokio::test]
+#[ignore = "requires LOCALSTACK_ENDPOINT"]
+async fn secrets_manager_put_returns_read_only_error() {
+    let Some(ep) = support::localstack_endpoint() else {
+        return;
+    };
+    let client = support::sm_client(&ep).await;
+    let store = rollout_cloud_aws::SecretsManagerSecretStore::new(client, vec![]);
+    let err = store.put("any", "v").await.expect_err("read-only");
+    match err {
+        rollout_core::CoreError::Fatal(FatalError::ConfigInvalid { msg }) => {
+            assert!(msg.contains("read-only in v1.1"), "got: {msg}");
+        }
+        other => panic!("expected ConfigInvalid, got {other:?}"),
+    }
+}
