@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "AWS impls of rollout-core cloud traits. Stub introduced in Phase 5 Plan 04; fleshed out in Plan 05."
+description = "AWS impls of rollout-core cloud traits (S3, SQS, SecretsManager, IMDSv2)."
 publish = false
 
 [lints]
@@ -13,6 +13,35 @@ workspace = true
 
 [features]
 default = []
+aws = [
+    "dep:aws-config",
+    "dep:aws-sdk-s3",
+    "dep:aws-sdk-sqs",
+    "dep:aws-sdk-secretsmanager",
+    "dep:aws-smithy-runtime",
+    "dep:aws-credential-types",
+]
 
 [dependencies]
-rollout-core = { path = "../rollout-core", version = "0.1" }
+rollout-core        = { path = "../rollout-core", version = "0.1" }
+rollout-cloud-local = { path = "../rollout-cloud-local", version = "0.1" }
+async-trait = { workspace = true }
+tokio       = { workspace = true }
+bytes       = { workspace = true }
+blake3      = { workspace = true }
+tracing     = { workspace = true }
+base64      = { workspace = true }
+ulid        = { workspace = true }
+
+aws-config             = { workspace = true, optional = true }
+aws-sdk-s3             = { workspace = true, optional = true }
+aws-sdk-sqs            = { workspace = true, optional = true }
+aws-sdk-secretsmanager = { workspace = true, optional = true }
+aws-smithy-runtime     = { workspace = true, optional = true }
+aws-credential-types   = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio          = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }
+hyper          = { workspace = true }
+hyper-util     = { workspace = true }
+http-body-util = { workspace = true }

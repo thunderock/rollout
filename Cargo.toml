@@ -32,7 +32,7 @@ resolver = "2"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-rust-version = "1.91.0"
+rust-version = "1.91.1"
 repository = "https://github.com/astiwari/rollout"
 
 [workspace.lints.rust]
@@ -126,3 +126,17 @@ uuid = { version = "1.10", features = ["serde", "v4"] }
 
 # Phase 4 — async-stream for PgListener-backed watch_stream (plan 04-03)
 async-stream = "0.3"
+
+# Phase 5 — AWS SDK (rollout-cloud-aws, CLOUD-01). MSRV-1.91 BUMP path (PRECURSOR-C
+# decision: BUMP) → caret selectors, not `=`-exact pins. default-features off keeps
+# the non-AWS workspace build slim (these are optional + feature-gated downstream).
+aws-config             = { version = "1.8", default-features = false, features = ["behavior-version-latest", "rustls", "rt-tokio"] }
+aws-sdk-s3             = { version = "1",   default-features = false, features = ["behavior-version-latest", "rt-tokio", "default-https-client", "sigv4a"] }
+aws-sdk-sqs            = { version = "1",   default-features = false, features = ["behavior-version-latest", "rt-tokio", "default-https-client"] }
+aws-sdk-secretsmanager = { version = "1",  default-features = false, features = ["behavior-version-latest", "rt-tokio", "default-https-client"] }
+aws-smithy-runtime     = { version = "1",  default-features = false, features = ["client", "rt-tokio"] }
+aws-credential-types   = "1"
+base64                 = "0.22"
+hyper                  = { version = "1", features = ["server", "http1"] }
+hyper-util             = { version = "0.1", features = ["tokio"] }
+http-body-util         = "0.1"
