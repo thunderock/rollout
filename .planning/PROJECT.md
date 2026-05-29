@@ -67,11 +67,15 @@ If any single requirement defines success: **plan-time validation catches all co
 - [x] **DOCS-02** — v1.0 — Per-commit doc/test policy enforced (`scripts/check-docs-tests-touched.sh` + `docs-test-policy` CI job).
 - [x] **DOCS-03** — v1.0 — Rustdoc gate in CI (`-D warnings -D rustdoc::broken_intra_doc_links -D rustdoc::missing_crate_level_docs`).
 
+### ✓ Shipped — v1.1 (Phase 5, 2026-05-29)
+
+- [x] **CLOUD-01** — v1.1 — AWS cloud crate `rollout-cloud-aws`: S3 (`put_stream` multipart + `MultipartGuard` abort-on-drop + blake3-before-send), SQS (lease-based dequeue), Secrets Manager (read-only allowlist), IMDSv2 ComputeHint. `cloud-emulator-aws` localstack CI job. *Validated in Phase 5.*
+- [x] **CLOUD-02** — v1.1 — GCP cloud crate `rollout-cloud-gcp`: GCS (resumable upload), Pub/Sub (lease), Secret Manager (REST v1), GCE metadata. `cloud-emulator-gcp` fake-gcs-server CI job. yoshidan `gcloud-*` cohort. *Validated in Phase 5.*
+- [x] **CLOUD-03** — v1.1 — Object-store-backed snapshot storage: streaming snapshots over `ObjectStore::put_stream`/`get_stream`; `bit_identical_resume_at_step_5_via_{s3,gcs}` + cross-provider portability witnesses run every commit against emulators. *Validated in Phase 5.*
+- [x] **CLOUD-04** — v1.1 — `rollout cloud doctor --provider <aws|gcp>` CLI: 7 checks across all 4 cloud traits, human + JSON output, exit 0/1/2. *Validated in Phase 5.*
+
 ### Planned — next milestones
 
-- [ ] **CLOUD-01** AWS cloud crate: S3, SQS, Secrets Manager, EC2 metadata.
-- [ ] **CLOUD-02** GCP cloud crate: GCS, Pub/Sub, Secret Manager, GCE metadata.
-- [ ] **CLOUD-03** Object-store-backed snapshot storage.
 - [ ] **DIST-01** Multi-node coordinator + worker model.
 - [ ] **DIST-02** Work-stealing pull queue.
 - [ ] **DIST-03** Coordinator restart from storage (no in-memory-only state).
@@ -145,4 +149,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-27 — v1.1 milestone (cloud + distribution + harnesses) started*
+*Last updated: 2026-05-29 — Phase 5 complete (cloud layer + object-store snapshots): `rollout-cloud-aws` + `rollout-cloud-gcp` + streaming snapshots + `rollout cloud doctor`; CLOUD-01..04 verified 5/5. MSRV bumped 1.88→1.91.1. Dep-direction lint at 14 invariants. Next: Phase 6 — multi-node distribution.*
