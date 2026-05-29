@@ -2,7 +2,7 @@
 //!
 //! Built behind the `gcp` Cargo feature so the default workspace build pulls no
 //! GCP SDK crates. SDK error types are collapsed to `CoreError` at this crate
-//! boundary (see [`error`]) — none leak into `rollout-core`'s public API
+//! boundary (see the `error` module) — none leak into `rollout-core`'s public API
 //! (`public-api-cloud-leak` gate). The `gcp ↮ aws` dependency-direction
 //! invariant (#13) holds: this crate never depends on `rollout-cloud-aws`.
 #![cfg_attr(not(feature = "gcp"), allow(unused_crate_dependencies))]

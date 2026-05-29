@@ -10,7 +10,9 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use gcloud_metadata::{METADATA_FLAVOR_KEY, METADATA_GOOGLE, METADATA_GOOGLE_HOST, METADATA_HOST_ENV};
+use gcloud_metadata::{
+    METADATA_FLAVOR_KEY, METADATA_GOOGLE, METADATA_GOOGLE_HOST, METADATA_HOST_ENV,
+};
 
 use rollout_core::traits::cloud::{ComputeHint, ComputeInventory};
 use rollout_core::CoreError;
@@ -36,7 +38,8 @@ impl GceMetadataComputeHint {
     /// Honors the `GCE_METADATA_HOST` env override (the same one the SDK reads).
     #[must_use]
     pub fn new(local: Box<dyn ComputeHint>) -> Self {
-        let host = std::env::var(METADATA_HOST_ENV).unwrap_or_else(|_| METADATA_GOOGLE_HOST.to_owned());
+        let host =
+            std::env::var(METADATA_HOST_ENV).unwrap_or_else(|_| METADATA_GOOGLE_HOST.to_owned());
         Self {
             http: reqwest::Client::builder()
                 .timeout(Duration::from_secs(3))
@@ -55,7 +58,10 @@ impl GceMetadataComputeHint {
                 .timeout(Duration::from_secs(3))
                 .build()
                 .unwrap_or_default(),
-            host: host.trim_start_matches("http://").trim_end_matches('/').to_owned(),
+            host: host
+                .trim_start_matches("http://")
+                .trim_end_matches('/')
+                .to_owned(),
             local,
         }
     }

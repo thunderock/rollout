@@ -2,7 +2,7 @@
 //!
 //! Built behind the `aws` Cargo feature so the default workspace build pulls no
 //! AWS SDK crates. SDK error types are collapsed to `CoreError` at this crate
-//! boundary (see [`error`]) — none leak into `rollout-core`'s public API
+//! boundary (see the `error` module) — none leak into `rollout-core`'s public API
 //! (`public-api-cloud-leak` gate).
 #![cfg_attr(not(feature = "aws"), allow(unused_crate_dependencies))]
 

@@ -6,7 +6,7 @@
 //! `ack` acknowledges. The trait gives `ack`/`nack` only a `QueueItemId`, but
 //! Pub/Sub needs the per-pull `ack_id` (carried by `ReceivedMessage`), so the
 //! queue keeps an in-memory `QueueItemId -> ReceivedMessage` inflight table
-//! (see [`lease`]).
+//! (see the `lease` module).
 
 pub(crate) mod lease;
 

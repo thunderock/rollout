@@ -43,7 +43,9 @@ impl Drop for MockMds {
 
 /// Spawn a mock MDS server seeded with `fixture`.
 pub async fn spawn(fixture: MdsFixture) -> MockMds {
-    let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind mock MDS");
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("bind mock MDS");
     let addr = listener.local_addr().expect("local_addr");
     let host = addr.to_string();
     let fixture = Arc::new(fixture);

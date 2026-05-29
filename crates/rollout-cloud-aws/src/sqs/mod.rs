@@ -4,7 +4,7 @@
 //! `VisibilityTimeout`, `extend_lease` / `nack` call `ChangeMessageVisibility`,
 //! `ack` calls `DeleteMessage`. The trait gives `ack`/`nack` only a
 //! `QueueItemId`, but SQS needs a `ReceiptHandle`, so the queue keeps an
-//! in-memory `QueueItemId -> ReceiptHandle` inflight table (see [`lease`]).
+//! in-memory `QueueItemId -> ReceiptHandle` inflight table (see the `lease` module).
 
 pub(crate) mod lease;
 

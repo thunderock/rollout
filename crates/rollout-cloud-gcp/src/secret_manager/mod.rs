@@ -67,11 +67,10 @@ impl SecretManagerSecretStore {
             .await
             .map_err(|e| config_invalid(format!("Secret Manager ADC load failed: {e}")))?;
         // `TokenSource::token()` returns a ready "Bearer <token>" header value.
-        let header = provider
-            .token_source()
-            .token()
-            .await
-            .map_err(|e| config_invalid(format!("Secret Manager ADC token fetch failed: {e}")))?;
+        let header =
+            provider.token_source().token().await.map_err(|e| {
+                config_invalid(format!("Secret Manager ADC token fetch failed: {e}"))
+            })?;
         // We re-attach via `bearer_auth`, so strip the leading "Bearer ".
         let raw = header.strip_prefix("Bearer ").unwrap_or(&header).to_owned();
         Ok(Self::new(project, allowlist, Some(raw)))
@@ -158,8 +157,7 @@ mod tests {
 
     #[tokio::test]
     async fn put_is_read_only() {
-        let store =
-            SecretManagerSecretStore::with_endpoint("http://x", "p".to_owned(), vec![]);
+        let store = SecretManagerSecretStore::with_endpoint("http://x", "p".to_owned(), vec![]);
         let err = store.put("x", "v").await.expect_err("read-only");
         match err {
             CoreError::Fatal(FatalError::ConfigInvalid { msg }) => {
