@@ -166,3 +166,75 @@ async fn pubsub_queue_extend_lease_succeeds_via_modify_ack_deadline() {
         .await
         .unwrap();
 }
+
+// ---------------------------------------------------------------------------
+// Secret Manager conformance (Task 3) — Docker-free via in-process hyper mock.
+// ---------------------------------------------------------------------------
+
+use rollout_core::traits::cloud::SecretStore;
+use rollout_core::FatalError;
+use std::collections::HashMap;
+
+#[tokio::test]
+async fn secret_manager_get_returns_secret_value_for_allowed_name() {
+    let mut secrets = HashMap::new();
+    secrets.insert("test-secret".to_owned(), "hello".to_owned());
+    let mock = support::mock_secret_manager::spawn(secrets).await;
+    let store = rollout_cloud_gcp::SecretManagerSecretStore::with_endpoint(
+        &mock.endpoint,
+        "test".to_owned(),
+        vec!["test-secret".to_owned()],
+    );
+    assert_eq!(store.get("test-secret").await.unwrap(), "hello");
+}
+
+#[tokio::test]
+async fn secret_manager_get_rejects_non_allowlisted_name() {
+    let mock = support::mock_secret_manager::spawn(HashMap::new()).await;
+    let store = rollout_cloud_gcp::SecretManagerSecretStore::with_endpoint(
+        &mock.endpoint,
+        "test".to_owned(),
+        vec!["only-this".to_owned()],
+    );
+    let err = store.get("other").await.expect_err("must reject");
+    match err {
+        rollout_core::CoreError::Fatal(FatalError::ConfigInvalid { msg }) => {
+            assert!(msg.contains("not in allowlist"), "got: {msg}");
+        }
+        other => panic!("expected ConfigInvalid, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn secret_manager_get_missing_secret_returns_fatal() {
+    let mock = support::mock_secret_manager::spawn(HashMap::new()).await;
+    let store = rollout_cloud_gcp::SecretManagerSecretStore::with_endpoint(
+        &mock.endpoint,
+        "test".to_owned(),
+        vec!["nope".to_owned()],
+    );
+    let err = store.get("nope").await.expect_err("missing secret");
+    assert!(
+        matches!(
+            err,
+            rollout_core::CoreError::Fatal(FatalError::ConfigInvalid { .. })
+        ),
+        "missing secret -> Fatal::ConfigInvalid, got {err:?}"
+    );
+}
+
+#[tokio::test]
+async fn secret_manager_put_returns_read_only_error() {
+    let store = rollout_cloud_gcp::SecretManagerSecretStore::with_endpoint(
+        "http://unused",
+        "test".to_owned(),
+        vec![],
+    );
+    let err = store.put("any", "v").await.expect_err("read-only");
+    match err {
+        rollout_core::CoreError::Fatal(FatalError::ConfigInvalid { msg }) => {
+            assert!(msg.contains("read-only in v1.1"), "got: {msg}");
+        }
+        other => panic!("expected ConfigInvalid, got {other:?}"),
+    }
+}

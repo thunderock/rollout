@@ -15,11 +15,15 @@ pub(crate) mod error;
 pub mod gcs;
 #[cfg(feature = "gcp")]
 pub mod pubsub;
+#[cfg(feature = "gcp")]
+pub mod secret_manager;
 
 #[cfg(feature = "gcp")]
 pub use gcs::GcsObjectStore;
 #[cfg(feature = "gcp")]
 pub use pubsub::PubSubQueue;
+#[cfg(feature = "gcp")]
+pub use secret_manager::SecretManagerSecretStore;
 
 // Re-exported for the conformance test harness + the CLI cloud factory.
 #[cfg(feature = "gcp")]
