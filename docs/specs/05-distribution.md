@@ -152,9 +152,12 @@ The lease is a **single-row CAS** over `StorageTxn::cas_bytes` (one impl, `Stora
 
 ### Spot / preemption
 
-- Cloud preemption notifications (AWS spot ITN, GCP preemption) are caught by the worker.
-- On notification: trigger an opportunistic **process snapshot** (spec 04). If process snapshot succeeds, the worker's state can be resumed on a new node.
-- If process snapshot fails: rely on TrainState + Buffer snapshots. Lost work since the last snapshot is requeued.
+- Cloud preemption notifications (AWS spot ITN, GCP preemption) are caught by the worker via `ComputeHint::preemption_signal`.
+- **Two distinct numbers (D-SPOT-01 — do not conflate them):**
+  - **Preemption-notice lead time** — what the cloud gives ahead of reclaim: **120s AWS / 30s GCP**. This is the value `preemption_signal` returns.
+  - **Conservative drain deadline** — the budget the graceful-drain state machine targets and completes within: **60s AWS / 15s GCP**. The witness `spot_drain_completes_within_lead_time` asserts the whole drain sequence finishes inside this *deadline* (not the lead), leaving 60s/15s of margin before forced reclaim.
+- On notification the drain state machine runs: stop-pull → requeue in-flight via lease nack → opportunistic **TrainState** snapshot if the budget allows (v1.1 is TrainState-only; the process-snapshot path lands with SNAPSHOT-01 in v1.2+) → deregister → ack-exit.
+- If the snapshot is skipped (budget too tight) the lost work since the last snapshot is requeued and recomputed by the next claimant — no double-execute (the next claim goes through `try_claim`).
 
 ## 7. Resource hints and scheduling
 
