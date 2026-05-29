@@ -4,13 +4,13 @@ milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
 current_plan: 1
 status: unknown
-stopped_at: Completed 05-05-PLAN.md
-last_updated: "2026-05-29T02:56:06.116Z"
+stopped_at: Completed 05-06-PLAN.md
+last_updated: "2026-05-29T03:29:33.180Z"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 8
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # STATE — Project Memory
@@ -20,7 +20,7 @@ This file tracks current project state. Updated at phase transitions.
 ## Current Position
 
 Phase: 05 (cloud-layer-object-store-snapshots) — EXECUTING
-Plan: 6 of 8
+Plan: 7 of 8
 
 ## Previous Milestone — v1.0 (Shipped 2026-05-27)
 
@@ -154,6 +154,7 @@ Optional cleanup before Phase 5 kickoff: `/gsd:validate-phase` for v1.0 phases 0
 | Phase 05-cloud-layer-object-store-snapshots P03 | 12 | 1 tasks | 5 files |
 | Phase 05 P04 | 32min | 4 tasks | 34 files |
 | Phase 05 P05 | 155min | 5 tasks | 36 files |
+| Phase 05 P06 | 27min | 5 tasks | 27 files |
 
 ## Decisions
 
@@ -271,11 +272,12 @@ Optional cleanup before Phase 5 kickoff: `/gsd:validate-phase` for v1.0 phases 0
 - [Phase 05]: Dep-direction lint at 14 invariants + stub rollout-cloud-aws/gcp crates; public-api-cloud-leak + forbidden-patterns CI gates added (14->16 jobs)
 - [Phase 05]: Toolchain bumped 1.91.0->1.91.1: published AWS SDK requires rustc 1.91.1 (the MSRV-BUMP precursor's motivation)
 - [Phase 05]: AWS SDK error mapping by rendered-string classification (SDK-version-agnostic; no SDK type in any error #[source] chain)
+- [Phase 05]: 05-06: used verified gcloud-* SDK cohort (storage/pubsub/auth/metadata/googleapis) instead of planned gcloud-secretmanager-v1/gcloud_auth::mds (different incompatible cohort); SM over v1 REST, MDS over gcloud-metadata constants
 
 ## Last Session
 
-- **Last session:** 2026-05-29T02:55:58.288Z
-- **Stopped at:** Completed 05-05-PLAN.md
+- **Last session:** 2026-05-29T03:29:27.030Z
+- **Stopped at:** Completed 05-06-PLAN.md
 
 ## Things Not To Forget
 

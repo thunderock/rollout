@@ -53,7 +53,7 @@ Research artifacts under `.planning/research/` (STACK / FEATURES / ARCHITECTURE 
 ### Cloud (`CLOUD-*`)
 
 - [x] **CLOUD-01** _[v1.1]_ — `rollout-cloud-aws`: S3, SQS, Secrets Manager, EC2/EKS metadata. Compliance suite passes against localstack. Stack picks per `research/STACK.md` (aws-sdk-s3 `=1.112.0` cohort, exact-pin for MSRV 1.88).
-- [ ] **CLOUD-02** _[v1.1]_ — `rollout-cloud-gcp`: GCS, Pub/Sub, Secret Manager, GCE/GKE metadata. Compliance suite passes against emulators (fake-gcs-server / pubsub-emulator). Official `googleapis/google-cloud-rust` SDK (MSRV 1.87, Apache-2.0).
+- [x] **CLOUD-02** _[v1.1]_ — `rollout-cloud-gcp`: GCS, Pub/Sub, Secret Manager, GCE/GKE metadata. Compliance suite passes against emulators (fake-gcs-server / pubsub-emulator). Official `googleapis/google-cloud-rust` SDK (MSRV 1.87, Apache-2.0).
 - [ ] **CLOUD-03** _[v1.1]_ — Object-store-backed snapshot storage replacing local-fs snapshots in cloud mode. `ObjectStore::put_stream/get_stream` extensions preserve blake3 content-addressing via incremental hasher. Re-witnessed by `bit_identical_resume_at_step_5_via_{s3,gcs}`.
 - [ ] **CLOUD-04** _[v1.1]_ — `rollout cloud doctor` CLI subcommand running reachability + auth + write-test against a live cloud.
 

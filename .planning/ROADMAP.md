@@ -103,7 +103,7 @@ Plans:
 - [x] 05-03-precursor-msrv-bump-PLAN.md — Wave 1 precursor C: spike + BUMP/STAY decision for Rust MSRV 1.88 → 1.91 (standalone PR; has `checkpoint:decision`)
 - [x] 05-04-stage1-trait-extensions-ci-gates-PLAN.md — Wave 2 stage 1: `ObjectStore::put_stream`/`get_stream` + `Queue::dequeue_with_lease`/`extend_lease` trait extensions + CloudConfig schema + 4 new dep-direction invariants (#11-14) + `public-api-cloud-leak` + `forbidden-patterns` CI gates
 - [x] 05-05-stage2-cloud-aws-impl-PLAN.md — Wave 3 stage 2: `rollout-cloud-aws` impls (S3 → SQS → SecretsManager + IMDSv2) + MultipartGuard + blake3-hash-before-send + cloud-emulator-aws CI job; addresses CLOUD-01
-- [ ] 05-06-stage3-cloud-gcp-impl-PLAN.md — Wave 3 stage 3: `rollout-cloud-gcp` impls (GCS → Pub/Sub → SM + GCE MDS) + cloud-emulator-gcp CI job + in-test mock secret manager; addresses CLOUD-02
+- [x] 05-06-stage3-cloud-gcp-impl-PLAN.md — Wave 3 stage 3: `rollout-cloud-gcp` impls (GCS → Pub/Sub → SM + GCE MDS) + cloud-emulator-gcp CI job + in-test mock secret manager; addresses CLOUD-02
 - [ ] 05-07-stage4-snapshot-streaming-witnesses-PLAN.md — Wave 4 stage 4: `bit_identical_resume_at_step_5_via_{s3,gcs}` always-on witnesses + cross-provider portability witness + examples/sft-tiny-{aws,gcp}.toml; addresses CLOUD-03
 - [ ] 05-08-stage5-rollout-cloud-doctor-PLAN.md — Wave 5 stage 5: `rollout cloud doctor` CLI subcommand (7 checks, human + json output, exit 0/1/2); addresses CLOUD-04
 
