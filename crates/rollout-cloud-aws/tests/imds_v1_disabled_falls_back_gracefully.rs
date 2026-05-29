@@ -6,6 +6,8 @@
 //! The mock IMDS server is an inline hyper fixture (no external image). It
 //! records that a token PUT preceded any successful metadata GET.
 
+#![cfg(feature = "aws")] // SDK-backed tests compile only under the `aws` feature
+
 use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};

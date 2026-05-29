@@ -8,6 +8,7 @@
 //! out-of-band. Both run against localstack; neither requires real fault
 //! injection because the hash is computed in our code, not by the SDK.
 
+#![cfg(feature = "aws")] // SDK-backed tests compile only under the `aws` feature
 #![allow(deprecated)] // exercising overridden put_stream (trait-level #[deprecated])
 
 mod support;

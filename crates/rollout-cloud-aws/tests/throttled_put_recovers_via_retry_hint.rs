@@ -6,6 +6,8 @@
 //! witnesses the end-to-end success path and asserts the retry-hint contract via
 //! the crate's public `retry_hint_for_test` shim driven with a synthetic 503.
 
+#![cfg(feature = "aws")] // SDK-backed tests compile only under the `aws` feature
+
 mod support;
 
 use rollout_core::{ObjectStore, PutHint};

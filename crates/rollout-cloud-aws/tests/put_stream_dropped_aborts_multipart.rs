@@ -1,6 +1,7 @@
 //! PITFALLS.md §4 witness: dropping an in-flight `put_stream` future aborts the
 //! multipart upload via `MultipartGuard::drop`, leaving zero orphan multiparts.
 
+#![cfg(feature = "aws")] // SDK-backed tests compile only under the `aws` feature
 #![allow(deprecated)] // exercising overridden put_stream (trait-level #[deprecated])
 
 mod support;

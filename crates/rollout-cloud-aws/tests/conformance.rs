@@ -3,6 +3,7 @@
 //! All tests `#[ignore]` by default and early-return unless `LOCALSTACK_ENDPOINT`
 //! is set. The `cloud-emulator-aws` CI job runs them via `--include-ignored`.
 
+#![cfg(feature = "aws")] // SDK-backed tests compile only under the `aws` feature
 #![allow(deprecated)] // exercising overridden put_stream/get_stream (trait-level #[deprecated])
 
 mod support;
