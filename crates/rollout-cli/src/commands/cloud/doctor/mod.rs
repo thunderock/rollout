@@ -116,7 +116,12 @@ mod tests {
     #[test]
     fn doctor_args_parse_gcp_json() {
         let a = parse(&[
-            "--provider", "gcp", "--config", "bar.toml", "--format", "json",
+            "--provider",
+            "gcp",
+            "--config",
+            "bar.toml",
+            "--format",
+            "json",
         ])
         .unwrap();
         assert_eq!(a.provider, ProviderArg::Gcp);
@@ -132,7 +137,12 @@ mod tests {
     #[test]
     fn doctor_args_reject_unknown_format() {
         assert!(parse(&[
-            "--provider", "aws", "--config", "x.toml", "--format", "yaml"
+            "--provider",
+            "aws",
+            "--config",
+            "x.toml",
+            "--format",
+            "yaml"
         ])
         .is_err());
     }

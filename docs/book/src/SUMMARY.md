@@ -31,4 +31,5 @@
   - [AWS](./cloud/aws.md)
   - [GCP](./cloud/gcp.md)
   - [Cloud-backed snapshots](./cloud/snapshots.md)
+  - [Doctor (pre-flight)](./cloud/doctor.md)
 - [Examples](./examples/index.md)

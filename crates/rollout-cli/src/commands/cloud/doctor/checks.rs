@@ -49,7 +49,10 @@ pub async fn run_all_checks(provider: ProviderArg, cfg: &CloudConfig) -> Vec<Che
         }
     };
 
-    out.push(timed("reachability", check_reachability(provider, cfg).await));
+    out.push(timed(
+        "reachability",
+        check_reachability(provider, cfg).await,
+    ));
     out.push(timed("auth", check_auth(&runtime).await));
 
     // 3-6 run concurrently to save wall-clock.
@@ -128,7 +131,12 @@ async fn check_reachability(
     let host = match (provider, cfg) {
         (ProviderArg::Aws, CloudConfig::Aws(aws)) => format!("s3.{}.amazonaws.com", aws.region),
         (ProviderArg::Gcp, CloudConfig::Gcp(_)) => "storage.googleapis.com".to_owned(),
-        _ => return Err((start.elapsed().as_millis(), "provider/config mismatch".to_owned())),
+        _ => {
+            return Err((
+                start.elapsed().as_millis(),
+                "provider/config mismatch".to_owned(),
+            ))
+        }
     };
     let res = tcp_tls_probe(&host, 443).await;
     let latency = start.elapsed().as_millis();
@@ -170,7 +178,9 @@ async fn tcp_tls_probe(_host: &str, _port: u16) -> Result<(), String> {
 
 /// Check 2: credential chain is usable. We treat a successful runtime build plus
 /// a cheap inventory call as evidence the credential/ADC chain resolved.
-async fn check_auth(runtime: &Arc<crate::cloud_factory::CloudRuntime>) -> Result<u128, (u128, String)> {
+async fn check_auth(
+    runtime: &Arc<crate::cloud_factory::CloudRuntime>,
+) -> Result<u128, (u128, String)> {
     let start = Instant::now();
     let res = runtime
         .compute_hint
@@ -183,7 +193,9 @@ async fn check_auth(runtime: &Arc<crate::cloud_factory::CloudRuntime>) -> Result
 }
 
 /// Check 3: small payload PUT + GET roundtrip on the configured bucket.
-async fn check_object_store(runtime: &Arc<crate::cloud_factory::CloudRuntime>) -> Result<(), String> {
+async fn check_object_store(
+    runtime: &Arc<crate::cloud_factory::CloudRuntime>,
+) -> Result<(), String> {
     use rollout_core::traits::cloud::PutHint;
     let payload = format!("doctor-probe-{}", ulid::Ulid::new()).into_bytes();
     let id = runtime
@@ -253,7 +265,9 @@ async fn check_secret_store(
 }
 
 /// Check 6: inventory + `preemption_signal` probe.
-async fn check_compute_hint(runtime: &Arc<crate::cloud_factory::CloudRuntime>) -> Result<(), String> {
+async fn check_compute_hint(
+    runtime: &Arc<crate::cloud_factory::CloudRuntime>,
+) -> Result<(), String> {
     runtime
         .compute_hint
         .inventory()
@@ -280,7 +294,9 @@ async fn check_content_id_roundtrip(
     use tokio::io::{AsyncRead, AsyncReadExt};
 
     let len: usize = 64 * 1024 * 1024;
-    let buf: Vec<u8> = (0..len).map(|i| u8::try_from(i % 251).unwrap_or(0)).collect();
+    let buf: Vec<u8> = (0..len)
+        .map(|i| u8::try_from(i % 251).unwrap_or(0))
+        .collect();
     let expected = ContentId(*blake3::hash(&buf).as_bytes());
     let stream: Pin<Box<dyn AsyncRead + Send>> = Box::pin(std::io::Cursor::new(buf.clone()));
     let id = runtime
@@ -295,7 +311,9 @@ async fn check_content_id_roundtrip(
         .await
         .map_err(|e| format!("put_stream: {e}"))?;
     if id != expected {
-        return Err(format!("ContentId mismatch: got {id:?}, expected {expected:?}"));
+        return Err(format!(
+            "ContentId mismatch: got {id:?}, expected {expected:?}"
+        ));
     }
     let mut got_stream = runtime
         .object_store

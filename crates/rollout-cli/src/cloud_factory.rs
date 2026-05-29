@@ -75,11 +75,29 @@ async fn build_aws_runtime(
         Ec2MetadataComputeHint, S3ObjectStore, SecretsManagerSecretStore, SqsQueue,
     };
 
-    let aws_cfg = aws_config::defaults(BehaviorVersion::latest())
-        .region(aws_config::Region::new(cfg.region.clone()))
-        .load()
-        .await;
-    let blob_client = Arc::new(aws_sdk_s3::Client::new(&aws_cfg));
+    // Emulator override: `cloud doctor` against localstack sets AWS_ENDPOINT_URL
+    // (or LOCALSTACK_ENDPOINT). Production leaves both unset (regional endpoint).
+    let emulator_endpoint = std::env::var("AWS_ENDPOINT_URL")
+        .ok()
+        .or_else(|| std::env::var("LOCALSTACK_ENDPOINT").ok());
+
+    let mut loader = aws_config::defaults(BehaviorVersion::latest())
+        .region(aws_config::Region::new(cfg.region.clone()));
+    if let Some(endpoint) = &emulator_endpoint {
+        // localstack accepts static test creds + path-style addressing.
+        loader = loader.endpoint_url(endpoint).test_credentials();
+    }
+    let aws_cfg = loader.load().await;
+
+    // S3 against localstack requires path-style addressing.
+    let blob_client = if emulator_endpoint.is_some() {
+        let s3_cfg = aws_sdk_s3::config::Builder::from(&aws_cfg)
+            .force_path_style(true)
+            .build();
+        Arc::new(aws_sdk_s3::Client::from_conf(s3_cfg))
+    } else {
+        Arc::new(aws_sdk_s3::Client::new(&aws_cfg))
+    };
     let queue_client = Arc::new(aws_sdk_sqs::Client::new(&aws_cfg));
     let secrets_client = Arc::new(aws_sdk_secretsmanager::Client::new(&aws_cfg));
 
@@ -120,15 +138,30 @@ async fn build_gcp_runtime(
         GceMetadataComputeHint, GcsObjectStore, PubSubQueue, SecretManagerSecretStore,
     };
 
-    let gcs_client = Arc::new(rollout_cloud_gcp::load_gcs_client().await?);
-    let pubsub_cfg = PubSubClientConfig::default()
-        .with_auth()
-        .await
-        .map_err(|e| {
-            CoreError::Fatal(FatalError::ConfigInvalid {
-                msg: format!("pubsub ADC load failed: {e}"),
-            })
-        })?;
+    // Emulator overrides: `cloud doctor` against fake-gcs-server + pubsub-emulator
+    // sets STORAGE_EMULATOR_HOST / PUBSUB_EMULATOR_HOST. Production leaves them unset.
+    let gcs_emulator = std::env::var("STORAGE_EMULATOR_HOST").ok();
+    let pubsub_emulator = std::env::var("PUBSUB_EMULATOR_HOST").ok();
+
+    let gcs_client = Arc::new(match &gcs_emulator {
+        Some(endpoint) => rollout_cloud_gcp::load_gcs_client_with_endpoint(endpoint),
+        None => rollout_cloud_gcp::load_gcs_client().await?,
+    });
+
+    // `ClientConfig::default()` prefers PUBSUB_EMULATOR_HOST when set (anonymous);
+    // only mint ADC credentials for the real Pub/Sub endpoint.
+    let pubsub_cfg = if pubsub_emulator.is_some() {
+        PubSubClientConfig::default()
+    } else {
+        PubSubClientConfig::default()
+            .with_auth()
+            .await
+            .map_err(|e| {
+                CoreError::Fatal(FatalError::ConfigInvalid {
+                    msg: format!("pubsub ADC load failed: {e}"),
+                })
+            })?
+    };
     let pubsub_client = Arc::new(PubSubClient::new(pubsub_cfg).await.map_err(|e| {
         CoreError::Fatal(FatalError::ConfigInvalid {
             msg: format!("pubsub client init: {e}"),
@@ -149,10 +182,19 @@ async fn build_gcp_runtime(
         cfg.pubsub.subscription.clone(),
         cfg.pubsub.ack_deadline_secs,
     )) as Arc<dyn Queue>;
-    let secret_store = Arc::new(
-        SecretManagerSecretStore::from_adc(cfg.project.clone(), cfg.secrets.allowlist.clone())
-            .await?,
-    ) as Arc<dyn SecretStore>;
+    // Secret Manager has no first-party emulator. In emulator mode (doctor smoke
+    // against fake-gcs-server + pubsub-emulator), skip ADC and use the env-backed
+    // local store so runtime construction does not fail on absent GCP credentials.
+    let secret_store = if gcs_emulator.is_some() || pubsub_emulator.is_some() {
+        Arc::new(rollout_cloud_local::EnvSecretStore::new(
+            cfg.secrets.allowlist.clone(),
+        )) as Arc<dyn SecretStore>
+    } else {
+        Arc::new(
+            SecretManagerSecretStore::from_adc(cfg.project.clone(), cfg.secrets.allowlist.clone())
+                .await?,
+        ) as Arc<dyn SecretStore>
+    };
     let local_hint = rollout_cloud_local::hints::for_current_platform();
     let compute_hint = Arc::new(GceMetadataComputeHint::new(local_hint)) as Arc<dyn ComputeHint>;
 

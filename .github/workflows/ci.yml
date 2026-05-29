@@ -344,6 +344,23 @@ jobs:
           AWS_SECRET_ACCESS_KEY: test
           AWS_REGION: us-east-1
         run: cargo test -p rollout-snapshots --test snapshot_resume_s3_to_gcs_via_manual_copy -- --include-ignored
+      - name: Pre-create localstack resources for cloud doctor smoke (CLOUD-04)
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_REGION: us-east-1
+        run: |
+          aws --endpoint-url=http://localhost:4566 s3 mb s3://rollout-doctor-test
+          aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name doctor-test
+          aws --endpoint-url=http://localhost:4566 secretsmanager create-secret --name doctor-test-secret --secret-string "value"
+      - name: Run cloud doctor smoke against localstack (CLOUD-04)
+        env:
+          LOCALSTACK_ENDPOINT: http://localhost:4566
+          AWS_ENDPOINT_URL: http://localhost:4566
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_REGION: us-east-1
+        run: cargo test -p rollout-cli --features 'aws,gcp' --test doctor_smoke doctor_smoke_aws doctor_smoke_human doctor_smoke_json -- --include-ignored --test-threads=1
 
   cloud-live-aws:
     # CLOUD-01 nightly + path-triggered live cloud conformance. Real AWS via
@@ -414,6 +431,26 @@ jobs:
           PUBSUB_EMULATOR_HOST: localhost:8085
           PUBSUB_PROJECT_ID: rollout-test
         run: cargo test -p rollout-snapshots --test bit_identical_resume_at_step_5_via_gcs -- --include-ignored
+      - name: Pre-create emulator resources for cloud doctor smoke (CLOUD-04)
+        env:
+          PUBSUB_EMULATOR_HOST: localhost:8085
+        run: |
+          # fake-gcs-server: create the doctor bucket via the JSON API.
+          curl -fsS -X POST "http://localhost:4443/storage/v1/b?project=rollout-test" \
+            -H "Content-Type: application/json" \
+            -d '{"name":"rollout-doctor-test"}'
+          # pubsub-emulator: create the doctor topic + subscription via REST.
+          curl -fsS -X PUT "http://localhost:8085/v1/projects/rollout-test/topics/doctor-test-topic"
+          curl -fsS -X PUT "http://localhost:8085/v1/projects/rollout-test/subscriptions/doctor-test-sub" \
+            -H "Content-Type: application/json" \
+            -d '{"topic":"projects/rollout-test/topics/doctor-test-topic","ackDeadlineSeconds":30}'
+      - name: Run cloud doctor smoke against emulators (CLOUD-04)
+        env:
+          STORAGE_EMULATOR_HOST: http://localhost:4443
+          PUBSUB_EMULATOR_HOST: localhost:8085
+          PUBSUB_PROJECT_ID: rollout-test
+          ROLLOUT_SECRET_DOCTOR_SECRET: value
+        run: cargo test -p rollout-cli --features 'aws,gcp' --test doctor_smoke doctor_smoke_gcp -- --include-ignored --test-threads=1
 
   cloud-live-gcp:
     # CLOUD-02 nightly live cloud conformance. Real GCP via Workload Identity
