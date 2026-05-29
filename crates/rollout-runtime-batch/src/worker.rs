@@ -11,11 +11,12 @@
 //! 8. `queue.ack`
 
 use std::str::FromStr;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use rollout_core::{
-    ContentId, CoreError, FatalError, InferenceBackend, ObjectStore, Prompt, PutHint, Queue, RunId,
-    SamplingParams, Storage, WorkerId,
+    ComputeHint, ContentId, CoreError, FatalError, InferenceBackend, ObjectStore, Prompt, PutHint,
+    Queue, RunId, SamplingParams, Storage, WorkerId,
 };
 
 use crate::coordinator::now_ms;
@@ -34,6 +35,11 @@ pub struct BatchWorker {
     worker_id: WorkerId,
     sampling: SamplingParams,
     stale_after_ms: u64,
+    /// Spot-drain stop-pull flag (DIST-04). When set, the run loop leaves
+    /// `running` and refuses new pulls/steals so the spot-drain state machine
+    /// (`rollout-coordinator::drain`) can requeue in-flight work and exit within
+    /// the drain deadline. Shared with the drain orchestrator via `Arc`.
+    stop_pull: Arc<AtomicBool>,
 }
 
 impl BatchWorker {
@@ -62,6 +68,7 @@ impl BatchWorker {
             worker_id,
             sampling,
             stale_after_ms: DEFAULT_STALE_AFTER_MS,
+            stop_pull: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -70,6 +77,36 @@ impl BatchWorker {
     pub fn with_stale_after_ms(mut self, ms: u64) -> Self {
         self.stale_after_ms = ms;
         self
+    }
+
+    /// Share this worker's stop-pull flag with the spot-drain orchestrator.
+    ///
+    /// The returned handle is the same `AtomicBool` the run loop polls; the
+    /// drain state machine sets it to make the worker leave `running` (DIST-04
+    /// step 1). Clone it into both the worker and the drain call site.
+    #[must_use]
+    pub fn stop_pull_flag(&self) -> Arc<AtomicBool> {
+        self.stop_pull.clone()
+    }
+
+    /// Poll a `ComputeHint` for a spot-preemption notice and, if present, set the
+    /// stop-pull flag so the run loop drains. Returns the notice lead, if any.
+    ///
+    /// The signal is consumed ONLY through the [`ComputeHint`] trait (no
+    /// `rollout-cloud-*` import) — the drain state machine in
+    /// `rollout-coordinator::drain` runs the actual requeue/snapshot/deregister.
+    ///
+    /// # Errors
+    /// Propagates whatever [`ComputeHint::preemption_signal`] returns.
+    pub async fn poll_preemption(
+        &self,
+        hint: &dyn ComputeHint,
+    ) -> Result<Option<std::time::Duration>, CoreError> {
+        let lead = hint.preemption_signal().await?;
+        if lead.is_some() {
+            self.stop_pull.store(true, Ordering::SeqCst);
+        }
+        Ok(lead)
     }
 
     /// Run until the queue drains; returns the number of samples completed.
@@ -81,6 +118,11 @@ impl BatchWorker {
     pub async fn run_loop(&self) -> Result<usize, CoreError> {
         let mut completed = 0usize;
         loop {
+            // Spot-drain stop-pull (DIST-04 step 1): leave `running`, refuse new
+            // pulls. In-flight requeue + exit is handled by the drain orchestrator.
+            if self.stop_pull.load(Ordering::SeqCst) {
+                return Ok(completed);
+            }
             match self.run_one().await? {
                 RunOutcome::Drained => return Ok(completed),
                 RunOutcome::Completed => completed += 1,

@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 
 pub mod config;
+pub mod drain;
 pub mod emitter;
 pub mod failure_scan;
 pub mod epoch;
