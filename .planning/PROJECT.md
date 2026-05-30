@@ -74,12 +74,16 @@ If any single requirement defines success: **plan-time validation catches all co
 - [x] **CLOUD-03** — v1.1 — Object-store-backed snapshot storage: streaming snapshots over `ObjectStore::put_stream`/`get_stream`; `bit_identical_resume_at_step_5_via_{s3,gcs}` + cross-provider portability witnesses run every commit against emulators. *Validated in Phase 5.*
 - [x] **CLOUD-04** — v1.1 — `rollout cloud doctor --provider <aws|gcp>` CLI: 7 checks across all 4 cloud traits, human + JSON output, exit 0/1/2. *Validated in Phase 5.*
 
+### ✓ Shipped — v1.1 (Phase 6, 2026-05-29)
+
+- [x] **DIST-01** — v1.1 — Lease-based single-coordinator exclusion + epoch in Storage: `StorageLease` (one impl over `Arc<dyn Storage>`, dual-backed redb + Postgres via `cas_bytes`), monotonic epoch stamping, `lease_exclusion_single_winner` witness. *Validated in Phase 6.*
+- [x] **DIST-02** — v1.1 — Work-stealing pull queue: `queue_items` ULID-ordered dispatch + coordinator-mediated steal (busiest victim → `ceil(n/2)` capped at `MAX_STEAL_BATCH`) with CAS-on-state dedup; `concurrent_ack_and_steal_no_double_execute` witness (100 iterations, exactly-one-CAS-wins). *Validated in Phase 6.*
+- [x] **DIST-03** — v1.1 — Coordinator restart from storage via stateless-replayer (lease acquire → adopt epoch → replay ledger without re-executing Running → resume failure scan → serve); `coord_restart_no_duplicates` witness every commit. *Validated in Phase 6.*
+- [x] **DIST-04** — v1.1 — Spot-preemption graceful drain on `ComputeHint::preemption_signal` (stop-pull → nack in-flight → opportunistic TrainState snapshot → deregister); notice lead 120s AWS/30s GCP vs drain deadline 60s AWS/15s GCP (D-SPOT-04); `spot_drain_completes_within_lead_time` witness. *Validated in Phase 6.*
+- [x] **DIST-05** — v1.1 — Split-brain fencing: two coordinators on same lease → exactly one self-fences (`std::process::abort`) within 5s, survivor advances epoch, workers reject stale-epoch responses via `EpochGuard`; `split_brain_old_coord_self_fences` + `fence_aborts_within_5s` (subprocess) witnesses. *Validated in Phase 6.*
+
 ### Planned — next milestones
 
-- [ ] **DIST-01** Multi-node coordinator + worker model.
-- [ ] **DIST-02** Work-stealing pull queue.
-- [ ] **DIST-03** Coordinator restart from storage (no in-memory-only state).
-- [ ] **DIST-04** Spot-preemption signal handling.
 - [ ] **HARNESS-01** Env harness (text completion).
 - [ ] **HARNESS-02** Tool harness with sandboxed code-exec, shell, file, HTTP.
 - [ ] **HARNESS-03** Eval harness with bundled MMLU, IFEval, GSM8K.
@@ -149,4 +153,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-29 — Phase 5 complete (cloud layer + object-store snapshots): `rollout-cloud-aws` + `rollout-cloud-gcp` + streaming snapshots + `rollout cloud doctor`; CLOUD-01..04 verified 5/5. MSRV bumped 1.88→1.91.1. Dep-direction lint at 14 invariants. Next: Phase 6 — multi-node distribution.*
+*Last updated: 2026-05-29 — Phase 6 complete (multi-node distribution): lease/epoch fencing + work-stealing queue + coordinator restart-from-storage + spot-drain + split-brain self-fence; DIST-01..05 verified 5/5 (four every-commit witnesses Docker-free; live-cloud smoke + Postgres lease lane operator-gated). `make smoke-3node-aws`/`-gcp` green locally. Dep-direction lint at 14 invariants. Next: Phase 7 — harnesses (env + tool + eval).*
