@@ -29,10 +29,7 @@ fn epoch_key(run_id: RunId) -> StorageKey {
 ///
 /// # Errors
 /// Propagates [`CoreError`] from the underlying storage read or a decode failure.
-pub async fn current_epoch(
-    storage: &dyn Storage,
-    run_id: RunId,
-) -> Result<CoordEpoch, CoreError> {
+pub async fn current_epoch(storage: &dyn Storage, run_id: RunId) -> Result<CoordEpoch, CoreError> {
     match storage.get_bytes(&epoch_key(run_id)).await? {
         Some(bytes) => postcard::from_bytes(&bytes).map_err(|e| {
             CoreError::Fatal(rollout_core::FatalError::Internal {

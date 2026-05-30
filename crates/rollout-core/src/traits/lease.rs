@@ -18,9 +18,7 @@ use crate::{CoreError, WorkerId};
 /// Advances by exactly one on every successful takeover (steal-on-expiry), so a
 /// new coordinator is always strictly higher than the one it deposed. Workers
 /// store the highest epoch seen and reject stale-epoch responses (D-FENCE-04).
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct CoordEpoch(
     /// Raw monotonic counter; `0` is the first (fresh-acquire) epoch.
     pub u64,

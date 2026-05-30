@@ -120,7 +120,10 @@ async fn pg_lease_single_winner() {
     let won_b = cas_lease(&storage, run_id, None, &record(b, 0, 10_000)).await;
 
     assert!(won_a, "first acquire on a fresh row wins");
-    assert!(!won_b, "second acquire on the same fresh row loses (single winner)");
+    assert!(
+        !won_b,
+        "second acquire on the same fresh row loses (single winner)"
+    );
 }
 
 /// D-LEASE steal: acquire at epoch 0, then a steal-on-expiry CASes the EXACT
@@ -135,7 +138,10 @@ async fn pg_lease_steal_advances_epoch() {
     let old = WorkerId(Ulid::new());
     let thief = WorkerId(Ulid::new());
     let r0 = record(old, 0, 1); // expires_at_ms in the past -> stealable
-    assert!(cas_lease(&storage, run_id, None, &r0).await, "fresh acquire epoch 0");
+    assert!(
+        cas_lease(&storage, run_id, None, &r0).await,
+        "fresh acquire epoch 0"
+    );
 
     // Steal: CAS the exact prior bytes (the expired epoch-0 record) to epoch 1.
     let prior = storage
@@ -173,7 +179,10 @@ async fn pg_lease_renew_after_steal_fails() {
     let old = WorkerId(Ulid::new());
     let thief = WorkerId(Ulid::new());
     let r0 = record(old, 0, 1);
-    assert!(cas_lease(&storage, run_id, None, &r0).await, "old acquires epoch 0");
+    assert!(
+        cas_lease(&storage, run_id, None, &r0).await,
+        "old acquires epoch 0"
+    );
     // The old holder snapshots the bytes it believes are current (epoch 0).
     let old_expected = encode(&r0);
 
@@ -191,7 +200,10 @@ async fn pg_lease_renew_after_steal_fails() {
     // The old holder's renew CAS uses its stale epoch-0 expected bytes -> loses.
     let renewed = record(old, 0, 20_000);
     let won = cas_lease(&storage, run_id, Some(old_expected), &renewed).await;
-    assert!(!won, "old holder's renew on stale (epoch-0) bytes fails after steal");
+    assert!(
+        !won,
+        "old holder's renew on stale (epoch-0) bytes fails after steal"
+    );
 
     let after: LeaseRecord = postcard::from_bytes(
         &storage
@@ -202,5 +214,9 @@ async fn pg_lease_renew_after_steal_fails() {
     )
     .expect("decode");
     assert_eq!(after.holder, thief, "thief still holds the lease");
-    assert_eq!(after.epoch, CoordEpoch(1), "epoch unchanged by the failed renew");
+    assert_eq!(
+        after.epoch,
+        CoordEpoch(1),
+        "epoch unchanged by the failed renew"
+    );
 }

@@ -17,9 +17,7 @@ mod support;
 
 use std::sync::Arc;
 
-use rollout_coordinator::work_item::{
-    self, work_key, WorkItemRecord, WorkState,
-};
+use rollout_coordinator::work_item::{self, work_key, WorkItemRecord, WorkState};
 use rollout_core::{ContentId, RunId, Storage, WorkerId};
 use rollout_storage::EmbeddedStorage;
 use ulid::Ulid;
@@ -152,7 +150,11 @@ async fn final_state_consistent() {
         let won = work_item::try_complete(&mut txn, &run_id, &rec_a, result_id)
             .await
             .unwrap();
-        if won { txn.commit().await.unwrap() } else { txn.abort().await.unwrap() }
+        if won {
+            txn.commit().await.unwrap();
+        } else {
+            txn.abort().await.unwrap();
+        }
         won
     });
     let sb = storage.clone();
@@ -162,7 +164,11 @@ async fn final_state_consistent() {
         let won = work_item::try_repending(&mut txn, &run_id, &rec_b)
             .await
             .unwrap();
-        if won { txn.commit().await.unwrap() } else { txn.abort().await.unwrap() }
+        if won {
+            txn.commit().await.unwrap();
+        } else {
+            txn.abort().await.unwrap();
+        }
         won
     });
     let (a, b) = tokio::join!(ack, steal);
@@ -178,7 +184,10 @@ async fn final_state_consistent() {
         ],
     };
     let entries = storage
-        .scan_bytes(rollout_core::KeyRange { prefix, limit: None })
+        .scan_bytes(rollout_core::KeyRange {
+            prefix,
+            limit: None,
+        })
         .await
         .unwrap();
     assert_eq!(entries.len(), 1, "exactly one ledger row for X");

@@ -26,8 +26,8 @@
 use std::time::Duration;
 
 use rollout_core::{
-    ComputeHint, CoreError, FatalError, Queue, QueueItemId, RunId, Snapshotter, SnapshotKind,
-    SnapshotRequest,
+    ComputeHint, CoreError, FatalError, Queue, QueueItemId, RunId, SnapshotKind, SnapshotRequest,
+    Snapshotter,
 };
 
 /// The two spot numbers for a provider: the cloud `notice_lead` and the

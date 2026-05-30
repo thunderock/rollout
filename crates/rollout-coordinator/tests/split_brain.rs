@@ -49,7 +49,11 @@ async fn split_brain_old_coord_self_fences() {
 
     // 1. Old coordinator A acquires the lease at epoch 0.
     let coord_a = WorkerId(Ulid::new());
-    let held_a = lease.try_acquire(coord_a, ttl).await.unwrap().expect("A wins");
+    let held_a = lease
+        .try_acquire(coord_a, ttl)
+        .await
+        .unwrap()
+        .expect("A wins");
     assert_eq!(held_a.epoch.0, 0);
 
     // 2. A's lease expires (it stalled / GC paused).
@@ -57,18 +61,24 @@ async fn split_brain_old_coord_self_fences() {
 
     // 3. New coordinator B steals the lease -> epoch advances to 1.
     let coord_b = WorkerId(Ulid::new());
-    let held_b = lease.try_acquire(coord_b, ttl).await.unwrap().expect("B steals");
+    let held_b = lease
+        .try_acquire(coord_b, ttl)
+        .await
+        .unwrap()
+        .expect("B steals");
     assert_eq!(held_b.epoch.0, 1, "steal MUST advance epoch monotonically");
 
     // 4. A wakes up and tries to renew its STALE lease -> CAS fails (fenced).
     let renewed = lease.renew(&held_a, ttl).await.unwrap();
-    assert!(!renewed, "old coordinator must NOT renew after epoch advance");
+    assert!(
+        !renewed,
+        "old coordinator must NOT renew after epoch advance"
+    );
 
     // 5. WITNESS: A's fence routine emits EXACTLY ONE coordinator_fenced event
     //    with NO shared-state write, then decides Abort.
     let fenced = CountingEmitter::default();
-    let decision =
-        fence_old_coordinator(&fenced, coord_a, run, held_a.epoch, held_b.epoch).await;
+    let decision = fence_old_coordinator(&fenced, coord_a, run, held_a.epoch, held_b.epoch).await;
     assert_eq!(decision, FenceDecision::Abort, "fenced coord must abort");
     assert_eq!(
         fenced.count("coordinator_fenced"),
@@ -78,7 +88,10 @@ async fn split_brain_old_coord_self_fences() {
 
     // 6. Shared state is intact: the lease row is still B's (A wrote nothing).
     let cur = lease.current().await.unwrap().unwrap();
-    assert_eq!(cur.holder, coord_b, "B still holds; A wrote nothing (D-FENCE-01)");
+    assert_eq!(
+        cur.holder, coord_b,
+        "B still holds; A wrote nothing (D-FENCE-01)"
+    );
     assert_eq!(cur.epoch.0, 1);
 }
 
@@ -106,7 +119,10 @@ async fn fence_writes_no_shared_state() {
     let _ = fence_old_coordinator(&fenced, coord, run, held.epoch, held.epoch).await;
 
     let after = storage.get_bytes(&key).await.unwrap();
-    assert_eq!(before, after, "fence is observability-only; no shared-state write");
+    assert_eq!(
+        before, after,
+        "fence is observability-only; no shared-state write"
+    );
 }
 
 #[test]
@@ -114,7 +130,10 @@ fn fence_aborts_within_5s() {
     // SC4 subprocess witness: the --test-fence subcommand takes the real
     // std::process::abort() path; the child exits non-zero (SIGABRT) within 5s.
     let run = run_fence_subprocess(&["test-fence", "0", "1"]);
-    assert!(run.aborted(), "child must exit abnormally (SIGABRT from abort())");
+    assert!(
+        run.aborted(),
+        "child must exit abnormally (SIGABRT from abort())"
+    );
     assert!(
         run.elapsed < Duration::from_secs(5),
         "fence must abort within 5s (was {:?})",

@@ -26,7 +26,9 @@ async fn sim_seeds_and_scans_pending() {
     let records = sim.scan_work().await;
     assert_eq!(records.len(), 2, "scan sees the 2 seeded items");
     assert!(
-        records.iter().all(|r| matches!(r.state, WorkState::Pending)),
+        records
+            .iter()
+            .all(|r| matches!(r.state, WorkState::Pending)),
         "all seeded items are Pending"
     );
 }

@@ -298,6 +298,9 @@ mod tests {
         let back = decode(&bytes1).unwrap();
         let bytes2 = encode(&back).unwrap();
         assert_eq!(rec, back);
-        assert_eq!(bytes1, bytes2, "re-encode of the decoded record is byte-stable");
+        assert_eq!(
+            bytes1, bytes2,
+            "re-encode of the decoded record is byte-stable"
+        );
     }
 }

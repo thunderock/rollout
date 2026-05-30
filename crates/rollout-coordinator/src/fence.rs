@@ -16,9 +16,7 @@
 
 use std::time::SystemTime;
 
-use rollout_core::{
-    CoordEpoch, Event, EventEmitter, EventKind, Level, RunId, WorkerId,
-};
+use rollout_core::{CoordEpoch, Event, EventEmitter, EventKind, Level, RunId, WorkerId};
 
 /// What a fenced coordinator should do. Open for future variants (e.g. a future
 /// graceful-handoff mode), but v1.1 always aborts (D-FENCE-03 rejects flush).

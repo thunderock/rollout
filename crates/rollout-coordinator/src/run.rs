@@ -181,7 +181,11 @@ fn spawn_lease_renew_loop(
             if held.holder != me {
                 // someone else holds the lease — we were deposed (fenced).
                 let _ = crate::fence::fence_old_coordinator(
-                    emitter.as_ref(), me, run_id, start_epoch, held.epoch,
+                    emitter.as_ref(),
+                    me,
+                    run_id,
+                    start_epoch,
+                    held.epoch,
                 )
                 .await;
                 std::process::abort();
@@ -196,7 +200,11 @@ fn spawn_lease_renew_loop(
                         .flatten()
                         .map_or(held.epoch, |c| c.epoch);
                     let _ = crate::fence::fence_old_coordinator(
-                        emitter.as_ref(), me, run_id, held.epoch, observed,
+                        emitter.as_ref(),
+                        me,
+                        run_id,
+                        held.epoch,
+                        observed,
                     )
                     .await;
                     std::process::abort();

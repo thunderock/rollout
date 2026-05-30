@@ -29,7 +29,12 @@ fn now_ms() -> u128 {
         .as_millis()
 }
 
-fn domain_event(run_id: RunId, worker_id: Option<WorkerId>, topic: &str, attrs: serde_json::Value) -> Event {
+fn domain_event(
+    run_id: RunId,
+    worker_id: Option<WorkerId>,
+    topic: &str,
+    attrs: serde_json::Value,
+) -> Event {
     Event {
         ts: SystemTime::now(),
         kind: EventKind::Domain {
@@ -67,7 +72,10 @@ pub async fn mock_run(
     emitter: &dyn EventEmitter,
 ) -> Result<usize, CoreError> {
     assert!(workers >= 2, "steal needs at least 2 workers");
-    assert!(items >= workers, "need at least one item per worker to make a victim busy");
+    assert!(
+        items >= workers,
+        "need at least one item per worker to make a victim busy"
+    );
 
     let worker_ids: Vec<WorkerId> = (0..workers).map(|_| WorkerId(Ulid::new())).collect();
 
@@ -90,7 +98,9 @@ pub async fn mock_run(
             worker_ids[1 + (i % (workers - 1))]
         };
         let mut txn = storage.begin().await?;
-        if let Some(work_id) = ledger::dispatch(&mut txn, storage.as_ref(), &run_id, w, now_ms()).await? {
+        if let Some(work_id) =
+            ledger::dispatch(&mut txn, storage.as_ref(), &run_id, w, now_ms()).await?
+        {
             txn.commit().await?;
             dispatched.push(work_id);
             emitter
@@ -225,7 +235,9 @@ mod tests {
         let storage = open().await;
         let run_id = RunId(Ulid::new());
         let emitter = NoopEmitter;
-        let done = mock_run(storage.clone(), run_id, 8, 3, &emitter).await.unwrap();
+        let done = mock_run(storage.clone(), run_id, 8, 3, &emitter)
+            .await
+            .unwrap();
         assert_eq!(done, 8, "every item reaches Done exactly once");
     }
 }

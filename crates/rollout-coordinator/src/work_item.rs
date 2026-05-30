@@ -61,7 +61,10 @@ pub fn work_key(run_id: &RunId, work_id: &ContentId) -> StorageKey {
     StorageKey {
         namespace: SmolStr::new_static("work"),
         run_id: Some(*run_id),
-        path: vec![SmolStr::new_static("item"), SmolStr::new(work_id.to_string())],
+        path: vec![
+            SmolStr::new_static("item"),
+            SmolStr::new(work_id.to_string()),
+        ],
     }
 }
 
@@ -136,8 +139,12 @@ pub async fn try_complete(
     let mut next = running_record.clone();
     next.state = WorkState::Done { result_id };
     let new = encode_record(&next)?;
-    txn.cas_bytes(work_key(run_id, &running_record.id), Some(expected), Some(new))
-        .await
+    txn.cas_bytes(
+        work_key(run_id, &running_record.id),
+        Some(expected),
+        Some(new),
+    )
+    .await
 }
 
 /// CAS-transition a `Running` item back to `Pending` so a fresh worker re-claims.
@@ -159,8 +166,12 @@ pub async fn try_repending(
     let mut next = running_record.clone();
     next.state = WorkState::Pending;
     let new = encode_record(&next)?;
-    txn.cas_bytes(work_key(run_id, &running_record.id), Some(expected), Some(new))
-        .await
+    txn.cas_bytes(
+        work_key(run_id, &running_record.id),
+        Some(expected),
+        Some(new),
+    )
+    .await
 }
 
 #[cfg(test)]
@@ -207,7 +218,9 @@ mod tests {
 
         // claim
         let mut txn = storage.begin().await.unwrap();
-        assert!(try_claim(&mut txn, &run_id, &rec, worker_id, 1_000).await.unwrap());
+        assert!(try_claim(&mut txn, &run_id, &rec, worker_id, 1_000)
+            .await
+            .unwrap());
         txn.commit().await.unwrap();
 
         let running = WorkItemRecord {
@@ -219,11 +232,17 @@ mod tests {
         };
         let result_id = ContentId::of(b"result-1");
         let mut txn = storage.begin().await.unwrap();
-        assert!(try_complete(&mut txn, &run_id, &running, result_id).await.unwrap());
+        assert!(try_complete(&mut txn, &run_id, &running, result_id)
+            .await
+            .unwrap());
         txn.commit().await.unwrap();
 
         // final scan reads Done exactly once
-        let bytes = storage.get_bytes(&work_key(&run_id, &id)).await.unwrap().unwrap();
+        let bytes = storage
+            .get_bytes(&work_key(&run_id, &id))
+            .await
+            .unwrap()
+            .unwrap();
         let final_rec: WorkItemRecord = postcard::from_bytes(&bytes).unwrap();
         assert_eq!(final_rec.state, WorkState::Done { result_id });
     }
@@ -248,7 +267,10 @@ mod tests {
         let second = try_claim(&mut txn, &run_id, &rec, w2, 1_500).await.unwrap();
         txn.abort().await.unwrap();
 
-        assert!(first && !second, "exactly one claim must win (single-winner)");
+        assert!(
+            first && !second,
+            "exactly one claim must win (single-winner)"
+        );
     }
 
     #[tokio::test]
@@ -266,9 +288,16 @@ mod tests {
         let mut txn = storage.begin().await.unwrap();
         let repended = try_repending(&mut txn, &run_id, &done).await.unwrap();
         txn.abort().await.unwrap();
-        assert!(!repended, "try_repending on a Done record must return false");
+        assert!(
+            !repended,
+            "try_repending on a Done record must return false"
+        );
 
-        let bytes = storage.get_bytes(&work_key(&run_id, &id)).await.unwrap().unwrap();
+        let bytes = storage
+            .get_bytes(&work_key(&run_id, &id))
+            .await
+            .unwrap()
+            .unwrap();
         let cur: WorkItemRecord = postcard::from_bytes(&bytes).unwrap();
         assert_eq!(cur.state, WorkState::Done { result_id }, "state unchanged");
     }

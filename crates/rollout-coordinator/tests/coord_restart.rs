@@ -81,7 +81,11 @@ async fn replay_reconstructs_in_flight() {
         Some(w1),
         "Running item reconstructed as in-flight under its owning worker"
     );
-    assert_eq!(state.pending, vec![y], "Pending item collected for dispatch");
+    assert_eq!(
+        state.pending,
+        vec![y],
+        "Pending item collected for dispatch"
+    );
     assert_eq!(state.terminal, 1, "Done item skipped as terminal");
 
     // X is STILL Running(w1) on disk — the replayer did not requeue it.
@@ -114,7 +118,11 @@ async fn replayer_adopts_advanced_epoch() {
     assert_eq!(held_a.epoch.0, 0);
     tokio::time::sleep(short + Duration::from_millis(20)).await;
     let b = WorkerId(ulid::Ulid::new());
-    let held_b = lease.try_acquire(b, short).await.unwrap().expect("B steals");
+    let held_b = lease
+        .try_acquire(b, short)
+        .await
+        .unwrap()
+        .expect("B steals");
     assert_eq!(held_b.epoch.0, 1, "steal advanced epoch to 1");
     // Let B's lease expire so a fresh replayer can win.
     tokio::time::sleep(short + Duration::from_millis(20)).await;
@@ -161,7 +169,9 @@ async fn coord_restart_no_duplicates() {
         let rec = pending(*id);
         let mut txn = sim.storage.begin().await.unwrap();
         assert!(
-            work_item::try_claim(&mut txn, &sim.run_id, &rec, w, 100).await.unwrap(),
+            work_item::try_claim(&mut txn, &sim.run_id, &rec, w, 100)
+                .await
+                .unwrap(),
             "claim wins"
         );
         txn.commit().await.unwrap();

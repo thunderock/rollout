@@ -103,7 +103,9 @@ pub async fn handle_steal_request(
     let mut victim_items: Vec<WorkItemRecord> = entries
         .into_iter()
         .filter_map(|(_, bytes)| decode(&bytes).ok())
-        .filter(|rec| matches!(rec.state, WorkState::Running { worker_id, .. } if worker_id == victim))
+        .filter(
+            |rec| matches!(rec.state, WorkState::Running { worker_id, .. } if worker_id == victim),
+        )
         .collect();
     victim_items.sort_by(|a, b| a.id.0.cmp(&b.id.0));
 
@@ -191,8 +193,18 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(stolen.len(), 4, "ceil(7/2) = 4 items stolen");
-        assert_eq!(ledger::backlog(storage.as_ref(), &run_id, thief).await.unwrap(), 4);
-        assert_eq!(ledger::backlog(storage.as_ref(), &run_id, victim).await.unwrap(), 3);
+        assert_eq!(
+            ledger::backlog(storage.as_ref(), &run_id, thief)
+                .await
+                .unwrap(),
+            4
+        );
+        assert_eq!(
+            ledger::backlog(storage.as_ref(), &run_id, victim)
+                .await
+                .unwrap(),
+            3
+        );
 
         // 100 items -> capped at MAX_STEAL_BATCH (32).
         let storage2 = open().await;
@@ -221,7 +233,12 @@ mod tests {
             .unwrap();
         assert!(stolen.is_empty(), "a non-idle thief steals nothing");
         // Victim untouched.
-        assert_eq!(ledger::backlog(storage.as_ref(), &run_id, victim).await.unwrap(), 6);
+        assert_eq!(
+            ledger::backlog(storage.as_ref(), &run_id, victim)
+                .await
+                .unwrap(),
+            6
+        );
     }
 
     #[tokio::test]
@@ -239,7 +256,11 @@ mod tests {
 
         // The stolen item is Running(thief), not Running(victim).
         let x = stolen[0];
-        let bytes = storage.get_bytes(&work_key(&run_id, &x)).await.unwrap().unwrap();
+        let bytes = storage
+            .get_bytes(&work_key(&run_id, &x))
+            .await
+            .unwrap()
+            .unwrap();
         let rec: WorkItemRecord = decode(&bytes).unwrap();
         assert!(
             matches!(rec.state, WorkState::Running { worker_id, .. } if worker_id == thief),

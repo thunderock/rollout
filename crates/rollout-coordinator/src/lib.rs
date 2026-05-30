@@ -8,12 +8,12 @@
 pub mod config;
 pub mod drain;
 pub mod emitter;
-pub mod failure_scan;
 pub mod epoch;
+pub mod failure_scan;
 pub mod fence;
 pub mod heartbeat;
-pub mod ledger;
 pub mod lease;
+pub mod ledger;
 pub mod mock_run;
 pub mod registry;
 pub mod run;

@@ -97,7 +97,9 @@ mod tests {
         let mut c = cfg();
         // Force renew cadence == TTL (no slack) -> rejected.
         c.transport.heartbeat_interval = c.transport.coordinator_failure_timeout;
-        let errs = c.validate().expect_err("renew cadence == TTL must be rejected");
+        let errs = c
+            .validate()
+            .expect_err("renew cadence == TTL must be rejected");
         assert!(errs.iter().any(|e| e.contains("renew cadence")));
     }
 }

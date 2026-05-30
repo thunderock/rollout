@@ -318,7 +318,9 @@ mod tests {
         let worker = WorkerId(Ulid::new());
 
         let mut txn = storage.begin().await.unwrap();
-        enqueue(&mut txn, &run_id, b"payload".to_vec()).await.unwrap();
+        enqueue(&mut txn, &run_id, b"payload".to_vec())
+            .await
+            .unwrap();
         txn.commit().await.unwrap();
 
         let mut txn = storage.begin().await.unwrap();

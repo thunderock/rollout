@@ -125,7 +125,9 @@ async fn spot_drain_completes_within_lead_time() {
     // SC3: drain runs stop-pull -> nack -> snapshot -> deregister -> exit and
     // completes within the (compressed) deadline. Run for BOTH AWS and GCP.
     for cfg in [DrainConfig::aws(), DrainConfig::gcp()] {
-        let hint = MockHint { lead: cfg.notice_lead };
+        let hint = MockHint {
+            lead: cfg.notice_lead,
+        };
         let queue = MockQueue::default();
         let snap = MockSnapshotter::default();
         let stop = Arc::new(AtomicBool::new(false));
@@ -168,7 +170,11 @@ async fn spot_drain_completes_within_lead_time() {
         );
         // Ordering proof: stop-pull set, all in-flight nacked, snapshot saved, deregistered.
         assert!(stop.load(Ordering::SeqCst), "stop-pull set first");
-        assert_eq!(queue.nacked.lock().unwrap().len(), 3, "all in-flight nacked");
+        assert_eq!(
+            queue.nacked.lock().unwrap().len(),
+            3,
+            "all in-flight nacked"
+        );
         assert_eq!(snap.saves.lock().unwrap().len(), 1, "one snapshot saved");
         assert_eq!(dereg_calls.load(Ordering::SeqCst), 1, "deregistered once");
     }
@@ -179,7 +185,9 @@ async fn drain_requeues_in_flight() {
     // In-flight items are nacked (lease nack -> Pending) so a surviving worker
     // re-claims them. The mock records each nacked id.
     let cfg = DrainConfig::aws();
-    let hint = MockHint { lead: cfg.notice_lead };
+    let hint = MockHint {
+        lead: cfg.notice_lead,
+    };
     let queue = MockQueue::default();
     let stop = Arc::new(AtomicBool::new(false));
     let in_flight = ids(5);
@@ -203,7 +211,11 @@ async fn drain_requeues_in_flight() {
     .unwrap();
 
     let nacked = queue.nacked.lock().unwrap();
-    assert_eq!(nacked.len(), 5, "every in-flight item nacked back to Pending");
+    assert_eq!(
+        nacked.len(),
+        5,
+        "every in-flight item nacked back to Pending"
+    );
     for id in &in_flight {
         assert!(nacked.contains(id), "in-flight id {id:?} was nacked");
     }
@@ -214,7 +226,9 @@ async fn drain_snapshot_skipped_when_budget_low() {
     // D-SPOT-03: when remaining_budget < snapshot_cost, the opportunistic
     // TrainState snapshot is skipped; lost work is requeued (nacked) and recomputed.
     let cfg = DrainConfig::gcp();
-    let hint = MockHint { lead: cfg.notice_lead };
+    let hint = MockHint {
+        lead: cfg.notice_lead,
+    };
     let queue = MockQueue::default();
     let snap = MockSnapshotter::default();
     let stop = Arc::new(AtomicBool::new(false));
@@ -244,7 +258,11 @@ async fn drain_snapshot_skipped_when_budget_low() {
         "snapshot skipped when budget < cost (D-SPOT-03)"
     );
     // Work is still nacked so it is recomputed by the next claimant.
-    assert_eq!(queue.nacked.lock().unwrap().len(), 2, "in-flight still requeued");
+    assert_eq!(
+        queue.nacked.lock().unwrap().len(),
+        2,
+        "in-flight still requeued"
+    );
 }
 
 #[tokio::test]
@@ -253,10 +271,18 @@ async fn drain_uses_two_numbers() {
     // lead (120/30) the cloud signal returns.
     let aws = DrainConfig::aws();
     assert_eq!(aws.notice_lead, Duration::from_secs(120), "AWS notice lead");
-    assert_eq!(aws.drain_deadline, Duration::from_secs(60), "AWS drain deadline");
+    assert_eq!(
+        aws.drain_deadline,
+        Duration::from_secs(60),
+        "AWS drain deadline"
+    );
     let gcp = DrainConfig::gcp();
     assert_eq!(gcp.notice_lead, Duration::from_secs(30), "GCP notice lead");
-    assert_eq!(gcp.drain_deadline, Duration::from_secs(15), "GCP drain deadline");
+    assert_eq!(
+        gcp.drain_deadline,
+        Duration::from_secs(15),
+        "GCP drain deadline"
+    );
     assert_ne!(
         aws.notice_lead, aws.drain_deadline,
         "the two numbers are distinct (notice lead != drain deadline)"
