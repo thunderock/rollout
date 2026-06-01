@@ -184,5 +184,6 @@ libc        = "0.2"
 # `default-features = false` drops `default-tls` (native-tls). parquet/arrow-array
 # stay at the STACK 55 cohort (rust_version 1.81 ≤ MSRV 1.91.1, exposes async+arrow).
 hf-hub      = { version = "0.4", default-features = false, features = ["tokio", "rustls-tls"] }
-parquet     = { version = "55", default-features = false, features = ["async", "arrow"] }
+parquet     = { version = "55", default-features = false, features = ["arrow"] }
 arrow-array = "55"
+regex       = "1.11"

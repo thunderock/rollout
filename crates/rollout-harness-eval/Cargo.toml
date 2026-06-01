@@ -11,16 +11,23 @@ description = "EvalHarness (HARNESS-03): bundled MMLU/IFEval/GSM8K, eval-as-Work
 workspace = true
 
 [dependencies]
-rollout-core = { path = "../rollout-core", version = "0.1" }
+rollout-core        = { path = "../rollout-core", version = "0.1" }
+rollout-coordinator = { path = "../rollout-coordinator", version = "0.1" }
 async-trait  = { workspace = true }
 serde        = { workspace = true }
 serde_json   = { workspace = true }
 postcard     = { workspace = true }
 smol_str     = { workspace = true }
-# Dataset loading (hf-hub/parquet/arrow-array) is wired in Wave-1 plan 07-03;
-# the workspace pins live in the root Cargo.toml [workspace.dependencies].
+chrono       = { workspace = true }
+tracing      = { workspace = true }
+regex        = { workspace = true }
+# Dataset loading — rustls-only, openssl-free (Pitfall G); proven by `cargo deny check bans`.
+hf-hub       = { workspace = true }
+parquet      = { workspace = true }
+arrow-array  = { workspace = true }
+bytes        = { workspace = true }
 
 [dev-dependencies]
-tokio  = { workspace = true, features = ["macros", "rt-multi-thread"] }
-chrono = { workspace = true }
-ulid   = { workspace = true }
+tokio   = { workspace = true, features = ["macros", "rt-multi-thread"] }
+ulid    = { workspace = true }
+blake3  = { workspace = true }
