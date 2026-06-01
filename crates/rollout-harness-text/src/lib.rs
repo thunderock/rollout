@@ -161,7 +161,7 @@ impl EnvHarness for TextCompletionEnv {
                 })
                 .await;
 
-            let Some((turn, max_turns, prompt, _nonce)) = snap else {
+            let Some((turn, max_turns, prompt, nonce)) = snap else {
                 // Per-episode error isolation (spec §7): other episodes unaffected.
                 out.push(StepResult {
                     episode_id,
@@ -184,7 +184,9 @@ impl EnvHarness for TextCompletionEnv {
                 observation: Observation(action_text),
                 reward,
                 done: turn >= max_turns,
-                info: serde_json::json!({ "turn": turn }),
+                // `nonce` is drawn from the seeded RNG, so the trajectory is a
+                // function of the seed (D-ENV-03 deterministic replay).
+                info: serde_json::json!({ "turn": turn, "nonce": nonce }),
             });
         }
         Ok(out)

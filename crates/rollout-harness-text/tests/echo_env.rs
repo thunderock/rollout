@@ -41,7 +41,10 @@ async fn echo_env_step_returns_canned_reward_in_input_order() {
     let results = env.step(batch).await.unwrap();
 
     assert_eq!(results.len(), 2);
-    assert_eq!(results[0].episode_id, episodes[0].id, "input order preserved");
+    assert_eq!(
+        results[0].episode_id, episodes[0].id,
+        "input order preserved"
+    );
     assert_eq!(results[0].observation.0, "x", "observation echoes action");
     assert!(
         (results[0].reward.unwrap().0 - 0.5).abs() < f32::EPSILON,

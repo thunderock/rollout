@@ -132,10 +132,7 @@ impl Storage for NoopStorage {
     async fn get_bytes(&self, _key: &StorageKey) -> Result<Option<Vec<u8>>, CoreError> {
         Ok(None)
     }
-    async fn get_many_bytes(
-        &self,
-        keys: &[StorageKey],
-    ) -> Result<Vec<Option<Vec<u8>>>, CoreError> {
+    async fn get_many_bytes(&self, keys: &[StorageKey]) -> Result<Vec<Option<Vec<u8>>>, CoreError> {
         Ok(vec![None; keys.len()])
     }
     async fn scan_bytes(&self, _range: KeyRange) -> Result<Vec<(StorageKey, Vec<u8>)>, CoreError> {
