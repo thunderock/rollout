@@ -98,14 +98,17 @@ impl Dataset {
     }
 }
 
-/// Returns `true` when offline mode is requested (the test default).
+/// Returns `true` when offline mode is in effect. Offline is the **default**
+/// (D-EVAL-01) so the vendored-fixture witnesses are always-on with no env setup;
+/// opt into network full-split downloads by setting `HF_OFFLINE=0`.
 #[must_use]
 pub fn is_offline() -> bool {
-    truthy("HF_OFFLINE") || truthy("HF_HUB_OFFLINE")
+    !online_requested("HF_OFFLINE") && !online_requested("HF_HUB_OFFLINE")
 }
 
-fn truthy(var: &str) -> bool {
-    std::env::var(var).is_ok_and(|v| v != "0" && !v.is_empty())
+/// `true` only when the var is explicitly set to a falsy value — the online opt-in.
+fn online_requested(var: &str) -> bool {
+    std::env::var(var).is_ok_and(|v| v == "0" || v.eq_ignore_ascii_case("false"))
 }
 
 /// Load a suite's dataset, offline-by-default from the vendored fixture.
@@ -149,7 +152,7 @@ pub fn load(suite: Suite, fixtures_dir: &Path) -> Result<Dataset, CoreError> {
 pub fn load_online(suite: Suite) -> Result<Dataset, CoreError> {
     let _api = hf_hub::api::tokio::ApiBuilder::new();
     Err(fatal(format!(
-        "online dataset download for {} requires HF network + ObjectStore cache (07-05); set HF_OFFLINE=1 to use the vendored fixture",
+        "online dataset download for {} requires HF network + ObjectStore cache (07-05); unset HF_OFFLINE=0 (offline is the default) to use the vendored fixture",
         suite.name()
     )))
 }
