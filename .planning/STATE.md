@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
-current_plan: Not started
-status: ready_to_plan
-stopped_at: Phase 7 context gathered
-last_updated: "2026-06-01T17:32:40.141Z"
+current_plan: 1
+status: unknown
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-06-01T20:38:38.712Z"
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 13
+  total_plans: 19
   completed_plans: 13
 ---
 
@@ -19,23 +19,8 @@ This file tracks current project state. Updated at phase transitions.
 
 ## Current Position
 
-Phase: 7
-Plan: 5 of 5 (06-04 — complete; ready for phase verification)
-
-**06-04 (smoke + PG lane + docs):** All 4 tasks complete. Tasks 1-3 committed;
-Task 4 `checkpoint:human-verify` APPROVED by operator (live-cloud operator-optional,
-deferred). SUMMARY at `06-04-SUMMARY.md`.
-
-| Task | Name | Commit | Status |
-|---|---|---|---|
-| 1 | 3-node smoke driver + Make targets + worker drain edge | `6faadea` | done |
-| 2 | Postgres-lease CAS witness (D-LEASE-01/02) | `6abb63a` | done |
-| 3 | mdBook multi-node distribution chapter | `dd3132f` | done |
-| 4 | Operator verification of the assembled runtime | — | **approved** (live-cloud deferred) |
-
-Phase 6 is the assembled multi-node runtime: lease/epoch fencing, work-stealing,
-stateless-replayer restart, spot-drain — witnessed Docker-free on every commit,
-exercised by the 3-node smoke, documented in the mdBook, operator-approved.
+Phase: 07 (harnesses-env-tool-eval) — EXECUTING
+Plan: 3 of 6
 
 ### Quick Tasks Completed
 
@@ -65,7 +50,7 @@ Wave 4 plan 02-05 (rollout-plugin-host) shipped 2026-05-20 (SUBSTR-03). `rollout
 
 Wave 3 complete (solo): plan 02-04 (rollout-transport) shipped 2026-05-20. `rollout-transport` ships HTTP/2 tonic 0.14 + rustls 0.23 + mTLS-by-default as the plan-of-record per RESEARCH (tonic-h3 v0.0.5 stays opt-in EXPERIMENTAL behind a `quic` Cargo feature). Three logical channels (Heartbeat unary, Control server-stream, Work bidi-stub) multiplex over one H/2 connection. mTLS auto-bootstraps via rcgen-generated dev CA under `./data/tls/` (chmod 600 on private keys). Plan-time `TransportConfig::validate_cross_fields` enforces split-brain prevention (`self_fence < coord_failure`) + clock-skew bound (`skew < 2×hb`) per D-TIME-02. Deadline-based health helpers (`next_due_at`, `is_failed`) match spec 05 §6. Substrate/transport mdBook chapter ships. Plans 02-05 (rollout-plugin-host), 02-06 (rollout-coordinator), 02-07 (smoke + docs + CI) pending.
 
-**Current Plan:** Not started
+**Current Plan:** 1
 **Last completed plan:** 04-07-examples-docs-smoke (2026-05-22) — Wave 5, Phase-4 closeout: examples (`examples/{batch,sft,rm}-tiny.toml`), smoke recipes, mdBook polish, optional `train-smoke` / `infer-smoke` CI jobs gated on live-env vars. Closed Phase 4 and the v1.0 milestone.
 
 **Phase 2 — Local substrate is COMPLETE.** All four exit criteria satisfied: embedded `Storage` (redb 2.x; 02-02), gRPC transport with deadline-based heartbeats (HTTP/2 plan-of-record + QUIC EXPERIMENTAL; 02-04), `rollout-plugin-host` with cdylib + PyO3 + sidecar modes + hot-reload (02-05), `rollout-cloud-local` (02-03), and `make smoke` end-to-end (02-07). `cargo test --workspace --tests` reports 103 passing + 4 ignored (env-gated). Architecture-lint now enforces 4 invariants. CI grew to 12 jobs.
@@ -182,6 +167,8 @@ Optional cleanup: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Ny
 | Phase 06 P02 | 6min | 3 tasks | 5 files |
 | Phase 06 P03 | 15min | 3 tasks | 11 files |
 | Phase 06-multi-node-distribution P04 | 7min | 4 tasks | 12 files |
+| Phase 07 P00 | 10min | 3 tasks | 13 files |
+| Phase 07 P01 | 25min | 2 tasks | 9 files |
 
 ## Decisions
 
@@ -315,11 +302,16 @@ Optional cleanup: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Ny
 - [Phase 06]: DIST-04 spot-drain: two-number DrainConfig (notice lead 120/30 vs drain deadline 60/15); drain consumes preemption_signal via ComputeHint trait only (coord ↛ cloud); spot_drain_completes_within_lead_time (SC3) green
 - [Phase 06-multi-node-distribution]: 06-04: PG lease witness targets the LeaseRecord CAS primitive (rollout-core types only) via Postgres cas_bytes, not StorageLease — keeps rollout-storage independent of the coordinator crate while proving the dual-backed lease (D-LEASE-01)
 - [Phase 06-multi-node-distribution]: 06-04: 3-node smoke is local-transport-by-default (Docker-free wiring check); live-cloud gates behind ROLLOUT_SMOKE_CLOUD=1 as the operator-optional path. Every-commit witnesses are the load-bearing gate
+- [Phase 07]: hf-hub bumped 0.3->0.4 (0.3 has no rustls-tls; openssl ban)
+- [Phase 07]: Harness traits gained associated Settings type -> no longer object-safe; Send+Sync via generic bounds
+- [Phase 07]: Eval-dataset deps declared in workspace.deps but unconsumed in Wave 0; 07-03 owns openssl-free proof
+- [Phase 07]: 07-01: inline SplitMix64 RNG (no rand dep) for per-episode seeded determinism (seed XOR episode_index)
+- [Phase 07]: 07-01: reward via plugin host (D-ENV-03) — postcard RewardInput → call(score) → Reward; decode failure → Fatal(PluginContract)
 
 ## Last Session
 
-- **Last session:** 2026-06-01T17:32:40.136Z
-- **Stopped at:** Phase 7 context gathered
+- **Last session:** 2026-06-01T20:38:30.921Z
+- **Stopped at:** Completed 07-01-PLAN.md
 
 ## Things Not To Forget
 

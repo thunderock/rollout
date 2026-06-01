@@ -67,9 +67,9 @@ Research artifacts under `.planning/research/` (STACK / FEATURES / ARCHITECTURE 
 
 ### Harnesses (`HARNESS-*`)
 
-- [ ] **HARNESS-01** _[v1.1]_ — `rollout-harness-text`: text-completion env (`Observation = prompt`, `Action = completion`); reset / step / close on batches; reward via plugin host. Deterministic-replay witness.
-- [ ] **HARNESS-02** _[v1.1]_ — `rollout-harness-tool` with sandboxed tools: `python_exec`, `shell`, `file_read`, `file_write`, `http_get`, `http_post`. Layered defense: rustix namespaces + landlock (kernel ≥5.13) + seccompiler allowlist + cap-std capability FS + cgroups v2 (memory.max / pids.max). Linux full; macOS = dev-only stub. **Out of scope:** gVisor/Firecracker. Needs strace-derived seccomp baseline before planning.
-- [ ] **HARNESS-03** _[v1.1]_ — `rollout-harness-eval` (renamed from `rollout-evals` per dep-direction lint symmetry) with bundled MMLU, IFEval, GSM8K; hash-pinned vendored fixtures + hf-hub runtime download; offline-mode default; `EvalHarness` trait open for user plugins. Score parity vs lm-eval-harness ≤1%.
+- [x] **HARNESS-01** _[v1.1]_ — `rollout-harness-text`: text-completion env (`Observation = prompt`, `Action = completion`); reset / step / close on batches; reward via plugin host. Deterministic-replay witness.
+- [x] **HARNESS-02** _[v1.1]_ — `rollout-harness-tool` with sandboxed tools: `python_exec`, `shell`, `file_read`, `file_write`, `http_get`, `http_post`. Layered defense: rustix namespaces + landlock (kernel ≥5.13) + seccompiler allowlist + cap-std capability FS + cgroups v2 (memory.max / pids.max). Linux full; macOS = dev-only stub. **Out of scope:** gVisor/Firecracker. Needs strace-derived seccomp baseline before planning.
+- [x] **HARNESS-03** _[v1.1]_ — `rollout-harness-eval` (renamed from `rollout-evals` per dep-direction lint symmetry) with bundled MMLU, IFEval, GSM8K; hash-pinned vendored fixtures + hf-hub runtime download; offline-mode default; `EvalHarness` trait open for user plugins. Score parity vs lm-eval-harness ≤1%.
 - [ ] **HARNESS-04** _[deferred v1.2+]_ — Eval gate: training run can pause, run an eval, decide continue vs stop based on policy. _(Needs algo + dist + harness coupling; lands with RL training context.)_
 
 ### Inference (`INFER-*`)
