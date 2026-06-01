@@ -38,6 +38,7 @@ rollout-plugin-host  = { path = "../rollout-plugin-host",   version = "0.1" }
 rollout-proto        = { path = "../rollout-proto",         version = "0.1" }
 rollout-cloud-local  = { path = "../rollout-cloud-local",   version = "0.1" }
 rollout-runtime-batch = { path = "../rollout-runtime-batch", version = "0.1" }
+rollout-harness-eval = { path = "../rollout-harness-eval",   version = "0.1" }
 rollout-backend-vllm = { path = "../rollout-backend-vllm",  version = "0.1" }
 rollout-algo-sft     = { path = "../rollout-algo-sft",      version = "0.1" }
 rollout-algo-rm      = { path = "../rollout-algo-rm",       version = "0.1" }

@@ -13,6 +13,7 @@ use std::process::ExitCode;
 
 mod cloud_factory;
 mod commands;
+mod eval;
 mod infer;
 mod infer_config;
 mod snapshot;
@@ -50,6 +51,8 @@ enum Cmd {
     Train(train::TrainCmd),
     /// Snapshot subcommand group (Phase-4: list, show, prune).
     Snapshot(snapshot::SnapshotCmd),
+    /// Eval subcommand: run a bundled suite against a checkpoint (Phase-7, D-EVAL-02).
+    Eval(eval::EvalCmd),
     /// Cloud diagnostics and pre-flight checks (Phase-5: doctor).
     Cloud(CloudCmd),
 }
@@ -124,8 +127,26 @@ fn main() -> ExitCode {
         Cmd::Infer(c) => infer_dispatch(c),
         Cmd::Train(c) => train_dispatch(c),
         Cmd::Snapshot(c) => snapshot_dispatch(c),
+        Cmd::Eval(c) => eval_dispatch(c),
         Cmd::Cloud(c) => cloud_dispatch(c),
     }
+}
+
+fn eval_dispatch(cmd: eval::EvalCmd) -> ExitCode {
+    init_tracing();
+    let Ok(rt) = tokio::runtime::Runtime::new() else {
+        eprintln!("failed to start tokio runtime");
+        return ExitCode::from(2);
+    };
+    rt.block_on(async move {
+        match eval::run_eval(&cmd).await {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("eval exit: {e}");
+                ExitCode::from(2)
+            }
+        }
+    })
 }
 
 fn cloud_dispatch(cmd: CloudCmd) -> ExitCode {

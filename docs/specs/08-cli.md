@@ -40,6 +40,7 @@ rollout plan        Validate + load plugins + reach substrate → emit plan.lock
 rollout run         Execute a plan
 rollout train       (Convenience) plan + run for a training config
 rollout infer       (Convenience) plan + run for an inference config
+rollout eval        Run a bundled eval suite against a checkpoint (D-EVAL-02)
 rollout snapshot    Snapshot ops
 rollout runs        Read-only run queries
 rollout logs        Tail / search structured logs
@@ -96,7 +97,7 @@ Output (success):
 ✓ Storage reachable: postgres://...
 ✓ Object store reachable: s3://my-rollout/
 ✓ Queue reachable: sqs://...
-✓ Harness DAG: acyclic, 3 nodes
+✓ Harness DAG: acyclic, 3 nodes    [†]
 ✓ Resources fit: 4 GPUs (have 8), 32 GiB RAM (have 256)
 ✓ Plan written: ./plan.lock  (id: plan-01HX3Q...)
 ```
@@ -105,6 +106,11 @@ Exit codes match `validate` plus:
 
 - `66` (`EX_NOINPUT`) — plugin not found
 - `69` (`EX_UNAVAILABLE`) — substrate unreachable
+
+> [†] **Harness DAG validation is deferred to v1.2 (D-CORE-02).** v1.1 ships the
+> three harnesses standalone (no env↔tool edges to validate); the `HarnessGraph`
+> composition config + plan-time acyclicity check land with the composed harness
+> work in v1.2. The line above is forward-looking, not yet enforced.
 
 ### `rollout run`
 
@@ -148,8 +154,23 @@ rollout train rm --config rm.toml
 ```bash
 rollout infer batch  --config batch-infer.toml
 rollout infer online --config serve.toml
-rollout infer eval   --config eval-suite.toml --checkpoint <snapshot-id>
 ```
+
+### `rollout eval`
+
+Top-level sibling to `infer`/`train`/`snapshot` (D-EVAL-02). Runs a bundled eval
+suite against a checkpoint and emits per-task scores + aggregate metrics.
+
+```bash
+rollout eval --suite mmlu --checkpoint <snapshot-id>
+rollout eval --suite gsm8k --checkpoint <snapshot-id> --format json
+rollout eval --suite ifeval --checkpoint <snapshot-id> --dry-run
+```
+
+Flags: `--suite <mmlu|ifeval|gsm8k>`, `--checkpoint <snapshot-id>` (resolved from
+local storage to a `ModelRef`, else treated as a content-id pin), `--config <toml>`
+(optional), `--dry-run` (validate + resolve, no backend), `--format json`.
+Eval runs as `WorkQueue` jobs (D-EVAL-05); offline-default fixtures (`HF_OFFLINE=1`).
 
 ### `rollout snapshot`
 

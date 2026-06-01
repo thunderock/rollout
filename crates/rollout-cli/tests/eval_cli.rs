@@ -44,9 +44,21 @@ fn eval_dry_run_no_backend() {
     // 64-hex blake3-shaped id; dry-run pins it into ModelRef.content_id without
     // a snapshot lookup (no --storage-path given → treat as a direct content id).
     let cid = "0".repeat(64);
+    let tmp = tempfile::tempdir().unwrap();
     Command::cargo_bin("rollout")
         .unwrap()
-        .args(["eval", "--suite", "mmlu", "--checkpoint", &cid, "--dry-run"])
+        .args([
+            "eval",
+            "--suite",
+            "mmlu",
+            "--checkpoint",
+            &cid,
+            "--storage-path",
+            tmp.path().join("rollout.db").to_str().unwrap(),
+            "--object-path",
+            tmp.path().join("object-store").to_str().unwrap(),
+            "--dry-run",
+        ])
         .assert()
         .success()
         .stdout(predicate::str::contains("dry-run").and(predicate::str::contains("mmlu")));
@@ -59,6 +71,7 @@ fn eval_dry_run_no_backend() {
 #[test]
 fn eval_dispatch_mock_backend_json() {
     let cid = "0".repeat(64);
+    let tmp = tempfile::tempdir().unwrap();
     let out = Command::cargo_bin("rollout")
         .unwrap()
         .env("HF_OFFLINE", "1")
@@ -69,6 +82,10 @@ fn eval_dispatch_mock_backend_json() {
             "gsm8k",
             "--checkpoint",
             &cid,
+            "--storage-path",
+            tmp.path().join("rollout.db").to_str().unwrap(),
+            "--object-path",
+            tmp.path().join("object-store").to_str().unwrap(),
             "--format",
             "json",
         ])

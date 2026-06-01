@@ -4654,6 +4654,7 @@ dependencies = [
  "rollout-cloud-local",
  "rollout-coordinator",
  "rollout-core",
+ "rollout-harness-eval",
  "rollout-plugin-host",
  "rollout-proto",
  "rollout-runtime-batch",
