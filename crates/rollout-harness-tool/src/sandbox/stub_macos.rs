@@ -3,13 +3,26 @@
 //! The Linux enforcement primitives (namespaces/landlock/seccomp/cgroups) do not
 //! exist on darwin, so the whole sandbox module compiles to this stub. The
 //! sandboxed [`launch`] returns the documented Fatal verbatim. There is NO
-//! `allow_unsandboxed` escape hatch (rejected, D-TOOL-05) — Linux is the only
+//! unsandboxed-run escape hatch (rejected, D-TOOL-05) — Linux is the only
 //! enforced surface.
 
 use std::path::PathBuf;
 use std::time::Duration;
 
 use rollout_core::{CoreError, FatalError};
+
+/// Resource limits (stub mirror of the Linux `launcher::Rlimits`).
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Rlimits {
+    /// `RLIMIT_CPU` seconds.
+    pub cpu_secs: u64,
+    /// `RLIMIT_AS` bytes.
+    pub as_bytes: u64,
+    /// `RLIMIT_NOFILE` open-fd cap.
+    pub nofile: u64,
+    /// `RLIMIT_NPROC` process/thread cap.
+    pub nproc: u64,
+}
 
 /// A request to run an allowlisted binary under the sandbox (stub mirror of the
 /// Linux [`launcher::ExecRequest`](super)).
@@ -21,6 +34,14 @@ pub struct ExecRequest {
     pub argv: Vec<String>,
     /// Per-invocation wall-clock budget.
     pub timeout: Duration,
+    /// Per-invocation tempdir.
+    pub tempdir: PathBuf,
+    /// Resource limits.
+    pub rlimits: Rlimits,
+    /// cgroup `memory.max`, if available.
+    pub memory_max: Option<u64>,
+    /// cgroup `pids.max`, if available.
+    pub pids_max: Option<u64>,
 }
 
 /// Result of a sandboxed exec (unreachable on macOS — `launch` errors first).

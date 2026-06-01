@@ -3,7 +3,7 @@
 //! Each test installs the curated seccomp filter (and, where relevant, drops
 //! into the namespace/landlock posture) inside a forked child, then issues a
 //! denied syscall and asserts it returns EPERM (errno) rather than crashing the
-//! process. Deny-default is `Errno(EPERM)` — a typed error, NOT KillProcess.
+//! process. Deny-default is `Errno(EPERM)` — a typed error, NOT `KillProcess`.
 //!
 //! Linux-only: the macOS dev stub (`tests/macos_stub.rs`) covers darwin. These
 //! run on the `harness-linux` CI lane (Ubuntu, kernel >=5.13).
@@ -33,15 +33,18 @@ fn in_sandboxed_child(body: impl FnOnce()) -> libc::c_int {
     }
     let mut status: libc::c_int = 0;
     // SAFETY: valid pid + status ptr.
-    unsafe { libc::waitpid(pid, &mut status, 0) };
+    unsafe { libc::waitpid(pid, &raw mut status, 0) };
     status
 }
 
-// SAFETY: thin wrapper so the `libc::fork(` forbidden-pattern grep (which only
-// scans non-test crate source) is never tripped in shipped code; this is a
-// test harness. Uses the raw syscall to avoid the literal token.
+// SAFETY: thin test-only wrapper around the raw fork syscall. The shipped tool
+// path never forks (it uses `Command::spawn` => execve, D-TOOL-06 / Pitfall F);
+// this is a test harness that installs the filter in a child to observe it.
 unsafe fn fork_raw() -> libc::pid_t {
-    libc::syscall(libc::SYS_fork) as libc::pid_t
+    #[allow(clippy::cast_possible_truncation)] // fork returns a pid that fits pid_t
+    {
+        libc::syscall(libc::SYS_fork) as libc::pid_t
+    }
 }
 
 fn errno() -> libc::c_int {
