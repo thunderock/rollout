@@ -11,8 +11,6 @@
 //! are included so `seccomp_python_runs` passes — the positive proxy for the
 //! real strace spike.
 
-#![cfg(target_os = "linux")]
-
 use seccompiler::{
     BpfProgram, SeccompAction, SeccompCmpArgLen, SeccompCmpOp, SeccompCondition, SeccompFilter,
     SeccompRule,

@@ -7,9 +7,17 @@
 //! cgroup / capfs modules land in Task 2.
 
 #[cfg(target_os = "linux")]
+pub mod capfs;
+#[cfg(target_os = "linux")]
+pub mod cgroup;
+#[cfg(target_os = "linux")]
+pub mod launcher;
+#[cfg(target_os = "linux")]
 pub mod seccomp;
+#[cfg(target_os = "linux")]
+pub use launcher::{launch, ExecRequest, ExecResult, Rlimits};
 
 #[cfg(not(target_os = "linux"))]
 pub mod stub_macos;
 #[cfg(not(target_os = "linux"))]
-pub use stub_macos::{launch, ExecRequest, ExecResult};
+pub use stub_macos::{launch, ExecRequest, ExecResult, Rlimits};

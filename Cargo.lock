@@ -4397,15 +4397,18 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "cap-std",
+ "futures",
  "landlock",
  "libc",
  "rollout-core",
  "rustix",
+ "schemars 1.2.1",
  "seccompiler",
  "serde",
  "serde_json",
  "tempfile",
  "tokio",
+ "ulid",
 ]
 
 [[package]]

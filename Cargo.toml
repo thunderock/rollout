@@ -169,7 +169,7 @@ webpki-roots           = "1.0"
 # rollout-harness-tool. Pins verified against crates.io 2026-06-01: all four are
 # the current max-stable and match STACK (rustix 1.1.4 / landlock 0.4.5 /
 # seccompiler 0.5.0 / cap-std 4.0.2).
-rustix      = { version = "=1.1.4", features = ["process", "fs", "thread", "stdio"] }
+rustix      = { version = "=1.1.4", features = ["process", "fs", "thread", "stdio", "system"] }
 landlock    = "=0.4.5"
 seccompiler = "=0.5.0"
 cap-std     = "=4.0.2"

@@ -22,11 +22,20 @@ pedantic = { level = "warn", priority = -1 }
 missing_errors_doc = "allow"
 module_name_repetitions = "allow"
 
+[features]
+default = ["all-tools"]
+all-tools = ["python_exec", "shell", "file_read", "file_write"]
+python_exec = []
+shell = []
+file_read = []
+file_write = []
+
 [dependencies]
 rollout-core = { path = "../rollout-core", version = "0.1" }
 async-trait  = { workspace = true }
 serde        = { workspace = true }
 serde_json   = { workspace = true }
+schemars     = { workspace = true }
 
 # Linux-only sandbox primitives (HARNESS-02). macOS compiles to a stub, so these
 # stay platform-gated; Wave-1 plan 07-02 wires the launcher/seccomp/cgroup code.
@@ -39,7 +48,10 @@ libc        = { workspace = true }
 tempfile    = { workspace = true }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio       = { workspace = true, features = ["macros", "rt-multi-thread"] }
+async-trait = { workspace = true }
+ulid        = { workspace = true }
+futures     = { workspace = true }
 
 # Linux-only test deps: raw syscalls / fork to observe seccomp enforcement.
 [target.'cfg(target_os = "linux")'.dev-dependencies]
