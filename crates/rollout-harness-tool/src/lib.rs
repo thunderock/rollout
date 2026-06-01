@@ -1,19 +1,22 @@
 //! `rollout-harness-tool` (HARNESS-02) — sandboxed [`ToolHarness`].
 //!
-//! Four non-HTTP tools (`python_exec`, `shell`, `file_read`, `file_write`) behind
-//! a best-effort layered Linux sandbox (namespaces + `setrlimit` + landlock +
-//! seccomp + cgroups v2). On macOS the crate compiles to a dev stub whose
+//! Six tools: `python_exec`, `shell`, `file_read`, `file_write` behind a
+//! best-effort layered Linux sandbox (namespaces + `setrlimit` + landlock +
+//! seccomp + cgroups v2), plus `http_get` / `http_post` backed by an in-process
+//! SSRF-filtered hyper connector (post-DNS IP filter + IP pinning + per-redirect
+//! re-filter). On macOS the exec/file sandbox compiles to a dev stub whose
 //! `invoke` returns `Fatal::ConfigInvalid("sandbox unavailable on macOS — dev
-//! stub")` (D-TOOL-05) — Linux is the only enforced surface. The HTTP tools +
-//! SSRF connector land in 07-04.
+//! stub")` (D-TOOL-05) — Linux is the only enforced surface for exec/file tools;
+//! the HTTP tools run on both lanes (in-process, not a syscall sandbox).
 //!
 //! This crate overrides the workspace `unsafe_code = forbid` to `deny` (see
 //! Cargo.toml) so the syscall/sandbox boundary can opt in with
 //! `#[allow(unsafe_code)]`.
 //!
 //! Threat boundary (D-TOOL-08): these tools defend against ACCIDENTAL damage;
-//! they are NOT a security perimeter for actively malicious code. gVisor /
-//! Firecracker microVM isolation is out of scope (v1.2+).
+//! they are NOT a security perimeter for actively malicious code. The sandbox is
+//! process-isolated, NOT VM-isolated; gVisor / Firecracker microVM isolation is
+//! out of scope (v1.2+). See `README.md` for the full sandbox-depth matrix.
 
 use std::collections::BTreeMap;
 use std::net::IpAddr;
