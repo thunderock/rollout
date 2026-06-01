@@ -24,11 +24,15 @@ module_name_repetitions = "allow"
 
 [features]
 default = ["all-tools"]
-all-tools = ["python_exec", "shell", "file_read", "file_write"]
+all-tools = ["python_exec", "shell", "file_read", "file_write", "http_get", "http_post"]
 python_exec = []
 shell = []
 file_read = []
 file_write = []
+# HTTP tools share the SSRF-filtered hyper connector (07-04); platform-independent.
+http = ["dep:hyper", "dep:hyper-util", "dep:http", "dep:http-body-util", "dep:rustls", "dep:tokio", "dep:tokio-rustls", "dep:webpki-roots"]
+http_get = ["http"]
+http_post = ["http"]
 
 [dependencies]
 rollout-core = { path = "../rollout-core", version = "0.1" }
@@ -36,6 +40,19 @@ async-trait  = { workspace = true }
 serde        = { workspace = true }
 serde_json   = { workspace = true }
 schemars     = { workspace = true }
+
+# HTTP egress (http_get/http_post) — hyper 1.x + tokio-rustls + rustls 0.23.
+# The high-level client crate is deliberately avoided (it auto-follows redirects
+# with no per-hop IP-refilter hook); NO openssl (rustls-only, cargo-deny ban).
+# Platform-independent (in-process).
+hyper          = { version = "1", features = ["client", "http1"], optional = true }
+hyper-util     = { workspace = true, optional = true }
+http           = { version = "1", optional = true }
+http-body-util = { workspace = true, optional = true }
+rustls         = { workspace = true, optional = true }
+tokio          = { workspace = true, features = ["net", "io-util", "time", "rt"], optional = true }
+tokio-rustls   = { workspace = true, optional = true }
+webpki-roots   = { workspace = true, optional = true }
 
 # Linux-only sandbox primitives (HARNESS-02). macOS compiles to a stub, so these
 # stay platform-gated; Wave-1 plan 07-02 wires the launcher/seccomp/cgroup code.
@@ -48,7 +65,7 @@ libc        = { workspace = true }
 tempfile    = { workspace = true }
 
 [dev-dependencies]
-tokio       = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio       = { workspace = true, features = ["macros", "rt-multi-thread", "net", "io-util", "time"] }
 async-trait = { workspace = true }
 ulid        = { workspace = true }
 futures     = { workspace = true }

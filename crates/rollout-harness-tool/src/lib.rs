@@ -16,6 +16,7 @@
 //! Firecracker microVM isolation is out of scope (v1.2+).
 
 use std::collections::BTreeMap;
+use std::net::IpAddr;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -28,6 +29,8 @@ use rollout_core::{CoreError, FatalError};
 use schemars::JsonSchema;
 use serde::Deserialize;
 
+#[cfg(feature = "http")]
+pub mod http;
 pub mod sandbox;
 pub mod tools;
 
@@ -95,6 +98,13 @@ pub struct ToolSettings {
     pub cgroup_memory_max: Option<u64>,
     /// cgroup `pids.max` (degrade-with-warning if no delegated tree).
     pub cgroup_pids_max: Option<u64>,
+    /// Enable `http_get` (SSRF-filtered network egress).
+    pub enable_http_get: bool,
+    /// Enable `http_post`.
+    pub enable_http_post: bool,
+    /// Egress IP allowlist for the HTTP tools (defends split-horizon DNS). Empty
+    /// = block-list only (private/link-local/IMDS/loopback/CGNAT always blocked).
+    pub egress_allowlist: Vec<IpAddr>,
 }
 
 impl Default for ToolSettings {
@@ -114,6 +124,9 @@ impl Default for ToolSettings {
             rlimit_nproc: 64,
             cgroup_memory_max: Some(512 * 1024 * 1024),
             cgroup_pids_max: Some(64),
+            enable_http_get: true,
+            enable_http_post: true,
+            egress_allowlist: Vec::new(),
         }
     }
 }
@@ -173,7 +186,31 @@ impl ToolHarnessImpl {
                 t,
             ));
         }
+        if cfg!(feature = "http_get") && self.settings.enable_http_get {
+            v.push(spec(
+                "http_get",
+                "HTTP GET via the SSRF-filtered connector",
+                SideEffectClass::Network,
+                t,
+            ));
+        }
+        if cfg!(feature = "http_post") && self.settings.enable_http_post {
+            v.push(spec(
+                "http_post",
+                "HTTP POST via the SSRF-filtered connector",
+                SideEffectClass::Network,
+                t,
+            ));
+        }
         v
+    }
+
+    #[cfg(feature = "http")]
+    fn egress(&self) -> http::EgressConfig {
+        http::EgressConfig {
+            allowlist: std::sync::Arc::new(self.settings.egress_allowlist.clone()),
+            allow_loopback: false, // production: loopback SSRF blocked
+        }
     }
 }
 
@@ -324,6 +361,70 @@ impl ToolHarness for ToolHarnessImpl {
     }
 
     async fn invoke(&self, calls: Vec<ToolCall>) -> Result<Vec<ToolResult>, CoreError> {
-        Ok(calls.iter().map(|c| dispatch(self, c)).collect())
+        let mut results = Vec::with_capacity(calls.len());
+        for call in &calls {
+            let is_http = matches!(call.tool.as_str(), "http_get" | "http_post");
+            if is_http {
+                results.push(self.dispatch_http(call).await);
+            } else {
+                results.push(dispatch(self, call));
+            }
+        }
+        Ok(results)
+    }
+}
+
+impl ToolHarnessImpl {
+    /// Async dispatch for the SSRF-filtered HTTP tools (platform-independent).
+    #[cfg(feature = "http")]
+    async fn dispatch_http(&self, call: &ToolCall) -> ToolResult {
+        use http::{HttpError, Resolver, StdResolver};
+
+        let started = Instant::now();
+        let timeout = self.timeout();
+        let egress = self.egress();
+        let resolver: &dyn Resolver = &StdResolver;
+
+        let out: Result<serde_json::Value, HttpError> = match call.tool.as_str() {
+            #[cfg(feature = "http_get")]
+            "http_get" if self.settings.enable_http_get => {
+                tools::http_get::run(&call.args, &egress, resolver, timeout).await
+            }
+            #[cfg(feature = "http_post")]
+            "http_post" if self.settings.enable_http_post => {
+                tools::http_post::run(&call.args, &egress, resolver, timeout).await
+            }
+            other => {
+                return errored(call, format!("unknown or disabled tool: {other}"), started);
+            }
+        };
+
+        match out {
+            Ok(output) => ToolResult {
+                call_id: call.call_id,
+                outcome: ToolOutcome::Success,
+                output,
+                stderr: None,
+                duration: started.elapsed(),
+            },
+            Err(HttpError::TimedOut) => ToolResult {
+                call_id: call.call_id,
+                outcome: ToolOutcome::TimedOut,
+                output: serde_json::Value::Null,
+                stderr: Some(HttpError::TimedOut.to_string()),
+                duration: started.elapsed(),
+            },
+            Err(e) => errored(call, e.to_string(), started),
+        }
+    }
+
+    /// HTTP tools disabled at compile time: always the documented Fatal.
+    #[cfg(not(feature = "http"))]
+    async fn dispatch_http(&self, call: &ToolCall) -> ToolResult {
+        errored(
+            call,
+            "http tools not compiled in".to_owned(),
+            Instant::now(),
+        )
     }
 }

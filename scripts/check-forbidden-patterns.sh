@@ -21,8 +21,10 @@ check() {
     fi
 }
 
-# IMDSv1 raw URL (PITFALLS §3): allowed only in the AWS IMDS module.
-check "imds-aws-raw"     "169\.254\.169\.254"           '^(crates/rollout-cloud-aws/src/imds/|docs/|\.planning/|\.github/|scripts/check-forbidden-patterns\.sh)'
+# IMDSv1 raw URL (PITFALLS §3): allowed in the AWS IMDS module + the tool
+# harness HTTP SSRF filter/tests (it must NAME the IMDS address in order to
+# block it — the connector rejects it, the witnesses prove it).
+check "imds-aws-raw"     "169\.254\.169\.254"           '^(crates/rollout-cloud-aws/src/imds/|crates/rollout-harness-tool/src/http/|crates/rollout-harness-tool/tests/http_ssrf\.rs|docs/|\.planning/|\.github/|scripts/check-forbidden-patterns\.sh)'
 
 # GCP metadata raw URL (PITFALLS §3): allowed only in the GCP MDS module.
 check "metadata-gcp-raw" "metadata\.google\.internal"   '^(crates/rollout-cloud-gcp/src/mds/|docs/|\.planning/|\.github/|scripts/check-forbidden-patterns\.sh)'
