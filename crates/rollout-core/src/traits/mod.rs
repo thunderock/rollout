@@ -24,7 +24,12 @@ pub use cloud::{
     ComputeHint, ComputeInventory, GpuInfo, LeaseToken, ObjectStore, PutHint, Queue, QueueItemId,
     SecretStore,
 };
-pub use harness::{EnvHarness, EvalHarness, RewardModel, ToolHarness};
+pub use harness::{
+    Action, EnvHarness, Episode, EpisodeId, EpisodeStep, EvalContext, EvalDescriptor, EvalHarness,
+    EvalReport, HarnessDependencies, MetricSpec, MetricValue, Observation, ResourceEstimate,
+    Reward, SideEffectClass, StepResult, TaskResult, ToolCall, ToolCallId, ToolContext,
+    ToolDescriptor, ToolHarness, ToolOutcome, ToolResult, ToolSpec,
+};
 pub use lease::{CoordEpoch, CoordinatorLease, LeaseRecord};
 pub use observability::{Event, EventEmitter, EventKind, Level, SpanPhase};
 pub use plugin::{

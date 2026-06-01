@@ -11,9 +11,8 @@ use rollout_core::{
     EvalHarness, Event, EventEmitter, EventKind, GpuInfo, Heartbeat, InferenceBackend, KeyRange,
     Level, ModelRef, ObjectStore, Plugin, PluginDependencies, PluginHandle, PluginHost, PluginId,
     PluginKind, PluginManifest, PluginMode, PolicyAlgorithm, Prompt, PutHint, Queue, QueueItemId,
-    RewardModel, RuntimeHints, SamplingParams, Scheduler, SecretStore, SidecarProtocol,
-    Snapshotter, SpanPhase, Storage, StorageEvent, StorageKey, StorageTxn, ToolHarness, Worker,
-    WorkerRole, WorkerState,
+    RuntimeHints, SamplingParams, Scheduler, SecretStore, SidecarProtocol, Snapshotter, SpanPhase,
+    Storage, StorageEvent, StorageKey, StorageTxn, ToolHarness, Worker, WorkerRole, WorkerState,
 };
 use std::sync::Arc;
 
@@ -41,17 +40,20 @@ fn plugin() {
 fn plugin_host() {
     let _: Option<Arc<dyn PluginHost>> = None;
 }
-fn env_harness() {
-    let _: Option<Arc<dyn EnvHarness>> = None;
+// Phase-7 (D-CORE-01): the harness traits carry an associated `Settings` type,
+// so they are no longer object-safe (the v1.0 stub was). Check Send + Sync via a
+// generic bound instead of a trait object — same pattern as `PolicyAlgorithm`.
+fn env_harness<T: EnvHarness>() {
+    fn check_send_sync<T: Send + Sync>() {}
+    check_send_sync::<T>();
 }
-fn tool_harness() {
-    let _: Option<Arc<dyn ToolHarness>> = None;
+fn tool_harness<T: ToolHarness>() {
+    fn check_send_sync<T: Send + Sync>() {}
+    check_send_sync::<T>();
 }
-fn eval_harness() {
-    let _: Option<Arc<dyn EvalHarness>> = None;
-}
-fn reward_model() {
-    let _: Option<Arc<dyn RewardModel>> = None;
+fn eval_harness<T: EvalHarness>() {
+    fn check_send_sync<T: Send + Sync>() {}
+    check_send_sync::<T>();
 }
 fn inference_backend() {
     let _: Option<Arc<dyn InferenceBackend>> = None;
@@ -94,10 +96,8 @@ fn send_sync_bounds() {
     assert_send_sync::<dyn Scheduler>();
     assert_send_sync::<dyn Plugin>();
     assert_send_sync::<dyn PluginHost>();
-    assert_send_sync::<dyn EnvHarness>();
-    assert_send_sync::<dyn ToolHarness>();
-    assert_send_sync::<dyn EvalHarness>();
-    assert_send_sync::<dyn RewardModel>();
+    // EnvHarness/ToolHarness/EvalHarness are no longer object-safe (associated
+    // `Settings`); their Send + Sync is checked via the generic helpers above.
     assert_send_sync::<dyn InferenceBackend>();
     assert_send_sync::<dyn Storage>();
     assert_send_sync::<dyn StorageTxn>();
