@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
 current_plan: 1
 status: unknown
-stopped_at: Completed 07-04-PLAN.md
-last_updated: "2026-06-01T22:34:01.877Z"
+stopped_at: Completed 07-05-PLAN.md
+last_updated: "2026-06-01T22:49:46.533Z"
 progress:
   total_phases: 3
   completed_phases: 2
@@ -20,7 +20,7 @@ This file tracks current project state. Updated at phase transitions.
 ## Current Position
 
 Phase: 07 (harnesses-env-tool-eval) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 
 ### Quick Tasks Completed
 
@@ -169,6 +169,10 @@ Optional cleanup: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Ny
 | Phase 06-multi-node-distribution P04 | 7min | 4 tasks | 12 files |
 | Phase 07 P00 | 10min | 3 tasks | 13 files |
 | Phase 07 P01 | 25min | 2 tasks | 9 files |
+| Phase 07 P02 | 50min | 4 tasks | 15 files |
+| Phase 07 P03 | 18min | 2 tasks | 14 files |
+| Phase 07 P04 | 40min | 2 tasks | 11 files |
+| Phase 07 P05 | 14min | 2 tasks | 11 files |
 
 ## Decisions
 
@@ -307,11 +311,16 @@ Optional cleanup: `/gsd:validate-phase` for v1.0 phases 02/03/04 to close the Ny
 - [Phase 07]: Eval-dataset deps declared in workspace.deps but unconsumed in Wave 0; 07-03 owns openssl-free proof
 - [Phase 07]: 07-01: inline SplitMix64 RNG (no rand dep) for per-episode seeded determinism (seed XOR episode_index)
 - [Phase 07]: 07-01: reward via plugin host (D-ENV-03) — postcard RewardInput → call(score) → Reward; decode failure → Fatal(PluginContract)
+- [Phase 07]: Pinned lm-eval reference LM_EVAL_VERSION=lm-eval-harness-v0.4.9 (07-03 eval scorers)
+- [Phase 07]: Registered eval_reports namespace in embedded storage (07-00 row type was unwired)
+- [Phase 07]: 07-04: HTTP tools use hyper::client::conn::http1 over a self-resolved IP-pinned TcpStream (not the high-level client) so the SSRF IP filter re-runs per redirect hop
+- [Phase 07]: rollout eval is a top-level CLI subcommand (D-EVAL-02); spec 08 reconciled (rollout infer eval removed)
+- [Phase 07]: SC4 verified: workspace tests green with 5 new crates, dep-direction at 14 invariants, no schema drift
 
 ## Last Session
 
-- **Last session:** 2026-06-01T20:38:30.921Z
-- **Stopped at:** Completed 07-01-PLAN.md
+- **Last session:** 2026-06-01T22:49:40.546Z
+- **Stopped at:** Completed 07-05-PLAN.md
 
 ## Things Not To Forget
 
