@@ -30,6 +30,8 @@ pub const T_EPOCH: BytesTable = TableDefinition::new("epoch");
 pub const T_WORK: BytesTable = TableDefinition::new("work");
 /// `queue_items/*` — Phase-6 pending (unassigned) work queue (ULID-ordered).
 pub const T_QUEUE_ITEMS: BytesTable = TableDefinition::new("queue_items");
+/// `eval_reports/*` — Phase-7 eval-report rows (`eval_reports/<run>/report/<id>`).
+pub const T_EVAL_REPORTS: BytesTable = TableDefinition::new("eval_reports");
 
 /// Map `StorageKey.namespace` to its `TableDefinition`.
 ///
@@ -49,6 +51,7 @@ pub fn table_for(namespace: &str) -> Result<BytesTable, CoreError> {
         "epoch" => T_EPOCH,
         "work" => T_WORK,
         "queue_items" => T_QUEUE_ITEMS,
+        "eval_reports" => T_EVAL_REPORTS,
         other => {
             return Err(CoreError::Fatal(FatalError::ConfigInvalid {
                 msg: format!("unknown storage namespace: {other}"),
@@ -60,7 +63,7 @@ pub fn table_for(namespace: &str) -> Result<BytesTable, CoreError> {
 /// All known table definitions (used by `get_many_bytes` / scans that
 /// want to walk every namespace).
 #[must_use]
-pub fn all_tables() -> [(&'static str, BytesTable); 12] {
+pub fn all_tables() -> [(&'static str, BytesTable); 13] {
     [
         ("runs", T_RUNS),
         ("workers", T_WORKERS),
@@ -74,5 +77,6 @@ pub fn all_tables() -> [(&'static str, BytesTable); 12] {
         ("epoch", T_EPOCH),
         ("work", T_WORK),
         ("queue_items", T_QUEUE_ITEMS),
+        ("eval_reports", T_EVAL_REPORTS),
     ]
 }

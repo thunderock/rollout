@@ -21,6 +21,8 @@ smol_str     = { workspace = true }
 chrono       = { workspace = true }
 tracing      = { workspace = true }
 regex        = { workspace = true }
+schemars     = { workspace = true }
+ulid         = { workspace = true }
 # Dataset loading — rustls-only, openssl-free (Pitfall G); proven by `cargo deny check bans`.
 hf-hub       = { workspace = true }
 parquet      = { workspace = true }
@@ -28,6 +30,8 @@ arrow-array  = { workspace = true }
 bytes        = { workspace = true }
 
 [dev-dependencies]
-tokio   = { workspace = true, features = ["macros", "rt-multi-thread"] }
-ulid    = { workspace = true }
-blake3  = { workspace = true }
+tokio              = { workspace = true, features = ["macros", "rt-multi-thread"] }
+blake3             = { workspace = true }
+tempfile           = { workspace = true }
+rollout-storage    = { path = "../rollout-storage", version = "0.1" }
+rollout-cloud-local = { path = "../rollout-cloud-local", version = "0.1" }
