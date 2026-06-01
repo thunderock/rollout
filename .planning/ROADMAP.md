@@ -164,7 +164,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 5. Cloud layer + object-store snapshots | 0/0 | Not started | - |
 | 6. Multi-node distribution | 0/0 | Not started | - |
-| 7. Harnesses (env + tool + eval) | 0/5 | Planned | - |
+| 7. Harnesses (env + tool + eval) | 5/6 | In progress | - |
 
 ---
 

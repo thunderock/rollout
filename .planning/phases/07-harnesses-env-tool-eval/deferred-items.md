@@ -1,0 +1,3 @@
+# Deferred items — Phase 07
+
+- **ROADMAP.md Progress table is stale for all v1.1 phases.** `roadmap update-plan-progress 07` reports `summary_count: 0` despite 07-00..07-04 SUMMARY.md files existing on disk; the row stays `0/5 / Planned`. Phases 5 and 6 likewise show `0/0 / Not started` though both are complete. This is a pre-existing roadmap-tooling counting quirk (not introduced by 07-04) — the per-plan SUMMARY/STATE rollup is accurate; only the ROADMAP Progress table aggregation is off. Leave for the phase-closeout (07-05) / orchestrator to reconcile rather than hand-editing fabricated counts.
