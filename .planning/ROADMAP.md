@@ -31,7 +31,7 @@ The narrative roadmap lives at the repo root: [`../ROADMAP.md`](../ROADMAP.md). 
 | 4 | SFT + RM + train-state snapshots | TRAIN-01, TRAIN-02, TRAIN-03, TRAIN-04 | ✓ v1.0 |
 | 5 | Cloud layer + object-store snapshots | CLOUD-01, CLOUD-02, CLOUD-03, CLOUD-04 | **v1.1 active** |
 | 6 | Multi-node distribution | DIST-01, DIST-02, DIST-03, DIST-04, DIST-05 | **v1.1 active** |
-| 7 | Harnesses (env + tool + eval) | HARNESS-01, HARNESS-02, HARNESS-03 | **v1.1 active** |
+| 7 | Harnesses (env + tool + eval) | HARNESS-01, HARNESS-02, HARNESS-03 | **✓ complete (2026-06-01)** |
 | 8 | Online inference + episodic memory | INFER-01, INFER-02, INFER-03, INFER-04 | v1.2 planned |
 | 9 | PPO + GRPO + buffer snapshots | RL-01, RL-02, RL-03, RL-04 | v1.2 planned |
 | 10 | DPO / IPO / KTO | OFFLINE-01, OFFLINE-02, OFFLINE-03 | v1.2 planned |
@@ -71,7 +71,7 @@ The narrative `../ROADMAP.md` is authoritative for goals, risks, and exit criter
 
 - [ ] **Phase 5: Cloud layer + object-store snapshots** — AWS + GCP impls of `ObjectStore` / `Queue` / `SecretStore` / `ComputeHint` over the v1.0 trait surface; streaming put/get for big-blob snapshots; `rollout cloud doctor` CLI.
 - [ ] **Phase 6: Multi-node distribution** — Pull-based coordinator with state persisted in Storage; work-stealing queue with lease/CAS dedup; coordinator restart from storage; spot-preemption graceful drain; split-brain fencing.
-- [ ] **Phase 7: Harnesses (env + tool + eval)** — Text-completion env with plugin-host reward; best-effort tool sandbox (process isolation + seccomp + cgroups v2 + path/HTTP allowlists; Linux full / macOS dev-only stub); MMLU + IFEval + GSM8K eval with `rollout eval` CLI + offline-mode default.
+- [x] **Phase 7: Harnesses (env + tool + eval)** _(complete 2026-06-01 — verified 4/4 SC)_ — Text-completion env with plugin-host reward; best-effort tool sandbox (process isolation + seccomp + cgroups v2 + path/HTTP allowlists; Linux full / macOS dev-only stub); MMLU + IFEval + GSM8K eval with `rollout eval` CLI + offline-mode default.
 
 ### Phase Details
 

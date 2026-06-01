@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
-current_plan: 1
-status: unknown
-stopped_at: Completed 07-05-PLAN.md
-last_updated: "2026-06-01T22:49:46.533Z"
+current_plan: Complete
+status: phase_complete
+stopped_at: Phase 7 verified (4/4 SC) — v1.1 milestone complete
+last_updated: "2026-06-01T23:30:00.000Z"
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 19
-  completed_plans: 13
+  completed_plans: 19
 ---
 
 # STATE — Project Memory
@@ -19,8 +19,11 @@ This file tracks current project state. Updated at phase transitions.
 
 ## Current Position
 
-Phase: 07 (harnesses-env-tool-eval) — EXECUTING
-Plan: 6 of 6
+Phase: 07 (harnesses-env-tool-eval) — COMPLETE (verified 4/4 SC, 2026-06-01)
+Plan: 6 of 6 — all complete
+
+**v1.1 milestone complete:** Phases 5 (cloud), 6 (distribution), 7 (harnesses) all shipped.
+Next: v1.1 milestone audit / archive, then v1.2 (Phase 8 — online inference + episodic memory).
 
 ### Quick Tasks Completed
 
