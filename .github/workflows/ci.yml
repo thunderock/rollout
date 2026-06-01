@@ -59,6 +59,46 @@ jobs:
         with:
           command: check advisories licenses bans sources
 
+  harness-linux:
+    # HARNESS-02 enforcement lane (D-TOOL-05 / D-TOOL-07). The macOS `test:` job
+    # is the compile + dev-stub witness; THIS ubuntu-latest lane (kernel 5.15) is
+    # the only place the #[cfg(target_os = "linux")] sandbox tests execute. Runs
+    # every commit, Docker-free / GPU-free (SC2) — NOT gated behind a live-env var.
+    # In Wave 0 the harness crates are skeletons, so the lane runs the placeholder
+    # tests + the mandated real strace baseline; Wave-1 plans 07-01..03 populate
+    # the real env/sandbox/eval witnesses.
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 20
+    env:
+      HF_OFFLINE: "1"
+      HF_HUB_OFFLINE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.91.1
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-harness-linux
+      - name: Strace seccomp baseline (D-TOOL-07 mandated spike)
+        # The real strace the macOS dev box could not run. Its output is the
+        # ground truth Wave-1 07-02 diffs against seccomp::ALLOWLIST (expect 2-5
+        # syscall additions). Captured as a CI artifact for that executor.
+        run: |
+          sudo apt-get update && sudo apt-get install -y strace
+          strace -fc /usr/bin/python3 -c 'print(1)' 2>strace.txt
+          cat strace.txt
+      - name: Upload strace baseline
+        uses: actions/upload-artifact@v4
+        with:
+          name: strace-seccomp-baseline
+          path: strace.txt
+          if-no-files-found: warn
+      - name: Linux harness enforcement tests
+        run: |
+          cargo test -p rollout-harness-tool --tests --all-features
+          cargo test -p rollout-harness-text --tests
+          cargo test -p rollout-harness-eval --tests
+
   commitlint:
     runs-on: macos-14
     steps:
