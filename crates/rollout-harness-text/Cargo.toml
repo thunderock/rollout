@@ -1,0 +1,20 @@
+[package]
+name = "rollout-harness-text"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Text-completion EnvHarness (HARNESS-01): batched reset/step/close, reward via plugin host"
+
+[lints]
+workspace = true
+
+[dependencies]
+rollout-core = { path = "../rollout-core", version = "0.1" }
+async-trait  = { workspace = true }
+serde        = { workspace = true }
+serde_json   = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

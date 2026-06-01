@@ -1,0 +1,40 @@
+[package]
+name = "rollout-harness-tool"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Sandboxed ToolHarness (HARNESS-02): six tools behind a best-effort Linux sandbox; macOS dev stub"
+
+# The workspace forbids unsafe_code; `forbid` cannot be relaxed at file level, so
+# this crate overrides it to `deny` to allow `#[allow(unsafe_code)]` at the
+# sandbox/syscall boundary (Phase-2 rollout-plugin-host precedent). Restating the
+# workspace lints because a per-crate [lints.rust] table replaces (not merges)
+# the inherited one.
+[lints.rust]
+unsafe_code = "deny"
+missing_docs = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+missing_errors_doc = "allow"
+module_name_repetitions = "allow"
+
+[dependencies]
+rollout-core = { path = "../rollout-core", version = "0.1" }
+async-trait  = { workspace = true }
+serde        = { workspace = true }
+serde_json   = { workspace = true }
+
+# Linux-only sandbox primitives (HARNESS-02). macOS compiles to a stub, so these
+# stay platform-gated; Wave-1 plan 07-02 wires the launcher/seccomp/cgroup code.
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix      = { workspace = true }
+landlock    = { workspace = true }
+seccompiler = { workspace = true }
+cap-std     = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

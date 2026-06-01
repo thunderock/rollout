@@ -14,6 +14,9 @@ members = [
     "crates/rollout-runtime-batch",
     "crates/rollout-algo-sft",
     "crates/rollout-algo-rm",
+    "crates/rollout-harness-text",
+    "crates/rollout-harness-tool",
+    "crates/rollout-harness-eval",
     "crates/rollout-snapshots",
     "xtask",
 ]
@@ -160,3 +163,23 @@ futures-util           = "0.3"
 # Phase 5 — `rollout cloud doctor` TLS reachability probe (rustls 0.23-compatible).
 tokio-rustls           = { version = "0.26", default-features = false, features = ["ring"] }
 webpki-roots           = "1.0"
+
+# Phase 7 — Tool-harness sandbox (HARNESS-02). Linux-only; macOS compiles to a
+# stub so these stay platform-gated (`[target.'cfg(target_os = "linux")']`) in
+# rollout-harness-tool. Pins verified against crates.io 2026-06-01: all four are
+# the current max-stable and match STACK (rustix 1.1.4 / landlock 0.4.5 /
+# seccompiler 0.5.0 / cap-std 4.0.2).
+rustix      = { version = "=1.1.4", features = ["process", "fs", "thread", "stdio"] }
+landlock    = "=0.4.5"
+seccompiler = "=0.5.0"
+cap-std     = "=4.0.2"
+
+# Phase 7 — Eval datasets (HARNESS-03). hf-hub BUMPED from STACK's 0.3 → 0.4:
+# 0.3.x exposes NO `rustls-tls` feature (its `online`/`tokio` features pull
+# native-tls/openssl, violating the cargo-deny ban — RESEARCH Pitfall G), so the
+# STACK 0.3 pin is unsatisfiable under rustls-only. 0.4.x adds `rustls-tls`.
+# `default-features = false` drops `default-tls` (native-tls). parquet/arrow-array
+# stay at the STACK 55 cohort (rust_version 1.81 ≤ MSRV 1.91.1, exposes async+arrow).
+hf-hub      = { version = "0.4", default-features = false, features = ["tokio", "rustls-tls"] }
+parquet     = { version = "55", default-features = false, features = ["async", "arrow"] }
+arrow-array = "55"
