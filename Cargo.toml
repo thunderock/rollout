@@ -173,6 +173,9 @@ rustix      = { version = "=1.1.4", features = ["process", "fs", "thread", "stdi
 landlock    = "=0.4.5"
 seccompiler = "=0.5.0"
 cap-std     = "=4.0.2"
+# libc: only for the SYS_*/flag constants the seccomp allowlist + launcher need;
+# already in the lock via seccompiler. Linux-gated in rollout-harness-tool.
+libc        = "0.2"
 
 # Phase 7 — Eval datasets (HARNESS-03). hf-hub BUMPED from STACK's 0.3 → 0.4:
 # 0.3.x exposes NO `rustls-tls` feature (its `online`/`tokio` features pull

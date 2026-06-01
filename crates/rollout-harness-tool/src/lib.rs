@@ -6,8 +6,4 @@
 //! workspace `unsafe_code = forbid` to `deny` (see Cargo.toml) so the
 //! syscall/sandbox boundary can opt in with `#[allow(unsafe_code)]`.
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn skeleton_compiles() {}
-}
+pub mod sandbox;

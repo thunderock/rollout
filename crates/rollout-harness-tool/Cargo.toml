@@ -35,6 +35,13 @@ rustix      = { workspace = true }
 landlock    = { workspace = true }
 seccompiler = { workspace = true }
 cap-std     = { workspace = true }
+libc        = { workspace = true }
+tempfile    = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+# Linux-only test deps: raw syscalls / fork to observe seccomp enforcement.
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+libc        = { workspace = true }
+seccompiler = { workspace = true }
