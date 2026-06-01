@@ -149,7 +149,13 @@ Plans:
   3. Operator runs `rollout eval --suite mmlu --checkpoint <snapshot_id>` and gets a per-task score; bundled 10-row fixtures under `crates/rollout-harness-eval/tests/fixtures/` make the always-on `eval_score_matches_lm_eval_harness` test deterministic with no HF network call (HF_OFFLINE=1 default).
   4. `cargo test --workspace --tests` stays green with 5 new crates in the workspace (rename: `rollout-evals` → `rollout-harness-eval`; new: `rollout-cloud-aws`, `rollout-cloud-gcp`, `rollout-harness-text`, `rollout-harness-tool` — the cloud crates land in Phase 5 but the workspace count check happens here); dep-direction lint reaches 14 invariants total.
 
-**Plans**: TBD
+**Plans**: 6 plans
+- [x] 07-00-PLAN.md — Wave 0 enabler: spec-07 trait surface + HarnessDependencies + 3 crate skeletons + workspace dep pins + eval_reports row + Linux CI lane
+- [ ] 07-01-PLAN.md — HARNESS-01: rollout-harness-text env (EchoEnv, MockRewardEnv, env_deterministic_replay)
+- [ ] 07-02-PLAN.md — HARNESS-02 (sandbox core): layered launcher + curated seccomp allowlist + exec/file tools + macOS stub + CVE negative matrix
+- [ ] 07-03-PLAN.md — HARNESS-03: rollout-harness-eval (MMLU/IFEval/GSM8K scorers + offline fixtures + eval-as-job + lm-eval parity)
+- [ ] 07-04-PLAN.md — HARNESS-02 (http): SSRF-filtered hyper connector + http_get/http_post + sandbox-depth matrix README
+- [ ] 07-05-PLAN.md — Closeout: rollout eval CLI + spec-08 reconcile + mdBook Harnesses chapter + SC4 workspace/14-invariant gate
 **UI hint**: no
 
 ### Progress
@@ -158,7 +164,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 5. Cloud layer + object-store snapshots | 0/0 | Not started | - |
 | 6. Multi-node distribution | 0/0 | Not started | - |
-| 7. Harnesses (env + tool + eval) | 0/0 | Not started | - |
+| 7. Harnesses (env + tool + eval) | 1/6 | In progress | - |
 
 ---
 
