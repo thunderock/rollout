@@ -23,7 +23,11 @@ If any single requirement defines success: **plan-time validation catches all co
   - Components individually publishable (aggressive crate split — 13 crates in v1.0, growing to ~17 by v1.0 ship).
   - No mention of any prior framework or organization in any artifact in this repo.
 
-### Current State (post-v1.0, 2026-05-27)
+### Current State (v1.1 complete, 2026-06-01)
+
+> **v1.1 shipped** (phases 5 cloud · 6 distribution · 7 harnesses). Five new crates over v1.0 (`rollout-cloud-aws`, `rollout-cloud-gcp`, `rollout-harness-text`, `rollout-harness-tool`, `rollout-harness-eval`); dep-direction lint at 14 invariants. The algo-layer harness surface (spec-07 `EnvHarness`/`ToolHarness`/`EvalHarness`) that v1.2 PPO/GRPO consumes via trait objects is now in place. Next: v1.1 milestone audit/archive, then v1.2 (online inference + RL). Metrics below are the post-v1.0 baseline.
+
+#### Baseline (post-v1.0, 2026-05-27)
 
 - **LOC:** 17,901 Rust + 741 Python (~18.6k total)
 - **Workspace:** 13 crates under `crates/` + `xtask`
@@ -82,11 +86,14 @@ If any single requirement defines success: **plan-time validation catches all co
 - [x] **DIST-04** — v1.1 — Spot-preemption graceful drain on `ComputeHint::preemption_signal` (stop-pull → nack in-flight → opportunistic TrainState snapshot → deregister); notice lead 120s AWS/30s GCP vs drain deadline 60s AWS/15s GCP (D-SPOT-04); `spot_drain_completes_within_lead_time` witness. *Validated in Phase 6.*
 - [x] **DIST-05** — v1.1 — Split-brain fencing: two coordinators on same lease → exactly one self-fences (`std::process::abort`) within 5s, survivor advances epoch, workers reject stale-epoch responses via `EpochGuard`; `split_brain_old_coord_self_fences` + `fence_aborts_within_5s` (subprocess) witnesses. *Validated in Phase 6.*
 
+### ✓ Shipped — v1.1 (Phase 7, 2026-06-01)
+
+- [x] **HARNESS-01** — v1.1 — `rollout-harness-text`: spec-07 batched `EnvHarness` (`TextCompletionEnv`) with reset/step/close, multi-turn-capable episodes, in-memory episode store (no blob persistence — RL-03), reward via the plugin host (`EchoEnv` + `MockRewardEnv`). `env_deterministic_replay` witness (seeded SplitMix64). *Validated in Phase 7.*
+- [x] **HARNESS-02** — v1.1 — `rollout-harness-tool`: layered Linux sandbox launcher (rustix namespaces → setrlimit → cgroups v2 degrade-with-warning → landlock ≥5.13 fail-closed → seccompiler curated ALLOWLIST installed last → execve) + six tools (`python_exec`/`shell` with `shell=False` full-path allowlist, `file_read`/`file_write` via cap-std, SSRF-hardened `http_get`/`http_post`). macOS = compile-only dev stub. CVE negatives Linux-CI-gated (`sandbox_blocks_{userns,mount,keyctl,bpf}`, `seccomp_*`, `tool_sandbox_escape_blocked`); SSRF witnesses (`http_tool_blocks_dns_rebinding`/`_redirect_to_imds`) run on macOS. Honest sandbox-depth matrix (process-isolated, NOT VM-isolated). *Validated in Phase 7.*
+- [x] **HARNESS-03** — v1.1 — `rollout-harness-eval`: pure-Rust MMLU (acc + acc_norm) / IFEval (non-language constraints) / GSM8K (`####`) scorers; SHA-pinned 10-row offline fixtures (offline default, HF_OFFLINE=0 to go online); `eval_score_matches_lm_eval_harness` ≤1% parity witness; eval-as-WorkQueue-job with `MockEvalBackend`; top-level `rollout eval --suite <s> --checkpoint <id>` CLI (spec-08 reconciled). *Validated in Phase 7.*
+
 ### Planned — next milestones
 
-- [ ] **HARNESS-01** Env harness (text completion).
-- [ ] **HARNESS-02** Tool harness with sandboxed code-exec, shell, file, HTTP.
-- [ ] **HARNESS-03** Eval harness with bundled MMLU, IFEval, GSM8K.
 - [ ] **INFER-01** Online inference server (OpenAI-compatible `/v1/chat/completions` + `/v1/completions`).
 - [ ] **INFER-02** Tool-calling integrated into streaming generation.
 - [ ] **INFER-03** Episodic-memory snapshot kind.
