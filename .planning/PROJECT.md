@@ -160,4 +160,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-29 — Phase 6 complete (multi-node distribution): lease/epoch fencing + work-stealing queue + coordinator restart-from-storage + spot-drain + split-brain self-fence; DIST-01..05 verified 5/5 (four every-commit witnesses Docker-free; live-cloud smoke + Postgres lease lane operator-gated). `make smoke-3node-aws`/`-gcp` green locally. Dep-direction lint at 14 invariants. Next: Phase 7 — harnesses (env + tool + eval).*
+*Last updated: 2026-06-01 after v1.1 milestone — cloud + distribution + harnesses (Phases 5-7) shipped. 12/12 in-scope requirements validated (CLOUD-01..04, DIST-01..05, HARNESS-01..03); HARNESS-04 deferred to v1.2. Five new crates over v1.0 (cloud-aws/gcp + harness-text/tool/eval); dep-direction lint at 14 invariants; `rollout eval` CLI live. Milestone archived to `.planning/milestones/v1.1-*`; tagged `v1.1`. Next: v1.2 (Phase 8 — online inference + episodic memory) via `/gsd:new-milestone`.*

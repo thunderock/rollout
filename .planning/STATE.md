@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — cloud + distribution + harnesses
 current_plan: Complete
-status: phase_complete
-stopped_at: Phase 7 verified (4/4 SC) — v1.1 milestone complete
-last_updated: "2026-06-01T23:30:00.000Z"
+status: milestone_complete
+stopped_at: v1.1 archived + tagged — ready for /gsd:new-milestone (v1.2)
+last_updated: "2026-06-02T00:00:00.000Z"
 progress:
   total_phases: 3
   completed_phases: 3
@@ -19,11 +19,17 @@ This file tracks current project state. Updated at phase transitions.
 
 ## Current Position
 
-Phase: 07 (harnesses-env-tool-eval) — COMPLETE (verified 4/4 SC, 2026-06-01)
-Plan: 6 of 6 — all complete
+**v1.1 milestone SHIPPED + ARCHIVED (2026-06-01, tagged `v1.1`).** Phases 5 (cloud), 6 (distribution), 7 (harnesses) all complete — 12/12 in-scope requirements verified. Archives at `.planning/milestones/v1.1-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md`; retrospective at `.planning/RETROSPECTIVE.md`. `REQUIREMENTS.md` deleted (fresh one created by `/gsd:new-milestone`).
 
-**v1.1 milestone complete:** Phases 5 (cloud), 6 (distribution), 7 (harnesses) all shipped.
-Next: v1.1 milestone audit / archive, then v1.2 (Phase 8 — online inference + episodic memory).
+**Next:** `/gsd:new-milestone` → v1.2 (Phase 8 — online inference + episodic memory; then PPO/GRPO).
+
+## Project Reference
+
+See: `.planning/PROJECT.md` (updated 2026-06-01 after v1.1).
+**Core value:** Rust-core RL-for-LLMs framework — every plugin testable locally without cloud creds or GPU.
+**Current focus:** Planning v1.2 (online inference + RL).
+
+**Tech debt carried into v1.2:** Nyquist validation never run on phases 6/7 (`/gsd:validate-phase 6`/`7`); `--all-features` rustdoc upstream `h3-quinn` quic; `restart_no_duplicates.rs` clippy under `test-mock-backend` (03-05 follow-up); 9 by-design items from v1.0. See `milestones/v1.1-MILESTONE-AUDIT.md`.
 
 ### Quick Tasks Completed
 

@@ -60,6 +60,47 @@
 
 ---
 
+## Milestone: v1.1 — cloud + distribution + harnesses
+
+**Shipped:** 2026-06-01
+**Phases:** 3 (5-7) | **Plans:** 19
+**Commits:** 100 | **Timeline:** 5 days (2026-05-28 → 2026-06-01)
+
+### What Was Built
+
+Real AWS + GCP cloud adapters (`rollout-cloud-aws`/`-gcp`) over the v1.0 trait surface with streaming snapshots and `rollout cloud doctor`; a pull-based multi-node coordinator with dual-backed CAS lease + epoch fencing, work-stealing, storage-backed stateless-replayer restart, and spot-drain; and three algo-layer harness crates (text env, sandboxed tool harness, bundled-eval harness) over the full spec-07 batched trait surface, plus the top-level `rollout eval` CLI. 12/12 in-scope requirements; dep-direction lint at 14 invariants; 5 new crates.
+
+### What Worked
+
+- **Goal-backward verification per phase** caught real gaps before milestone audit — e.g. the offline-default eval defect surfaced in spot-checks because the success criterion was the *bare* `cargo test --workspace`, not an env-gated invocation.
+- **Mock-backend + offline-fixture discipline** kept every load-bearing witness GPU-free / network-free / Docker-free, so CI stays fast and the milestone is reproducible on a laptop.
+- **Layered-defense sandbox** designed from a curated seccomp allowlist + fail-closed kernel gate rather than ad-hoc blocking; the macOS dev-stub split let the workspace stay green on dev machines while enforcement validates on a dedicated Linux CI lane.
+
+### What Was Inefficient
+
+- **gsd-tools resolves project root to the primary worktree**, so running the full plan→execute→audit→complete chain inside a background-session git worktree split `.planning` writes across two trees; phase-completion bookkeeping had to be reconciled by hand and the branch fast-forwarded at the end.
+- **ROADMAP plan-counter aggregation under-reported** (`summary_count: 0`) for completed phases, so progress tables needed manual correction.
+- One executor hit a mid-plan API socket drop (07-02); a fresh continuation executor resumed cleanly from the last commit — but only because tasks were committed atomically.
+
+### Patterns Established
+
+- **Eval-as-WorkQueue-job** (one example = one queue item over the Phase-6 CAS machine) — never call `evaluate()` synchronously in an inner loop.
+- **Offline-by-default datasets** with SHA-pinned fixtures (`HF_OFFLINE` default true; opt online with `HF_OFFLINE=0`) so the parity witness is always-on.
+- **Honest threat-model docs** — sandbox-depth matrix states "process-isolated, NOT VM-isolated / not a security perimeter" rather than overclaiming.
+
+### Key Lessons
+
+- Make the always-on witness match the *exact* command the gate runs (bare `cargo test --workspace`), or env-coupled tests pass locally and fail in CI.
+- When isolating bg-session work in a worktree, treat the branch as authoritative and reconcile/merge at the end — don't trust tools that resolve to the primary checkout.
+- Deferring speculative surface (HarnessGraph, eval gate, trajectory persistence) to v1.2 kept the harness contract clean for its real consumers.
+
+### Cost Observations
+
+- **Model mix:** opus for planning + executors + verifier-of-record; sonnet for plan-checker + integration-checker.
+- **Notable:** Phase 7's tool sandbox (07-02/07-04) was the most expensive — layered Linux sandbox + SSRF connector + CVE matrix, with a mid-run resume.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -67,13 +108,17 @@
 | Milestone | Sessions | Phases | Key Change |
 |-----------|----------|--------|------------|
 | v1.0 | ~12–15 | 4 | First milestone — established the GSD phase / plan / SUMMARY / VERIFICATION / VALIDATION cadence; introduced standing rules in AGENTS.md §9; introduced per-milestone archive snapshots while keeping a living `REQUIREMENTS.md`. |
+| v1.1 | ~8–10 | 3 | First milestone executed largely autonomously (plan→execute→audit→complete chain) inside an isolated git worktree; surfaced the gsd-tools-resolves-to-primary-worktree friction; established eval-as-job + offline-default-fixture + layered-sandbox patterns. |
 
 ### Cumulative Quality
 
 | Milestone | Tests | LOC (Rust) | Crates |
 |-----------|-------|------------|--------|
 | v1.0 | ~200 (default-CI) + ignored live-env suite | 17,901 | 13 |
+| v1.1 | ~310 (default-CI, GPU/Docker-free) + Linux sandbox + cloud-emulator lanes | 34,951 | 18 |
 
 ### Top Lessons (Verified Across Milestones)
 
-*(populated after v1.1)*
+- **Witnesses must match the gate command exactly.** Env-coupled tests (e.g. `HF_OFFLINE=1`-only) pass locally but fail the bare `cargo test --workspace` CI gate — default the behavior, don't require the env.
+- **Atomic per-task commits make mid-run failures cheap.** Both milestones recovered from interruptions (v1.0 hot-reload, v1.1 socket drop) by resuming from the last commit with a fresh agent.
+- **Defer speculative surface.** Both milestones kept contracts clean by pushing not-yet-consumed features (quic transport, HarnessGraph, eval gate) behind explicit later-milestone markers rather than building them ahead of a consumer.
