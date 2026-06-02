@@ -76,6 +76,7 @@ pub const ALLOWLIST: &[(i64, &str)] = &[
     (libc::SYS_getrandom, "CSPRNG seed (glibc, Python)"),
     (libc::SYS_clock_gettime, "time"),
     (libc::SYS_nanosleep, "sleep"),
+    (libc::SYS_clock_nanosleep, "sleep — CPython >=3.11 time.sleep() uses clock_nanosleep, not nanosleep (strace-validated on Linux CI)"),
     (libc::SYS_getuid, "identity"),
     (libc::SYS_geteuid, "identity"),
     (libc::SYS_getgid, "identity"),
