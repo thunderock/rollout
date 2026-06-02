@@ -4714,7 +4714,6 @@ dependencies = [
  "gcloud-metadata",
  "gcloud-pubsub",
  "gcloud-storage",
- "hex",
  "http-body-util",
  "hyper",
  "hyper-util",

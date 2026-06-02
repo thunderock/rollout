@@ -166,7 +166,7 @@ jobs:
         with:
           shared-key: ci-public-api
       - name: Install cargo-public-api
-        run: cargo install cargo-public-api --locked --version 0.39
+        run: cargo install cargo-public-api --locked --version 0.39.0
       - name: Dump rollout-core public API
         run: cargo public-api -p rollout-core --simplified > rollout-core.public-api.txt
       - name: Assert no SDK type leakage
@@ -351,22 +351,27 @@ jobs:
           --health-interval 2s
           --health-timeout 1s
           --health-retries 30
-      # Second emulator for the D-XPROV-01 cross-provider witness (option (b):
-      # one job boots both emulators — minimal CI sprawl).
-      fake-gcs-server:
-        image: fsouza/fake-gcs-server:1.50.2
-        ports: ["4443:4443"]
-        options: >-
-          --health-cmd "wget -q -O- http://localhost:4443/storage/v1/b"
-          --health-interval 2s
-          --health-timeout 1s
-          --health-retries 30
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.91.1
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: ci-cloud-emulator-aws
+      # Second emulator for the D-XPROV-01 cross-provider witness. Run via
+      # `docker run` (not a `services:` container) so we can pass `-scheme http`
+      # — fake-gcs-server defaults to HTTPS on 4443, but the test client + the
+      # health check speak plain HTTP. (GitHub `services:` can't pass image args.)
+      - name: Start fake-gcs-server (http) for cross-provider witness
+        run: |
+          docker run -d --name fake-gcs -p 4443:4443 \
+            fsouza/fake-gcs-server:1.50.2 -scheme http -public-host localhost:4443
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:4443/storage/v1/b >/dev/null 2>&1; then
+              echo "fake-gcs-server ready"; break
+            fi
+            if [ "$i" = "30" ]; then echo "fake-gcs-server did not become ready" >&2; docker logs fake-gcs; exit 1; fi
+            sleep 2
+          done
       - name: Run rollout-cloud-aws conformance against localstack
         env:
           LOCALSTACK_ENDPOINT: http://localhost:4566

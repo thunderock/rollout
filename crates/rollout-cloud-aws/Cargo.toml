@@ -45,3 +45,10 @@ tokio          = { workspace = true, features = ["macros", "rt-multi-thread", "t
 hyper          = { workspace = true }
 hyper-util     = { workspace = true }
 http-body-util = { workspace = true }
+
+[package.metadata.cargo-machete]
+# Activated via the `aws` feature for SDK runtime wiring (HTTP connector +
+# credential types), not referenced by a direct `use` — cargo-machete can't see
+# runtime-only feature deps. rollout-cloud-local provides the shared cloud-runtime
+# builder used by the doctor path under feature gating.
+ignored = ["aws-smithy-runtime", "aws-credential-types", "rollout-cloud-local"]

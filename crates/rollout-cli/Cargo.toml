@@ -72,3 +72,8 @@ tokio-util           = { workspace = true }
 assert_cmd = { workspace = true }
 predicates = { workspace = true }
 tempfile   = { workspace = true }
+
+[package.metadata.cargo-machete]
+# Activated via the `gcp` feature for GCS runtime wiring, not referenced by a
+# direct `use` — cargo-machete can't see runtime-only feature deps.
+ignored = ["gcloud-storage"]
