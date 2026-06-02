@@ -18,4 +18,8 @@
 
 ALTER TABLE kv DROP CONSTRAINT kv_pkey;
 
+-- Dropping the PRIMARY KEY does NOT clear the implicit NOT NULL it put on run_id,
+-- so run-less ("global") rows still fail until we drop it explicitly.
+ALTER TABLE kv ALTER COLUMN run_id DROP NOT NULL;
+
 CREATE UNIQUE INDEX kv_pkey ON kv (namespace, run_id, path) NULLS NOT DISTINCT;
