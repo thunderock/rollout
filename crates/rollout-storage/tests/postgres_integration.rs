@@ -12,11 +12,15 @@ use rollout_core::{KeyRange, RunId, Storage, StorageEvent, StorageKey};
 use rollout_storage::PostgresStorage;
 use smol_str::SmolStr;
 use testcontainers::runners::AsyncRunner;
+use testcontainers::ImageExt;
 use testcontainers_modules::postgres::Postgres;
 use ulid::Ulid;
 
 async fn start_postgres() -> (testcontainers::ContainerAsync<Postgres>, String) {
+    // PG >= 15 required: migration 0004 uses a NULLS NOT DISTINCT unique index for
+    // run-less ("global") kv rows. The module default tag can be older.
     let container = Postgres::default()
+        .with_tag("16-alpine")
         .start()
         .await
         .expect("start postgres container");
