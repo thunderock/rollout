@@ -162,23 +162,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.91.1
-      # cargo-public-api shells out to `cargo +nightly rustdoc` for rustdoc-JSON.
-      - uses: dtolnay/rust-toolchain@nightly
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: ci-public-api
-      - name: Install cargo-public-api
-        run: cargo install cargo-public-api --locked --version 0.39.0
-      - name: Dump rollout-core public API
-        run: cargo public-api -p rollout-core --simplified > rollout-core.public-api.txt
-      - name: Assert no SDK type leakage
-        run: bash scripts/check-public-api-cloud-leak.sh rollout-core.public-api.txt
-      - name: Upload public-api dump on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rollout-core-public-api
-          path: rollout-core.public-api.txt
+      # rollout-core cannot leak an AWS/GCP SDK type in its public API unless it
+      # depends on an SDK crate — so assert it pulls none. This replaces a
+      # cargo-public-api + nightly rustdoc-JSON check that broke on every rustdoc
+      # FORMAT_VERSION bump; `cargo tree` is stable-toolchain and churn-free.
+      - name: Assert no cloud SDK in rollout-core (no SDK type can leak)
+        run: |
+          leaks=$(cargo tree -p rollout-core -e normal --prefix none \
+            | sort -u | grep -iE 'aws-sdk|aws-config|aws-smithy|aws-credential|gcloud-|google-cloud' || true)
+          if [ -n "$leaks" ]; then
+            echo "::error::rollout-core depends on cloud SDK crate(s) — SDK types can leak into its public API:"
+            echo "$leaks"
+            exit 1
+          fi
+          echo "ok: rollout-core has no cloud SDK dependencies"
 
   forbidden-patterns:
     # D-CI-03 + Pitfalls #3, #10a, #13 — no IMDSv1 raw URLs, no metadata.google.internal raw URLs,
