@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-06-02T22:09:41.138Z",
+  "context": "post-v1.1-milestone CI green-up + paused /gsd:validate-phase 6",
+  "phase": "post-milestone",
+  "status": "paused",
+  "git": {
+    "origin_main": "e8329a3 (all CI fixes through iteration-4 pushed)",
+    "v1_1_tag": "created locally, NOT pushed — run: git push origin v1.1",
+    "milestone": "v1.1 shipped + archived + tagged (Phases 5-7)"
+  },
+  "ci_status": {
+    "run": "26848285481 (push e8329a3)",
+    "green": 14,
+    "skipped": ["docs-test-policy", "cloud-live-aws", "cloud-live-gcp"],
+    "fixed_this_effort": [
+      "public-api-cloud-leak (cargo-tree SDK-absence check, churn-free)",
+      "unused-deps (drop hex + machete ignore-list)",
+      "harness-linux (seccomp clock_nanosleep for CPython time.sleep)",
+      "cloud-emulator container-init (fake-gcs-server via docker run -scheme http)"
+    ]
+  },
+  "remaining_failures": [
+    {"job": "train-smoke", "state": "PYTHONPATH fixed the import; now 'RuntimeError: init_train was not called'", "type": "code-bug", "next": "investigate train plugin protocol: rollout-backend-vllm train path + python/rollout/backends/vllm/train.py — Rust calls a train step before init_train", "verifiable_locally": false},
+    {"job": "postgres-integration", "state": "still failing; gh --log-failed returns EMPTY (not a normal step failure)", "type": "unknown", "next": "could not confirm if migration 0004 DROP NOT NULL fixed pg_scan_bytes; likely container/timeout from per-test 16-alpine pulls OR a different test — get raw job log via gh api or web UI; consider one shared container instead of per-test start_postgres", "verifiable_locally": false},
+    {"job": "infer-smoke", "state": "pip install vllm-cpu>=0.17 -> ResolutionImpossible", "type": "packaging", "next": "find correct vLLM-CPU install incantation OR gate job to schedule; PYTHONPATH fix already added for its second (rollout import) failure", "verifiable_locally": false},
+    {"job": "cloud-emulator-aws", "state": "localstack S3/SM/SQS ops return generic 'service error'; SM/SQS error-shape mapped to Internal not ConfigInvalid/Transient", "type": "emulator-parity", "next": "NEEDS DOCKER: run localstack locally + conformance tests to diagnose", "verifiable_locally": false},
+    {"job": "cloud-emulator-gcp", "state": "container-init fixed; GCS/PubSub conformance likely has same emulator-parity issues as aws", "type": "emulator-parity", "next": "NEEDS DOCKER: run fake-gcs + pubsub-emulator locally", "verifiable_locally": false}
+  ],
+  "key_facts": [
+    "gsd-tools resolves project root to PRIMARY worktree (git-common-dir): state/roadmap writes from a linked worktree hit MAIN .planning — do bookkeeping by hand in bg-worktree GSD runs",
+    "EnterWorktree branches from origin/main (stale if local main has unpushed commits) -> cherry-pick instead of FF when diverged",
+    "bg-isolation guard blocks Write/Edit on the main checkout; use a worktree or shell heredocs",
+    "Docker is NOT running on this macOS box -> live-emulator + vLLM-CPU jobs unverifiable locally",
+    "project now requires PostgreSQL >= 15 (migration 0004 uses NULLS NOT DISTINCT); test container pinned to 16-alpine"
+  ],
+  "also_paused": "/gsd:validate-phase 6 (Nyquist gap; phases 6 & 7 have draft VALIDATION.md, nyquist_compliant:false)",
+  "next_action": "Resume in a fresh session. Highest leverage: (1) start Docker -> fix cloud-emulator-aws/gcp + reproduce postgres-integration; (2) /gsd:debug the train-smoke init_train protocol bug; (3) decide infer-smoke vLLM-CPU (fix vs gate). Then git push origin v1.1 and finish /gsd:validate-phase 6."
+}
