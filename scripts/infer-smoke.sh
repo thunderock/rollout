@@ -8,6 +8,11 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
+# The vLLM backend embeds Python and does `import rollout`; the `python/rollout`
+# package has no pyproject (not pip-installable), so put it on PYTHONPATH for the
+# embedded interpreter.
+export PYTHONPATH="$REPO_ROOT/python${PYTHONPATH:+:$PYTHONPATH}"
+
 OUT_DIR="data/completions/batch-tiny"
 rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR"

@@ -12,6 +12,11 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 cd "$REPO_ROOT"
 
+# The transformers/vLLM backend embeds Python and does `import rollout`; the
+# `python/rollout` package has no pyproject (not pip-installable), so put it on
+# PYTHONPATH for the embedded interpreter.
+export PYTHONPATH="$REPO_ROOT/python${PYTHONPATH:+:$PYTHONPATH}"
+
 WORK_DIR="$(mktemp -d -t rollout-train-smoke-XXXXXX)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 echo "train-smoke: work dir $WORK_DIR"
