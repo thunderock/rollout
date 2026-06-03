@@ -65,6 +65,8 @@ pub(crate) enum VllmTask {
     SetTrainMode {
         /// `true` flips to training mode; `false` tears training state down.
         enabled: bool,
+        /// Model URI recorded for lazy `init_train` (empty when tearing down).
+        model_uri: String,
         /// Reply channel.
         reply: oneshot::Sender<Result<(), CoreError>>,
     },
@@ -192,11 +194,16 @@ fn worker_main_train_only(mut rx: mpsc::Receiver<VllmTask>, secret_token: Option
                     "Generate not supported under --features train without vllm",
                 )));
             }
-            VllmTask::SetTrainMode { enabled, reply } => {
+            VllmTask::SetTrainMode {
+                enabled,
+                model_uri,
+                reply,
+            } => {
                 let r = crate::train::run_set_train_mode(
                     enabled,
                     &mut active_mode,
                     secret_token.as_ref(),
+                    &model_uri,
                 );
                 let _ = reply.send(r);
             }
@@ -227,6 +234,7 @@ fn worker_main_train_only(mut rx: mpsc::Receiver<VllmTask>, secret_token: Option
 /// scheduler tasks make progress.
 #[cfg(feature = "vllm")]
 #[allow(clippy::needless_pass_by_value)] // `secret_token` is owned-on-thread by design.
+#[allow(clippy::too_many_lines)] // single match-dispatch loop over every VllmTask arm.
 fn worker_main_vllm(mut rx: mpsc::Receiver<VllmTask>, secret_token: Option<String>) {
     use pyo3::prelude::*;
     use pyo3::types::PyDict;
@@ -309,11 +317,16 @@ fn worker_main_vllm(mut rx: mpsc::Receiver<VllmTask>, secret_token: Option<Strin
                 }
             }
             #[cfg(feature = "train")]
-            VllmTask::SetTrainMode { enabled, reply } => {
+            VllmTask::SetTrainMode {
+                enabled,
+                model_uri,
+                reply,
+            } => {
                 let r = crate::train::run_set_train_mode(
                     enabled,
                     &mut active_mode,
                     secret_token.as_ref(),
+                    &model_uri,
                 );
                 let _ = reply.send(r);
             }

@@ -31,6 +31,30 @@ from rollout.backends.vllm.qwen25_chat_template import GENERATION_MARKED_QWEN25_
 
 # Module-global Accelerator state (Pitfall 7 — Accelerator is a singleton).
 _STATE: Optional[Dict[str, Any]] = None
+# Pending (model_uri, seed) recorded by `configure_train`; `init_train` fires
+# lazily from `_require_state` on the first forward/optimizer/save call.
+_PENDING: Optional[Tuple[str, int]] = None
+
+
+def configure_train(model_uri: str, seed: int = 42) -> None:
+    """Record the model URI + seed for lazy ``init_train`` on first use.
+
+    Cheap and idempotent — does NOT load the model. Rust calls this from
+    ``set_train_mode(true)`` so the heavy build is deferred to the first pass.
+    """
+    global _PENDING
+    _PENDING = (model_uri, seed)
+
+
+def _require_state() -> Dict[str, Any]:
+    """Return live training state, lazily building it from ``_PENDING``."""
+    global _STATE
+    if _STATE is None:
+        if _PENDING is None:
+            raise RuntimeError("init_train was not called")
+        init_train(*_PENDING)
+    assert _STATE is not None
+    return _STATE
 
 
 def _set_determinism_flags(seed: int) -> None:
@@ -129,7 +153,8 @@ def init_train(model_uri: str, seed: int = 42) -> Dict[str, Any]:
 
 def teardown_train() -> None:
     """Destroy training state and free CUDA memory (Pitfall 7)."""
-    global _STATE
+    global _STATE, _PENDING
+    _PENDING = None
     if _STATE is None:
         return
     try:
@@ -151,9 +176,7 @@ def forward_with_loss(rows: list, loss_scope: str) -> Dict[str, Any]:
     ``"assistant_only"`` (Phase 4 stub; needs structured rows from plan 04-06)
     or ``"full"``.
     """
-    state = _STATE
-    if state is None:
-        raise RuntimeError("init_train was not called")
+    state = _require_state()
     tokenizer = state["tokenizer"]
     model = state["model"]
 
@@ -194,9 +217,7 @@ def forward_with_loss(rows: list, loss_scope: str) -> Dict[str, Any]:
 
 def optimizer_step(grad_handle: Dict[str, Any], lr: float) -> None:
     """Sync; called via ``py.detach(...)``. Applies deferred backward + step."""
-    state = _STATE
-    if state is None:
-        raise RuntimeError("init_train was not called")
+    state = _require_state()
     loss = state.get("last_loss")
     if loss is None:
         raise RuntimeError("optimizer_step called without a pending forward_with_loss")
@@ -218,9 +239,7 @@ def save_weights(target_dir: str) -> str:
 
     Returns the path back. The Rust side tar+blake3-hashes for ``ContentId``.
     """
-    state = _STATE
-    if state is None:
-        raise RuntimeError("init_train was not called")
+    state = _require_state()
     Path(target_dir).mkdir(parents=True, exist_ok=True)
     state["accelerator"].save_state(target_dir)
     return target_dir
@@ -228,7 +247,5 @@ def save_weights(target_dir: str) -> str:
 
 def load_weights(src_dir: str) -> None:
     """Load state from ``src_dir`` via ``accelerate.load_state``."""
-    state = _STATE
-    if state is None:
-        raise RuntimeError("init_train was not called")
+    state = _require_state()
     state["accelerator"].load_state(src_dir)

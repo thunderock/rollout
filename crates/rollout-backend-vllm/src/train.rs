@@ -51,12 +51,18 @@ pub(crate) fn run_set_train_mode(
     enabled: bool,
     active_mode: &mut ActiveMode,
     secret_token: Option<&String>,
+    model_uri: &str,
 ) -> Result<(), CoreError> {
     let token: Option<&str> = secret_token.map(String::as_str);
     match (*active_mode, enabled) {
         (ActiveMode::None | ActiveMode::Training, true) => {
             Python::attach(|py| -> Result<(), CoreError> {
-                let _ = import_train_module(py, token)?;
+                let module = import_train_module(py, token)?;
+                // Record the model URI; init_train fires lazily on first forward.
+                module
+                    .bind(py)
+                    .call_method1("configure_train", (model_uri,))
+                    .map_err(py_to_core)?;
                 Ok(())
             })?;
             *active_mode = ActiveMode::Training;

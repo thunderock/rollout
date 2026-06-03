@@ -106,7 +106,7 @@ pub async fn run_train_sft(args: TrainSftArgs) -> Result<(), CoreError> {
         return Ok(());
     }
 
-    let backend = select_backend(&settings.base_model.uri)?;
+    let backend = select_backend(&settings.base_model.uri).await?;
     let deps = build_deps(backend, &args.config).await?;
     let mut algo = rollout_algo_sft::SftAlgo::from_settings(settings, deps)?;
 
@@ -165,7 +165,7 @@ pub async fn run_train_rm(args: TrainRmArgs) -> Result<(), CoreError> {
         return Ok(());
     }
 
-    let backend = select_backend(&settings.base_model.uri)?;
+    let backend = select_backend(&settings.base_model.uri).await?;
     let deps = build_deps(backend, &args.config).await?;
     let mut algo = rollout_algo_rm::RmAlgo::from_settings(settings, deps)?;
 
@@ -250,8 +250,13 @@ fn algorithm_kind_name(a: &AlgorithmConfig) -> &'static str {
 /// 1. `ROLLOUT_TEST_MOCK_BACKEND=1` + `test-mock-backend` feature → `MockBackend`
 /// 2. `train` feature on → `VllmBackend` (with HF token from env)
 /// 3. neither → `Fatal(ConfigInvalid)` with build-mode hint
-#[allow(clippy::unnecessary_wraps, unused_variables)]
-fn select_backend(model_uri: &str) -> Result<Arc<dyn TrainableBackend>, CoreError> {
+#[allow(
+    clippy::unnecessary_wraps,
+    clippy::unused_async,
+    clippy::needless_return,
+    unused_variables
+)]
+async fn select_backend(model_uri: &str) -> Result<Arc<dyn TrainableBackend>, CoreError> {
     #[cfg(feature = "test-mock-backend")]
     if std::env::var("ROLLOUT_TEST_MOCK_BACKEND").as_deref() == Ok("1") {
         return Ok(Arc::new(rollout_runtime_batch::MockBackend::new_train(42)));
@@ -259,10 +264,13 @@ fn select_backend(model_uri: &str) -> Result<Arc<dyn TrainableBackend>, CoreErro
 
     #[cfg(feature = "train")]
     {
-        let _ = model_uri;
         let engine_id = format!("cli-train-{}", ulid::Ulid::new());
         let token = std::env::var("ROLLOUT_SECRET_HF_TOKEN").ok();
-        let backend = rollout_backend_vllm::VllmBackend::with_secret_token(&engine_id, token)?;
+        let mut backend = rollout_backend_vllm::VllmBackend::with_secret_token(&engine_id, token)?;
+        // Thread the model URI + flip into training mode so the Python worker
+        // records it for lazy `init_train` before the algo's first forward pass.
+        backend.set_train_model_uri(model_uri);
+        backend.set_train_mode(true).await?;
         return Ok(Arc::new(backend));
     }
 

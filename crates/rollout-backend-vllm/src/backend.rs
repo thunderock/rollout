@@ -24,6 +24,11 @@ pub struct VllmBackend {
     /// worker echoes the URI back; the `vllm`-feature worker returns the
     /// `huggingface_hub`-resolved SHA per RESEARCH "Re-deriving `model_content_id`".
     model_id: ContentId,
+    /// Model URI for the training path; forwarded to the Python worker on
+    /// `set_train_mode(true)` so `init_train` can build lazily. Empty until set
+    /// (the inference path resolves its model via `init` instead).
+    #[cfg(feature = "train")]
+    model_uri: String,
 }
 
 impl VllmBackend {
@@ -59,7 +64,18 @@ impl VllmBackend {
         Ok(Self {
             engine,
             model_id: ContentId::of(engine_id.as_bytes()),
+            #[cfg(feature = "train")]
+            model_uri: String::new(),
         })
+    }
+
+    /// Set the model URI used by the training path's lazy `init_train`.
+    ///
+    /// The CLI train wiring calls this before `set_train_mode(true)`; the
+    /// inference path leaves it empty and resolves its model via `init`.
+    #[cfg(feature = "train")]
+    pub fn set_train_model_uri(&mut self, model_uri: &str) {
+        model_uri.clone_into(&mut self.model_uri);
     }
 }
 
@@ -145,6 +161,7 @@ impl rollout_core::TrainableBackend for VllmBackend {
             .tx
             .send(VllmTask::SetTrainMode {
                 enabled,
+                model_uri: self.model_uri.clone(),
                 reply: reply_tx,
             })
             .await
