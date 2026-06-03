@@ -237,7 +237,6 @@ fn worker_main_train_only(mut rx: mpsc::Receiver<VllmTask>, secret_token: Option
 #[allow(clippy::too_many_lines)] // single match-dispatch loop over every VllmTask arm.
 fn worker_main_vllm(mut rx: mpsc::Receiver<VllmTask>, secret_token: Option<String>) {
     use pyo3::prelude::*;
-    use pyo3::types::PyDict;
 
     // Phase-4: track active mode so train-side calls can refuse mid-run swaps.
     #[cfg(feature = "train")]
@@ -259,9 +258,9 @@ fn worker_main_vllm(mut rx: mpsc::Receiver<VllmTask>, secret_token: Option<Strin
         // Pitfall 10: env-write BEFORE py.import. Phase-3 secret_token contract.
         let import_result: PyResult<Py<PyModule>> = Python::attach(|py| {
             if let Some(token) = &secret_token {
+                // os.environ is os._Environ, not a dict — set via __setitem__.
                 let os = py.import("os")?;
-                let environ: Bound<'_, PyDict> = os.getattr("environ")?.cast_into()?;
-                environ.set_item("HF_TOKEN", token)?;
+                os.getattr("environ")?.set_item("HF_TOKEN", token)?;
             }
             let module = py.import("rollout.backends.vllm.engine")?;
             Ok(module.unbind())
