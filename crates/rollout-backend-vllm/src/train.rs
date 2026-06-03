@@ -21,11 +21,8 @@ fn import_train_module(
     secret_token: Option<&str>,
 ) -> Result<Py<PyModule>, CoreError> {
     let os = py.import("os").map_err(py_to_core)?;
-    let environ: Bound<'_, PyDict> = os
-        .getattr("environ")
-        .map_err(py_to_core)?
-        .cast_into()
-        .map_err(|e| py_to_core(e.into()))?;
+    // os.environ is os._Environ, not a dict — set via __setitem__ on the PyAny.
+    let environ = os.getattr("environ").map_err(py_to_core)?;
     environ
         .set_item("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
         .map_err(py_to_core)?;
