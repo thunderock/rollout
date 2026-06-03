@@ -54,6 +54,8 @@ def init(model_uri: str, **engine_args: object) -> str:
         "model": model_uri,
         "disable_log_stats": True,
         "disable_log_requests": True,
+        # CPU CI: skip torch.compile/inductor (fragile/slow on CPU runners).
+        "enforce_eager": device != "cuda",
         "gpu_memory_utilization": (
             engine_args.get("gpu_memory_utilization", 0.85) if device == "cuda" else None
         ),

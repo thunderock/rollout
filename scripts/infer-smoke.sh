@@ -13,6 +13,12 @@ cd "$REPO_ROOT"
 # embedded interpreter.
 export PYTHONPATH="$REPO_ROOT/python${PYTHONPATH:+:$PYTHONPATH}"
 
+# vLLM-CPU on public runners: run the V1 engine core in-process (the multiproc
+# WorkerProc subprocess crashes on CI) and give the CPU backend a KV-cache budget.
+# engine.py also sets enforce_eager on CPU to skip torch.compile/inductor.
+export VLLM_ENABLE_V1_MULTIPROCESSING="${VLLM_ENABLE_V1_MULTIPROCESSING:-0}"
+export VLLM_CPU_KVCACHE_SPACE="${VLLM_CPU_KVCACHE_SPACE:-4}"
+
 OUT_DIR="data/completions/batch-tiny"
 rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR"
