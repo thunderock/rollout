@@ -106,9 +106,8 @@ fn sort_key(entry: &(StorageKey, Vec<u8>)) -> (String, Option<[u8; 16]>, Vec<Str
 }
 
 proptest! {
-    // 32 cases: each does up to ~8 entries × (PG + redb) commits under
-    // --test-threads=1 — the cost is per-case PG fsync round-trips, not just
-    // case count (64×~15 overran the CI timeout). Keeps meaningful parity coverage.
+    // 32 cases, each batching all puts into one PG + one redb commit (see body).
+    // Earlier per-entry commits were fsync-bound and overran the CI timeout.
     #![proptest_config(ProptestConfig { cases: 32, .. ProptestConfig::default() })]
 
     #[test]
@@ -128,20 +127,19 @@ proptest! {
 
         let h = harness();
         h.rt.block_on(async {
+            // One transaction per backend (not one per entry): PG fsync-per-commit
+            // dominated runtime and blew the CI timeout. bucket isolates this case;
+            // prefix_component is the scanned prefix; (suffix,i) keeps leaves distinct.
+            let mut tpg = h.pg.begin().await.unwrap();
+            let mut tredb = h.redb.begin().await.unwrap();
             for (i, (suffix, value)) in entries.iter().enumerate() {
-                // bucket isolates this case; prefix_component is the scanned prefix;
-                // (suffix,i) keeps leaves distinct so the put count is deterministic.
                 let leaf = format!("{suffix}-{i}");
                 let k = key(&[bucket.as_str(), prefix_component.as_str(), leaf.as_str()]);
-
-                let mut t = h.pg.begin().await.unwrap();
-                t.put_bytes(k.clone(), value.clone()).await.unwrap();
-                t.commit().await.unwrap();
-
-                let mut t = h.redb.begin().await.unwrap();
-                t.put_bytes(k.clone(), value.clone()).await.unwrap();
-                t.commit().await.unwrap();
+                tpg.put_bytes(k.clone(), value.clone()).await.unwrap();
+                tredb.put_bytes(k.clone(), value.clone()).await.unwrap();
             }
+            tpg.commit().await.unwrap();
+            tredb.commit().await.unwrap();
 
             let range = KeyRange {
                 prefix: key(&[bucket.as_str(), prefix_component.as_str()]),
