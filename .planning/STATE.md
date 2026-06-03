@@ -36,6 +36,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-01 after v1.1).
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260528-w1p | Make train-smoke + infer-smoke CI jobs always-on and free on public runners (vllm-cpu wheel + un-gating + caching) | 2026-05-29 | 14060e8 | [260528-w1p-make-train-smoke-and-infer-smoke-ci-jobs](./quick/260528-w1p-make-train-smoke-and-infer-smoke-ci-jobs/) |
+| 260603-ci5 | Fix 5 failing CI jobs on main (train-smoke env cast, infer-smoke device kwarg, aws localstack checksum, pg proptest timeout, gcp doctor diagnosability) — CI-verified only | 2026-06-03 | 8b78b6a | [260603-ci5-fix-five-failing-ci-jobs](./quick/260603-ci5-fix-five-failing-ci-jobs/) |
 
 ## Previous Milestone — v1.0 (Shipped 2026-05-27)
 
