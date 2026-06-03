@@ -19,6 +19,7 @@ imported (handled on the Rust side; see ``engine.rs::worker_main_vllm``).
 
 from __future__ import annotations
 
+import inspect
 import logging
 
 logging.getLogger("vllm").setLevel(logging.WARNING)
@@ -45,25 +46,24 @@ def init(model_uri: str, **engine_args: object) -> str:
     """Bring up ``AsyncLLMEngine`` and return the resolved model SHA."""
     global _engine, _model_sha
     device = "cuda" if torch.cuda.is_available() else "cpu"  # Pitfall 9
-    gpu_memory_utilization = (
-        engine_args.get("gpu_memory_utilization", 0.85) if device == "cuda" else None
-    )
     tokenizer = engine_args.get("tokenizer")
-    if device == "cuda":
-        args = AsyncEngineArgs(
-            model=model_uri,
-            disable_log_stats=True,
-            disable_log_requests=True,
-            gpu_memory_utilization=gpu_memory_utilization,
-            tokenizer=tokenizer if isinstance(tokenizer, str) and tokenizer else None,
-        )
-    else:
-        args = AsyncEngineArgs(
-            model=model_uri,
-            disable_log_stats=True,
-            disable_log_requests=True,
-            tokenizer=tokenizer if isinstance(tokenizer, str) and tokenizer else None,
-        )
+    # Build the candidate kwargs then keep only those the installed vLLM's
+    # AsyncEngineArgs still accepts — the surface drifts across versions
+    # (e.g. `device`, `disable_log_requests` were removed). None values dropped.
+    candidate = {
+        "model": model_uri,
+        "disable_log_stats": True,
+        "disable_log_requests": True,
+        "gpu_memory_utilization": (
+            engine_args.get("gpu_memory_utilization", 0.85) if device == "cuda" else None
+        ),
+        "tokenizer": tokenizer if isinstance(tokenizer, str) and tokenizer else None,
+    }
+    accepted = set(inspect.signature(AsyncEngineArgs).parameters)
+    kwargs = {
+        k: v for k, v in candidate.items() if v is not None and (k == "model" or k in accepted)
+    }
+    args = AsyncEngineArgs(**kwargs)
     _engine = AsyncLLMEngine.from_engine_args(args)
     # Resolve the HF repo SHA for content-addressed model_id; fall back to the
     # URI when the model is local or the API call fails (offline dev hosts).
