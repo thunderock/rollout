@@ -51,3 +51,17 @@ but 5 jobs red: `train-smoke`, `infer-smoke`, `cloud-emulator-aws`, `cloud-emula
 **Confidence (round 2):** train, infer, snapshots, gcp-queue, gcp-compute_hint — high (root cause confirmed, compiles/lints). postgres — medium (per-case PG latency; 32×8 + 25m should fit, but if pathologically slow needs more).
 
 **Verification:** same as round 1 — all touched crates/tests compile with CI features; fmt + per-feature clippy + no-feature workspace clippy clean; default `cargo test --workspace --tests` green (111 binaries). Runtime pass/fail still **CI-only** (no Docker/GPU locally).
+
+---
+
+## Round 3 (run 26919353492) — fixes worked, revealed next layer
+
+| Job | Round-3 root cause | Fix | Commit |
+|-----|-------------------|-----|--------|
+| train-smoke | `_Environ` gone → `NameError: Tuple` (module-level annotation, no `__future__` import) | import `Tuple` | `126f76f` |
+| infer-smoke | kwarg errors gone → vLLM V1 multiproc `WorkerProc` crash on CPU runner | in-process engine (`VLLM_ENABLE_V1_MULTIPROCESSING=0`) + `VLLM_CPU_KVCACHE_SPACE` + `enforce_eager` on CPU | `5a8e09b` |
+| cloud-emulator-aws | checksum+snapshot fixed → unmasked CI-arg bug: 3 testname positionals before `--` (cargo takes only 1) | move filters after `--` | `301e6f9` |
+| cloud-emulator-gcp | queue+compute_hint now pass → JSON report polluted by tracing logs on stdout (trailing characters) | route tracing to stderr | `28b13ce` |
+| postgres-integration | 32 cases still ~fsync-bound (~28s/case), neared 25-min timeout | batch all puts/case into one PG + one redb commit (~8× fewer fsyncs) | `896a2f1` |
+
+**Confidence (round 3):** train, aws, gcp, postgres — high (root cause confirmed, compiles/lints). **infer-smoke — lower:** the WorkerProc crash is vLLM-CPU-on-CI runtime fragility; the in-process/eager mitigations are the standard remedies but only CI can confirm (and it may surface a further vLLM-CPU issue).

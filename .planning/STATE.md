@@ -36,7 +36,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-01 after v1.1).
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260528-w1p | Make train-smoke + infer-smoke CI jobs always-on and free on public runners (vllm-cpu wheel + un-gating + caching) | 2026-05-29 | 14060e8 | [260528-w1p-make-train-smoke-and-infer-smoke-ci-jobs](./quick/260528-w1p-make-train-smoke-and-infer-smoke-ci-jobs/) |
-| 260603-ci5 | Fix failing CI jobs on main — 2 rounds (train/infer vLLM, aws localstack checksum + snapshot dir, pg proptest timeout, gcp doctor compute_hint + pubsub project) — CI-verified only | 2026-06-03 | aaa9ff3 | [260603-ci5-fix-five-failing-ci-jobs](./quick/260603-ci5-fix-five-failing-ci-jobs/) |
+| 260603-ci5 | Fix failing CI jobs on main — 3 rounds (vLLM env/kwargs/CPU-init, aws checksum+snapshot+cargo-arg, pg proptest commit-batching, gcp pubsub project + logs-to-stderr) — CI-verified only | 2026-06-03 | 896a2f1 | [260603-ci5-fix-five-failing-ci-jobs](./quick/260603-ci5-fix-five-failing-ci-jobs/) |
 
 ## Previous Milestone — v1.0 (Shipped 2026-05-27)
 
