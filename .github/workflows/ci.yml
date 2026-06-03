@@ -560,7 +560,9 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install vllm-cpu (CPU wheel)
-        run: pip install 'vllm-cpu>=0.17'
+        # vllm-cpu pins torch==X+cpu, which only ships on the PyTorch CPU index
+        # (not PyPI) — without this extra index pip can't resolve torch.
+        run: pip install 'vllm-cpu>=0.17' --extra-index-url https://download.pytorch.org/whl/cpu
       - name: Cache HuggingFace models
         uses: actions/cache@v4
         with:
