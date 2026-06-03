@@ -412,7 +412,7 @@ jobs:
           AWS_ACCESS_KEY_ID: test
           AWS_SECRET_ACCESS_KEY: test
           AWS_REGION: us-east-1
-        run: cargo test -p rollout-cli --features 'aws,gcp' --test doctor_smoke doctor_smoke_aws doctor_smoke_human doctor_smoke_json -- --include-ignored --test-threads=1
+        run: cargo test -p rollout-cli --features 'aws,gcp' --test doctor_smoke -- --include-ignored --test-threads=1 doctor_smoke_aws doctor_smoke_human doctor_smoke_json
 
   cloud-live-aws:
     # CLOUD-01 nightly + path-triggered live cloud conformance. Real AWS via
