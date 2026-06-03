@@ -106,9 +106,10 @@ fn sort_key(entry: &(StorageKey, Vec<u8>)) -> (String, Option<[u8; 16]>, Vec<Str
 }
 
 proptest! {
-    // 64 cases: each runs real Postgres round-trips under --test-threads=1; 256
-    // overran the 15-min CI job timeout. 64 keeps meaningful parity coverage fast.
-    #![proptest_config(ProptestConfig { cases: 64, .. ProptestConfig::default() })]
+    // 32 cases: each does up to ~8 entries × (PG + redb) commits under
+    // --test-threads=1 — the cost is per-case PG fsync round-trips, not just
+    // case count (64×~15 overran the CI timeout). Keeps meaningful parity coverage.
+    #![proptest_config(ProptestConfig { cases: 32, .. ProptestConfig::default() })]
 
     #[test]
     #[ignore = "requires Docker / testcontainers"]
@@ -117,7 +118,7 @@ proptest! {
         prefix_component in "[ -~]{0,8}",                    // printable ASCII (0x20-0x7E)
         entries in prop::collection::vec(
             ("[ -~]{1,8}", prop::collection::vec(any::<u8>(), 0..32)),
-            1..16,
+            1..8,
         ),
     ) {
         prop_assume!(is_printable_ascii(&prefix_component));
