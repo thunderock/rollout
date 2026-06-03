@@ -109,9 +109,15 @@ impl ComputeHint for GceMetadataComputeHint {
 
     async fn preemption_signal(&self) -> Result<Option<Duration>, CoreError> {
         // MDS path: /computeMetadata/v1/instance/preempted -> "TRUE" when reclaiming.
-        match self.get_attr("instance/preempted").await? {
-            Some(v) if v.eq_ignore_ascii_case("true") => Ok(Some(GCE_PREEMPT_LEAD)),
-            _ => Ok(None),
+        // An unreachable MDS (e.g. off-GCE) means "no preemption signal", matching
+        // inventory()'s tolerance — don't propagate the transport error.
+        match self.get_attr("instance/preempted").await {
+            Ok(Some(v)) if v.eq_ignore_ascii_case("true") => Ok(Some(GCE_PREEMPT_LEAD)),
+            Ok(_) => Ok(None),
+            Err(e) => {
+                tracing::warn!(error = ?e, "MDS preempted fetch failed; assuming not preempted");
+                Ok(None)
+            }
         }
     }
 }
