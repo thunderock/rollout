@@ -4,7 +4,7 @@
 //! construction time and never reach the backends (`prop_assume!` skip).
 //!
 //! One Postgres container + one redb file are started once and reused across all
-//! 256 cases; each case isolates itself under a unique random top-level path
+//! cases; each case isolates itself under a unique random top-level path
 //! segment so concurrent rows never collide. The load-bearing assertion is
 //! `prop_assert_eq!(redb_results, pg_results)` after sorting.
 //!
@@ -106,7 +106,9 @@ fn sort_key(entry: &(StorageKey, Vec<u8>)) -> (String, Option<[u8; 16]>, Vec<Str
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 256, .. ProptestConfig::default() })]
+    // 64 cases: each runs real Postgres round-trips under --test-threads=1; 256
+    // overran the 15-min CI job timeout. 64 keeps meaningful parity coverage fast.
+    #![proptest_config(ProptestConfig { cases: 64, .. ProptestConfig::default() })]
 
     #[test]
     #[ignore = "requires Docker / testcontainers"]
