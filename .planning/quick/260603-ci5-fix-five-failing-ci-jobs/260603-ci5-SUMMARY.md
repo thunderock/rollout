@@ -34,3 +34,20 @@ but 5 jobs red: `train-smoke`, `infer-smoke`, `cloud-emulator-aws`, `cloud-emula
   slow, may need further tuning.
 - cloud-emulator-gcp: **diagnostic only** — the actual failing check is not yet known.
   This commit makes the next CI run reveal it; a real fix follows once the report is visible.
+
+---
+
+## Round 2 (run 26909821478) — fixes worked, revealed deeper sites
+
+| Job | Round-2 root cause | Fix | Commit |
+|-----|-------------------|-----|--------|
+| train-smoke | **2nd** `os.environ`→`PyDict` cast (train import path, `train.rs:24`) | `set_item` on `PyAny` | `c3d5826` |
+| infer-smoke | `device` gone; vLLM also removed `disable_log_requests` | filter kwargs to installed `AsyncEngineArgs` signature | `68148c5` |
+| cloud-emulator-aws | conformance checksum **fixed** → unmasked: `snapshotter_for` opens redb in a missing dir; snapshots' own S3 client also lacked the checksum cfg | `create_dir_all` + `WhenRequired` checksums | `ba83c2e` |
+| postgres-integration | not case-count-bound — ~15 PG commits/case; 64 cases still overran | 32 cases × ≤8 entries + timeout 15→25 | `b5d918b` |
+| cloud-emulator-gcp (compute_hint) | `preemption_signal` propagated unreachable-MDS error (`inventory` already tolerates) | tolerate → `Ok(None)` | `7fcb1f9` |
+| cloud-emulator-gcp (queue) | gcloud-pubsub `ClientConfig::default()` hardcodes `project_id="local-project"` under emulator → publishes to wrong project → "Topic not found" | set `project_id` from `cfg.project` | `aaa9ff3` |
+
+**Confidence (round 2):** train, infer, snapshots, gcp-queue, gcp-compute_hint — high (root cause confirmed, compiles/lints). postgres — medium (per-case PG latency; 32×8 + 25m should fit, but if pathologically slow needs more).
+
+**Verification:** same as round 1 — all touched crates/tests compile with CI features; fmt + per-feature clippy + no-feature workspace clippy clean; default `cargo test --workspace --tests` green (111 binaries). Runtime pass/fail still **CI-only** (no Docker/GPU locally).
