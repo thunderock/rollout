@@ -291,5 +291,7 @@ fn init_tracing() {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(filter)
         .json()
+        // Logs to stderr so stdout stays pure JSON for `schema` / `cloud doctor --format json`.
+        .with_writer(std::io::stderr)
         .try_init();
 }
