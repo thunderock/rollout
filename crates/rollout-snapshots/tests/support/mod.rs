@@ -35,9 +35,13 @@ pub async fn build_localstack_object_store() -> Option<Arc<dyn ObjectStore>> {
         .region(aws_config::Region::new("us-east-1"))
         .load()
         .await;
-    // localstack requires path-style addressing.
+    // localstack requires path-style addressing; WhenRequired stops the SDK
+    // emitting CRC32 on multipart uploads (localstack rejects with
+    // InvalidRequest: Checksum Type mismatch).
     let s3_cfg = aws_sdk_s3::config::Builder::from(&cfg)
         .force_path_style(true)
+        .request_checksum_calculation(aws_sdk_s3::config::RequestChecksumCalculation::WhenRequired)
+        .response_checksum_validation(aws_sdk_s3::config::ResponseChecksumValidation::WhenRequired)
         .build();
     let client = Arc::new(aws_sdk_s3::Client::from_conf(s3_cfg));
     let bucket = format!("rollout-snapshots-test-{}", ulid::Ulid::new()).to_lowercase();
@@ -66,6 +70,8 @@ pub async fn snapshotter_for(
     dir: &Path,
     object: Arc<dyn ObjectStore>,
 ) -> (Arc<dyn Storage>, SnapshotterImpl) {
+    // redb's Database::create needs the parent dir to exist.
+    std::fs::create_dir_all(dir).unwrap();
     let storage: Arc<dyn Storage> =
         Arc::new(EmbeddedStorage::open(&dir.join("st.db")).await.unwrap());
     let snapper = SnapshotterImpl::new(Arc::clone(&storage), object, dir.to_path_buf());
