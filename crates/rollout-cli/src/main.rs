@@ -115,6 +115,12 @@ enum SchemaFormat {
 }
 
 fn main() -> ExitCode {
+    // rustls 0.23 panics when it can't auto-pick a CryptoProvider; the aws+gcp
+    // build links both aws-lc-rs and ring, so install one explicitly up front.
+    // rustls 0.23 panics when it can't auto-pick a CryptoProvider; the aws+gcp
+    // build links both aws-lc-rs and ring, so install one explicitly up front.
+    #[cfg(feature = "_doctor")]
+    let _ = tokio_rustls::rustls::crypto::aws_lc_rs::default_provider().install_default();
     let cli = Cli::parse();
     match cli.cmd {
         Cmd::Schema { format } => schema(format),
