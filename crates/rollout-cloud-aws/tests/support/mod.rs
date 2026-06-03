@@ -27,10 +27,17 @@ pub async fn localstack_sdk_config(endpoint: &str) -> aws_config::SdkConfig {
 }
 
 /// Build a path-style S3 client (localstack requires path-style addressing).
+///
+/// Checksums are forced to `WhenRequired`: `BehaviorVersion::latest` defaults to
+/// emitting CRC32 on (multipart) uploads, which localstack rejects with
+/// `InvalidRequest: Checksum Type mismatch`. Real S3 is unaffected (prod client).
 pub async fn s3_client(endpoint: &str) -> aws_sdk_s3::Client {
+    use aws_sdk_s3::config::{RequestChecksumCalculation, ResponseChecksumValidation};
     let cfg = localstack_sdk_config(endpoint).await;
     let s3_cfg = aws_sdk_s3::config::Builder::from(&cfg)
         .force_path_style(true)
+        .request_checksum_calculation(RequestChecksumCalculation::WhenRequired)
+        .response_checksum_validation(ResponseChecksumValidation::WhenRequired)
         .build();
     aws_sdk_s3::Client::from_conf(s3_cfg)
 }
