@@ -10,8 +10,9 @@ Contract:
   returns ``{text, finish_reason, prompt_tokens, completion_tokens}``.
 - ``shutdown()`` is idempotent.
 
-Pitfall 9 (RESEARCH): device is resolved via an explicit
-``torch.cuda.is_available()`` probe rather than vLLM's ``device="auto"``.
+Pitfall 9 (RESEARCH): a ``torch.cuda.is_available()`` probe gates
+``gpu_memory_utilization``; device itself is left to vLLM's platform
+auto-detection (the ``device`` kwarg was removed from ``AsyncEngineArgs``).
 Pitfall 10: ``HF_TOKEN`` is written into ``os.environ`` BEFORE this module is
 imported (handled on the Rust side; see ``engine.rs::worker_main_vllm``).
 """
@@ -51,7 +52,6 @@ def init(model_uri: str, **engine_args: object) -> str:
     if device == "cuda":
         args = AsyncEngineArgs(
             model=model_uri,
-            device=device,
             disable_log_stats=True,
             disable_log_requests=True,
             gpu_memory_utilization=gpu_memory_utilization,
@@ -60,7 +60,6 @@ def init(model_uri: str, **engine_args: object) -> str:
     else:
         args = AsyncEngineArgs(
             model=model_uri,
-            device=device,
             disable_log_stats=True,
             disable_log_requests=True,
             tokenizer=tokenizer if isinstance(tokenizer, str) and tokenizer else None,
