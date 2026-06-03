@@ -18,7 +18,7 @@ use tokio::io::AsyncRead;
 
 use rollout_core::{ContentId, CoreError, ObjectStore, PutHint};
 
-use crate::error::{fatal_internal, map_s3_sdk_error};
+use crate::error::{fatal_internal, map_s3_sdk_error, render_sdk};
 
 /// S3-backed content-addressed object store.
 pub struct S3ObjectStore {
@@ -119,11 +119,11 @@ impl ObjectStore for S3ObjectStore {
         {
             Ok(_) => Ok(true),
             Err(e) => {
-                let rendered = format!("{e}");
+                let rendered = render_sdk(&e);
                 if rendered.contains("NotFound") || rendered.contains("404") {
                     Ok(false)
                 } else {
-                    Err(map_s3_sdk_error(e))
+                    Err(map_s3_sdk_error(rendered))
                 }
             }
         }

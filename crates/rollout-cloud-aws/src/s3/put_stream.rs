@@ -21,7 +21,7 @@ use tracing::warn;
 
 use rollout_core::{ContentId, CoreError, PutHint};
 
-use crate::error::{fatal_internal, map_s3_sdk_error, recoverable_transient};
+use crate::error::{fatal_internal, map_s3_sdk_error, recoverable_transient, render_sdk};
 
 /// Guard that aborts an in-flight multipart upload unless `.commit()` ran.
 pub(crate) struct MultipartGuard {
@@ -57,7 +57,7 @@ impl MultipartGuard {
             )
             .send()
             .await
-            .map_err(map_s3_sdk_error)?;
+            .map_err(|e| map_s3_sdk_error(render_sdk(&e)))?;
         self.committed = true;
         Ok(())
     }
@@ -117,7 +117,7 @@ pub(crate) async fn put_stream_impl(
         )
         .send()
         .await
-        .map_err(map_s3_sdk_error)?;
+        .map_err(|e| map_s3_sdk_error(render_sdk(&e)))?;
     let upload_id = create
         .upload_id()
         .ok_or_else(|| fatal_internal("CreateMultipartUpload missing upload_id"))?
@@ -188,7 +188,7 @@ pub(crate) async fn put_stream_impl(
         .copy_source(format!("{}/{}", store.bucket, temp_key))
         .send()
         .await
-        .map_err(map_s3_sdk_error)?;
+        .map_err(|e| map_s3_sdk_error(render_sdk(&e)))?;
     store
         .client
         .delete_object()
@@ -196,7 +196,7 @@ pub(crate) async fn put_stream_impl(
         .key(&temp_key)
         .send()
         .await
-        .map_err(map_s3_sdk_error)?;
+        .map_err(|e| map_s3_sdk_error(render_sdk(&e)))?;
 
     Ok(content_id)
 }
@@ -223,7 +223,7 @@ async fn upload_one_part(
         .body(ByteStream::from(bytes))
         .send()
         .await
-        .map_err(map_s3_sdk_error)?;
+        .map_err(|e| map_s3_sdk_error(render_sdk(&e)))?;
     parts.push(
         CompletedPart::builder()
             .e_tag(resp.e_tag().unwrap_or_default())

@@ -20,7 +20,7 @@ use tokio::sync::Mutex;
 use rollout_core::traits::cloud::{LeaseToken, Queue, QueueItemId};
 use rollout_core::CoreError;
 
-use crate::error::{fatal_internal, map_sqs_sdk_error};
+use crate::error::{fatal_internal, map_sqs_sdk_error, render_sdk};
 
 /// SQS-backed work queue with lease support.
 pub struct SqsQueue {
@@ -143,7 +143,7 @@ impl Queue for SqsQueue {
             .visibility_timeout(secs)
             .send()
             .await
-            .map_err(map_sqs_sdk_error)?;
+            .map_err(|e| map_sqs_sdk_error(render_sdk(&e)))?;
         Ok(())
     }
 }

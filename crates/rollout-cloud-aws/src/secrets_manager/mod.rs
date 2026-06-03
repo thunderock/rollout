@@ -12,7 +12,7 @@ use aws_sdk_secretsmanager::Client;
 use rollout_core::traits::cloud::SecretStore;
 use rollout_core::{CoreError, FatalError};
 
-use crate::error::{fatal_internal, map_sm_sdk_error};
+use crate::error::{fatal_internal, map_sm_sdk_error, render_sdk};
 
 /// Read-only Secrets Manager-backed secret store.
 pub struct SecretsManagerSecretStore {
@@ -44,7 +44,7 @@ impl SecretStore for SecretsManagerSecretStore {
             .secret_id(name)
             .send()
             .await
-            .map_err(map_sm_sdk_error)?;
+            .map_err(|e| map_sm_sdk_error(render_sdk(&e)))?;
         let secret = resp
             .secret_string()
             .ok_or_else(|| {

@@ -12,7 +12,27 @@
 use std::fmt::Display;
 use std::time::Duration;
 
+use aws_sdk_s3::error::{ProvideErrorMetadata, SdkError};
 use rollout_core::{CoreError, FatalError, RecoverableError, RetryHint};
+
+/// Render an SDK error to a string that surfaces the modeled error code +
+/// message. `SdkError`'s own `Display` collapses to just "service error"; the
+/// real code (`NotFound`, `ResourceNotFoundException`, `ReceiptHandleIsInvalid`)
+/// lives in the service-error payload, which the string-based mappers below
+/// (and the not-found checks at the call sites) need in order to classify.
+pub(crate) fn render_sdk<E, R>(err: &SdkError<E, R>) -> String
+where
+    E: ProvideErrorMetadata + std::error::Error + 'static,
+{
+    match err.as_service_error() {
+        Some(svc) => format!(
+            "{err} (code={}, message={})",
+            svc.code().unwrap_or("Unknown"),
+            svc.message().unwrap_or("<none>")
+        ),
+        None => err.to_string(),
+    }
+}
 
 /// Backoff used for throttled / transient retries.
 fn backoff() -> RetryHint {

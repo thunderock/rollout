@@ -7,7 +7,7 @@ use tokio::io::AsyncRead;
 
 use rollout_core::{ContentId, CoreError};
 
-use crate::error::{fatal_internal, map_s3_sdk_error};
+use crate::error::{fatal_internal, map_s3_sdk_error, render_sdk};
 
 pub(crate) async fn get_stream_impl(
     store: &super::S3ObjectStore,
@@ -22,11 +22,11 @@ pub(crate) async fn get_stream_impl(
         .send()
         .await
         .map_err(|e| {
-            let rendered = format!("{e}");
+            let rendered = render_sdk(&e);
             if rendered.contains("NoSuchKey") || rendered.contains("404") {
                 fatal_internal(&format!("object not found: {id}"))
             } else {
-                map_s3_sdk_error(e)
+                map_s3_sdk_error(rendered)
             }
         })?;
     Ok(Box::pin(resp.body.into_async_read()))
