@@ -88,6 +88,30 @@ async fn restart_replays_unacked_items() {
     assert_eq!(seen[2].1, b"gamma".to_vec());
 }
 
+// Tight-loop enqueues land in the same millisecond on fast machines; the
+// monotonic ULID generator must still preserve strict enqueue order on replay.
+#[tokio::test]
+async fn same_millisecond_enqueues_replay_in_order() {
+    let dir = tempfile::TempDir::new().unwrap();
+    let storage = fresh_storage(dir.path()).await;
+    let q = InMemQueue::open(Arc::clone(&storage)).await.unwrap();
+    let mut ids = Vec::new();
+    for i in 0..256u32 {
+        ids.push(q.enqueue(i.to_le_bytes().to_vec()).await.unwrap().0);
+    }
+    for w in ids.windows(2) {
+        assert!(w[0] < w[1], "enqueue order must be strictly increasing");
+    }
+    drop(q);
+
+    let q2 = InMemQueue::open(Arc::clone(&storage)).await.unwrap();
+    let mut seen = Vec::new();
+    while let Some((id, _)) = q2.dequeue().await.unwrap() {
+        seen.push(id.0);
+    }
+    assert_eq!(seen, ids, "replay order must match enqueue order");
+}
+
 #[tokio::test]
 async fn ack_removes_from_storage() {
     let dir = tempfile::TempDir::new().unwrap();

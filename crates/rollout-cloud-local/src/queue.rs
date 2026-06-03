@@ -24,6 +24,8 @@ const NAMESPACE: &str = "cloudlocal_queue";
 pub struct InMemQueue {
     inner: Mutex<VecDeque<(QueueItemId, Vec<u8>)>>,
     storage: Arc<dyn Storage>,
+    // Monotonic so same-millisecond enqueues stay strictly ULID-ordered.
+    ids: std::sync::Mutex<ulid::Generator>,
 }
 
 impl InMemQueue {
@@ -58,6 +60,7 @@ impl InMemQueue {
         Ok(Self {
             inner: Mutex::new(deque),
             storage,
+            ids: std::sync::Mutex::new(ulid::Generator::new()),
         })
     }
 
@@ -73,7 +76,14 @@ impl InMemQueue {
 #[async_trait]
 impl Queue for InMemQueue {
     async fn enqueue(&self, payload: Vec<u8>) -> Result<QueueItemId, CoreError> {
-        let id = QueueItemId(ulid::Ulid::new());
+        let id = {
+            let mut g = self.ids.lock().expect("ulid generator mutex poisoned");
+            QueueItemId(g.generate().map_err(|e| {
+                CoreError::Fatal(FatalError::Internal {
+                    msg: format!("ulid monotonic overflow: {e}"),
+                })
+            })?)
+        };
         let mut txn = self.storage.begin().await?;
         txn.put_bytes(Self::key_for(&id), payload.clone()).await?;
         txn.commit().await?;
