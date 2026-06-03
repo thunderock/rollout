@@ -566,9 +566,12 @@ jobs:
           key: ${{ runner.os }}-pip-infer-smoke-py311-${{ hashFiles('.github/workflows/ci.yml') }}
           restore-keys: ${{ runner.os }}-pip-infer-smoke-py311-
       - name: Install vllm-cpu (CPU wheel)
-        # vllm-cpu pins torch==X+cpu, which only ships on the PyTorch CPU index
-        # (not PyPI) — without this extra index pip can't resolve torch.
-        run: pip install 'vllm-cpu>=0.17' --extra-index-url https://download.pytorch.org/whl/cpu
+        # Newer vllm-cpu versions pin torch==X.Y.Z+cpu exactly; if that specific
+        # torch+cpu wheel is not yet on the CPU index, pip fails with
+        # ResolutionImpossible.  Specifying torch>=2.1,<3.0 alongside vllm-cpu
+        # lets pip's resolver backtrack to a vllm-cpu version whose torch dep IS
+        # available, mirroring the pattern used by train-smoke.
+        run: pip install 'torch>=2.1,<3.0' 'vllm-cpu>=0.17' --extra-index-url https://download.pytorch.org/whl/cpu
       - name: Cache HuggingFace models
         uses: actions/cache@v4
         with:
