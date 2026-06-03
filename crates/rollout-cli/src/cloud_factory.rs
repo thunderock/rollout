@@ -151,7 +151,13 @@ async fn build_gcp_runtime(
     // `ClientConfig::default()` prefers PUBSUB_EMULATOR_HOST when set (anonymous);
     // only mint ADC credentials for the real Pub/Sub endpoint.
     let pubsub_cfg = if pubsub_emulator.is_some() {
-        PubSubClientConfig::default()
+        // Emulator ClientConfig::default() hardcodes project_id="local-project";
+        // override with the configured project so topic paths resolve (else the
+        // emulator reports "Topic not found").
+        PubSubClientConfig {
+            project_id: Some(cfg.project.clone()),
+            ..PubSubClientConfig::default()
+        }
     } else {
         PubSubClientConfig::default()
             .with_auth()
