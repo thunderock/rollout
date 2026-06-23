@@ -113,15 +113,17 @@ fn doctor_smoke_aws_localstack_all_pass() {
         .env("AWS_REGION", "us-east-1")
         .output()
         .unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // Print the JSON report (which check failed + why) on any failure — the
+    // report goes to stdout, so a bare exit-code assert reveals nothing.
     assert_eq!(
         output.status.code(),
         Some(0),
-        "doctor exited non-zero: {}",
+        "doctor exited non-zero.\nstdout (report): {stdout}\nstderr: {}",
         String::from_utf8_lossy(&output.stderr)
     );
-    let stdout = String::from_utf8_lossy(&output.stdout);
     let report: serde_json::Value = serde_json::from_str(&stdout).expect("JSON shape");
-    assert_eq!(report["summary"]["fail_count"], 0);
+    assert_eq!(report["summary"]["fail_count"], 0, "report: {stdout}");
     assert_eq!(report["checks"].as_array().unwrap().len(), 7);
 }
 

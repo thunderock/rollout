@@ -89,10 +89,17 @@ async fn build_aws_runtime(
     }
     let aws_cfg = loader.load().await;
 
-    // S3 against localstack requires path-style addressing.
+    // S3 against localstack requires path-style addressing. It also rejects the
+    // CRC32 checksums BehaviorVersion::latest emits on multipart uploads with
+    // `InvalidRequest: Checksum Type mismatch` — force checksums to WhenRequired
+    // so `put_stream` (content_id_roundtrip doctor check) works. Emulator-only;
+    // real S3 keeps the default checksums. Mirrors the test-support client.
     let blob_client = if emulator_endpoint.is_some() {
+        use aws_sdk_s3::config::{RequestChecksumCalculation, ResponseChecksumValidation};
         let s3_cfg = aws_sdk_s3::config::Builder::from(&aws_cfg)
             .force_path_style(true)
+            .request_checksum_calculation(RequestChecksumCalculation::WhenRequired)
+            .response_checksum_validation(ResponseChecksumValidation::WhenRequired)
             .build();
         Arc::new(aws_sdk_s3::Client::from_conf(s3_cfg))
     } else {
