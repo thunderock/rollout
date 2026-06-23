@@ -26,8 +26,11 @@ mkdir -p "$OUT_DIR"
 echo "infer-smoke: building rollout-cli --features vllm..."
 cargo build -p rollout-cli --features vllm
 
-echo "infer-smoke: running batch (timeout 300 s)..."
-timeout 300 cargo run -p rollout-cli --features vllm -- \
+# 300s was too tight on a cold HF cache: model download + CPU vLLM init + 4
+# prompts overran it (CI exit 124). The build above is already done, so this
+# budget is download+inference only; 1200s fits well inside the 50m job cap.
+echo "infer-smoke: running batch (timeout 1200 s)..."
+timeout 1200 cargo run -p rollout-cli --features vllm -- \
   infer batch --config examples/batch-tiny.toml
 
 OUT_FILE="$OUT_DIR/completions.jsonl"
