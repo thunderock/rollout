@@ -47,12 +47,25 @@ impl ComputeHint for StubLocalHint {
 struct Counters {
     token_puts: AtomicUsize,
     spot_present: bool,
+    // When set, the spot/instance-action GET returns a non-404 error (411) so we
+    // can assert preemption_signal tolerates it as Ok(None) rather than Err.
+    spot_error: bool,
 }
 
 /// Spawn a mock `IMDSv2` server. Returns the base URL plus shared counters.
 async fn spawn_mock_imds(spot_present: bool) -> (String, Arc<Counters>) {
+    spawn_mock_imds_inner(spot_present, false).await
+}
+
+/// Spawn a mock `IMDSv2` server whose spot endpoint returns a non-404 error (411).
+async fn spawn_mock_imds_error() -> (String, Arc<Counters>) {
+    spawn_mock_imds_inner(false, true).await
+}
+
+async fn spawn_mock_imds_inner(spot_present: bool, spot_error: bool) -> (String, Arc<Counters>) {
     let counters = Arc::new(Counters {
         spot_present,
+        spot_error,
         ..Counters::default()
     });
     let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
@@ -114,7 +127,13 @@ async fn handle(req: Request<hyper::body::Incoming>, c: Arc<Counters>) -> Respon
             Response::new(Full::new(Bytes::from_static(b"m5.large")))
         }
         "/latest/meta-data/spot/instance-action" => {
-            if c.spot_present {
+            if c.spot_error {
+                // 411 Length Required — a non-404 error LocalStack/non-EC2 IMDS may emit.
+                Response::builder()
+                    .status(StatusCode::LENGTH_REQUIRED)
+                    .body(Full::new(Bytes::from_static(b"length required")))
+                    .unwrap()
+            } else if c.spot_present {
                 Response::new(Full::new(Bytes::from_static(b"terminate")))
             } else {
                 Response::builder()
@@ -166,6 +185,21 @@ async fn ec2_metadata_compute_hint_preemption_signal_no_notice_yet() {
             .unwrap();
     let sig = hint.preemption_signal().await.unwrap();
     assert_eq!(sig, None, "404 spot action -> no preemption notice yet");
+}
+
+#[tokio::test]
+async fn ec2_metadata_compute_hint_preemption_signal_tolerates_non_404() {
+    let (url, _c) = spawn_mock_imds_error().await;
+    let hint =
+        rollout_cloud_aws::Ec2MetadataComputeHint::with_endpoint(&url, Box::new(StubLocalHint))
+            .unwrap();
+    // 411 (or any non-404) from the spot endpoint must map to Ok(None), never Err:
+    // a garbled/non-spot-aware IMDS endpoint is not a fatal doctor failure.
+    let sig = hint.preemption_signal().await.unwrap();
+    assert_eq!(
+        sig, None,
+        "non-404 spot error -> no preemption signal, no Err"
+    );
 }
 
 #[tokio::test]
