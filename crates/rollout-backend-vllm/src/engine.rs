@@ -379,18 +379,17 @@ fn run_init(
 
 /// Drive `engine.generate_one(prompt, request_id, **sampling)` to completion.
 ///
-/// Architecture: spin up a fresh `asyncio` event loop on this worker thread,
-/// then drive the Python coroutine through it via
-/// `pyo3_async_runtimes::tokio::run_until_complete`. The Rust closure inside
-/// `run_until_complete` uses `into_future` to obtain a Rust `Future`
-/// pointing at the Python coroutine and awaits it.
+/// Architecture: call the Python `generate_one_sync` wrapper, which runs the
+/// coroutine on a PERSISTENT module-level `asyncio` loop. `AsyncLLMEngine`
+/// binds its background loop to the loop running the first `generate()`; an
+/// earlier design opened+closed a fresh loop per request, stranding that
+/// background task on the closed loop and hanging every request after the
+/// first (infer-smoke CI exit 124). A persistent loop keeps it alive.
 ///
-/// RESEARCH Pitfall 2 (GIL deadlock) is averted because the underlying
-/// `event_loop.run_until_complete` is a Python C-level call that releases
-/// the GIL whenever it has nothing to do — letting vLLM's background tasks
-/// (which also run on this asyncio event loop) progress. See
-/// `tests/pyo3_bridge_smoke.rs` for the regression test that proves a
-/// background Python thread runs concurrently with the Rust `await`.
+/// RESEARCH Pitfall 2 (GIL deadlock) is still averted: `loop.run_until_complete`
+/// is a Python C-level call that releases the GIL whenever it has nothing to do,
+/// letting vLLM's background tasks progress while this thread blocks in the call.
+/// See `tests/pyo3_bridge_smoke.rs` for the GIL-release regression test.
 #[cfg(feature = "vllm")]
 fn run_generate(
     module: &pyo3::Py<pyo3::types::PyModule>,
@@ -402,44 +401,18 @@ fn run_generate(
     use crate::python_glue::samplingparams_to_pydict;
     use pyo3::prelude::*;
     use pyo3::types::PyDict;
-    use pyo3_async_runtimes::tokio::{into_future, run_until_complete};
 
-    let prompt_owned = prompt.to_owned();
-    let request_id_owned = request_id.to_owned();
-    let params_owned = params.clone();
-
-    // Drive the Python coroutine inside a fresh asyncio loop on this thread.
-    // `run_until_complete` is what releases the GIL across the actual await
-    // window (RESEARCH Pitfall 2): the underlying Python C-level
-    // `loop.run_until_complete` runs the asyncio scheduler, which is what
-    // gives vLLM's background tasks the GIL when our Rust `await` yields.
+    // Blocking call into `generate_one_sync`, which drives the coroutine on the
+    // engine's PERSISTENT asyncio loop (see doc comment). The call releases the
+    // GIL while the loop awaits, so vLLM's background tasks still progress.
     let result_obj: pyo3::Py<pyo3::PyAny> = Python::attach(|py| -> Result<_, CoreError> {
-        let asyncio = py.import("asyncio").map_err(py_to_core)?;
-        let event_loop = asyncio.call_method0("new_event_loop").map_err(py_to_core)?;
-        let module_for_async = module.clone_ref(py);
-        let driver = async move {
-            let coro = Python::attach(|py| -> PyResult<Py<PyAny>> {
-                let m = module_for_async.bind(py);
-                let kwargs = samplingparams_to_pydict(py, &params_owned).map_err(|e| {
-                    pyo3::exceptions::PyRuntimeError::new_err(format!(
-                        "samplingparams_to_pydict: {e:?}"
-                    ))
-                })?;
-                let coro = m.call_method(
-                    "generate_one",
-                    (prompt_owned.as_str(), request_id_owned.as_str()),
-                    Some(&kwargs),
-                )?;
-                Ok(coro.unbind())
-            })?;
-            let fut = Python::attach(|py| into_future(coro.into_bound(py)))?;
-            fut.await
-        };
-        let event_loop_for_close = event_loop.clone();
-        let res = run_until_complete::<_, Py<PyAny>>(event_loop, driver).map_err(py_to_core)?;
-        // Close the loop to release its resources; ignore close errors.
-        let _ = event_loop_for_close.call_method0("close");
-        Ok(res)
+        let m = module.bind(py);
+        let kwargs = samplingparams_to_pydict(py, params)
+            .map_err(|e| internal(format!("samplingparams_to_pydict: {e:?}")))?;
+        let out = m
+            .call_method("generate_one_sync", (prompt, request_id), Some(&kwargs))
+            .map_err(py_to_core)?;
+        Ok(out.unbind())
     })?;
 
     // Re-acquire the GIL, convert dict → Completion.

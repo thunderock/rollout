@@ -40,6 +40,35 @@ import torch  # transitively pulled by vllm; explicit import for the device prob
 
 _engine: AsyncLLMEngine | None = None
 _model_sha: str | None = None
+_loop: asyncio.AbstractEventLoop | None = None
+
+
+def _persistent_loop() -> asyncio.AbstractEventLoop:
+    """One event loop for the engine's lifetime.
+
+    AsyncLLMEngine binds its background loop to whichever loop runs the first
+    generate(); the old Rust bridge opened+closed a fresh loop per request, so
+    request #2 awaited a background task stranded on the closed loop and hung
+    forever (infer-smoke CI exit 124). Reusing one loop keeps it alive.
+    """
+    global _loop
+    if _loop is None or _loop.is_closed():
+        _loop = asyncio.new_event_loop()
+    return _loop
+
+
+def generate_one_sync(
+    prompt: str, request_id: str, **sampling: object
+) -> dict[str, object]:
+    """Blocking wrapper driving generate_one() on the persistent loop.
+
+    Called from the Rust worker thread. ``loop.run_until_complete`` is a C-level
+    call that releases the GIL whenever the loop is idle/awaiting, so vLLM's
+    background work still makes progress (RESEARCH Pitfall 2).
+    """
+    return _persistent_loop().run_until_complete(
+        generate_one(prompt, request_id, **sampling)
+    )
 
 
 def init(model_uri: str, **engine_args: object) -> str:
@@ -57,13 +86,17 @@ def init(model_uri: str, **engine_args: object) -> str:
         # CPU CI: skip torch.compile/inductor (fragile/slow on CPU runners).
         "enforce_eager": device != "cuda",
         "gpu_memory_utilization": (
-            engine_args.get("gpu_memory_utilization", 0.85) if device == "cuda" else None
+            engine_args.get("gpu_memory_utilization", 0.85)
+            if device == "cuda"
+            else None
         ),
         "tokenizer": tokenizer if isinstance(tokenizer, str) and tokenizer else None,
     }
     accepted = set(inspect.signature(AsyncEngineArgs).parameters)
     kwargs = {
-        k: v for k, v in candidate.items() if v is not None and (k == "model" or k in accepted)
+        k: v
+        for k, v in candidate.items()
+        if v is not None and (k == "model" or k in accepted)
     }
     args = AsyncEngineArgs(**kwargs)
     _engine = AsyncLLMEngine.from_engine_args(args)
@@ -110,10 +143,13 @@ async def generate_one(
 
 def shutdown() -> None:
     """Drop the engine handle. ``AsyncLLMEngine`` has no explicit shutdown."""
-    global _engine, _model_sha
+    global _engine, _model_sha, _loop
     if _engine is not None:
         del _engine
         _engine = None
+    if _loop is not None and not _loop.is_closed():
+        _loop.close()
+    _loop = None
     _model_sha = None
 
 
