@@ -106,11 +106,12 @@ fn sort_key(entry: &(StorageKey, Vec<u8>)) -> (String, Option<[u8; 16]>, Vec<Str
 }
 
 proptest! {
-    // 16 cases, each batching all puts into one PG + one redb commit (see body).
-    // Lowered from 32: even batched, per-case Docker/PG round trips overran the
-    // postgres-integration CI timeout; 16 keeps printable-ASCII parity coverage
-    // at half the runner wall-clock.
-    #![proptest_config(ProptestConfig { cases: 16, .. ProptestConfig::default() })]
+    // 8 cases, each batching all puts into one PG + one redb commit (see body).
+    // Lowered 32->16->8: even batched, per-case Docker/PG fsync round trips are
+    // slow enough that 16 cases still overran the CI cap (job cancelled mid-run).
+    // 8 cases keep printable-ASCII parity coverage; the job timeout was also
+    // raised to 40m for margin.
+    #![proptest_config(ProptestConfig { cases: 8, .. ProptestConfig::default() })]
 
     #[test]
     #[ignore = "requires Docker / testcontainers"]

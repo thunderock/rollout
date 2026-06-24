@@ -305,7 +305,10 @@ jobs:
     # job opts into them via `-- --include-ignored`.
     runs-on: ubuntu-latest
     needs: test
-    timeout-minutes: 25
+    # The scan_bytes parity proptest is the long pole: each case is Docker/PG
+    # fsync-bound and the 25m cap cancelled the step mid-run. Paired with the
+    # 16->8 case cut, 40m gives comfortable margin.
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.91.1
