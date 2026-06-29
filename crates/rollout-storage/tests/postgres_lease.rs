@@ -27,11 +27,14 @@ use rollout_core::{CoordEpoch, LeaseRecord, RunId, Storage, StorageKey, WorkerId
 use rollout_storage::PostgresStorage;
 use smol_str::SmolStr;
 use testcontainers::runners::AsyncRunner;
+use testcontainers::ImageExt;
 use testcontainers_modules::postgres::Postgres;
 use ulid::Ulid;
 
 async fn start_postgres() -> (testcontainers::ContainerAsync<Postgres>, String) {
+    // Pin PG 16: migration 0004 needs PG >= 15 (NULLS NOT DISTINCT); default tag is 11-alpine.
     let container = Postgres::default()
+        .with_tag("16-alpine")
         .start()
         .await
         .expect("start postgres container");

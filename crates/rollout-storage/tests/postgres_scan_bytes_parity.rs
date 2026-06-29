@@ -23,6 +23,7 @@ use rollout_core::{KeyRange, Storage, StorageKey};
 use rollout_storage::{EmbeddedStorage, PostgresStorage};
 use smol_str::SmolStr;
 use testcontainers::runners::AsyncRunner;
+use testcontainers::ImageExt;
 use testcontainers_modules::postgres::Postgres;
 use tokio::runtime::Runtime;
 
@@ -43,7 +44,9 @@ fn harness() -> &'static Harness {
     H.get_or_init(|| {
         let rt = Runtime::new().expect("tokio runtime");
         let (container, pg, redb, tmp) = rt.block_on(async {
+            // Pin PG 16: migration 0004's NULLS NOT DISTINCT needs PG >= 15 (default tag is 11-alpine).
             let container = Postgres::default()
+                .with_tag("16-alpine")
                 .start()
                 .await
                 .expect("start postgres container");
@@ -55,16 +58,21 @@ fn harness() -> &'static Harness {
 
             // Readiness retry (container reports "running" before PG accepts conns).
             let mut pg = None;
+            let mut last_err = None;
             for _ in 0..30 {
                 match PostgresStorage::new(&url, 4).await {
                     Ok(s) => {
                         pg = Some(s);
                         break;
                     }
-                    Err(_) => tokio::time::sleep(Duration::from_secs(2)).await,
+                    Err(e) => {
+                        last_err = Some(e);
+                        tokio::time::sleep(Duration::from_secs(2)).await;
+                    }
                 }
             }
-            let pg = pg.expect("postgres never became ready");
+            let pg = pg
+                .unwrap_or_else(|| panic!("postgres never became ready: {last_err:?}"));
 
             let tmp = tempfile::tempdir().expect("tempdir");
             let redb = EmbeddedStorage::open(tmp.path().join("parity.db"))
