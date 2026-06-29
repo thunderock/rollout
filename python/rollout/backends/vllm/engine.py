@@ -19,6 +19,7 @@ imported (handled on the Rust side; see ``engine.rs::worker_main_vllm``).
 
 from __future__ import annotations
 
+import asyncio
 import inspect
 import logging
 
